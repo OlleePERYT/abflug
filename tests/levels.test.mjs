@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
-const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const html = readFileSync(process.env.ABFLUG_HTML || new URL("../index.html", import.meta.url), "utf8");
 const src = html.match(/<script id="logic">([\s\S]*?)<\/script>/)[1];
 globalThis.window = {};
 new Function(src)();
@@ -31,17 +31,21 @@ A.LEVELS.forEach((L, i) => {
     let wins = 0;
     for (let run = 0; run < 30; run++) {
       const st = A.createState(lv);
-      for (let step = 0; step < 20000; step++) {
+      for (let step = 0; step < 200000; step++) {
         st.planes.forEach(p => { if (p.where === "full") A.depart(st, p.id); });
         const s = A.status(st);
         if (s === "win") { wins++; break; }
         if (s === "lose") break;
-        if (A.boardOne(st)) continue;
-        const free = st.planes.filter(p => p.where === "apron" && A.freeRun(st, p) < 0);
-        if (!free.length) throw new Error("kein Zug möglich, aber nicht verloren");
-        const p = free[(Math.random() * free.length) | 0];
-        const r = A.tap(st, p.id);
-        if (r.ok) A.arrive(st, p.id);
+        // Zufallsspieler: schickt ab und zu irgendein freies Flugzeug los.
+        if (s === "play" && Math.random() < 0.15) {
+          const free = st.planes.filter(p => p.where === "apron" && A.freeRun(st, p) < 0);
+          if (!free.length) throw new Error("kein Zug möglich, aber nicht verloren");
+          const p = free[(Math.random() * free.length) | 0];
+          if (A.tap(st, p.id).ok) A.arrive(st, p.id);
+          continue;
+        }
+        A.tick(st);
+        if (step === 199999) throw new Error("Spiel endet nicht");
       }
     }
     console.log(`ok  ${String(i + 1).padStart(2)} ${L.name.padEnd(14)} ${lv.planes.length}/${L.planes} Flugzeuge, ${lv.tourists} Touristen, Zufallsspieler ${wins}/30 gewonnen, ${ms} ms`);

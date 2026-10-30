@@ -84,6 +84,11 @@ window.Abflug = (() => {
     { id: "TR", name: "Türkei", color: "#E3403A", text: "#FFFFFF" },
     { id: "JP", name: "Japan", color: "#F5F3EC", text: "#B0162A" },
     { id: "SE", name: "Schweden", color: "#2453B8", text: "#FFFFFF" },
+    { id: "NL", name: "Niederlande", color: "#F28A1E", text: "#2A1604" },
+    { id: "MX", name: "Mexiko", color: "#EC5FA8", text: "#FFFFFF" },
+    { id: "FR", name: "Frankreich", color: "#8E5BD0", text: "#FFFFFF" },
+    { id: "QA", name: "Katar", color: "#7A1B3A", text: "#FFFFFF" },
+    { id: "EG", name: "Ägypten", color: "#A8773F", text: "#FFFFFF" },
   ];
 
   function rng(seed) {
@@ -97,50 +102,60 @@ window.Abflug = (() => {
   const grid = (c, r, f) => Array.from({ length: r }, (_, y) => Array.from({ length: c }, (_, x) => !!f(x, y)));
   const art = rows => rows.map(s => [...s].map(ch => ch === "#"));
 
+  // Wartering im Terminal: RING Reihen à 4 Plätze, Position 0 ist der Ausgang zu den Gates.
+  const RING = 20, ENTRY = { L: 7, R: 13 };
+
   const LEVELS = [
-    { name: "Ferienstart", mask: grid(5, 6, () => 1), dests: 3, planes: 7, mode: "seq" },
-    { name: "Pauschalreise", mask: grid(6, 7, () => 1), dests: 3, planes: 10, mode: "seq" },
-    { name: "Brückentag", mask: grid(7, 8, (x, y) => !((x === 0 || x === 6) && (y === 0 || y === 7))), dests: 4, planes: 13, mode: "seq" },
-    { name: "Schranken", mask: grid(7, 8, () => 1), dests: 4, planes: 15, mode: "alt" },
+    { name: "Ferienstart", mask: grid(6, 8, () => 1), dests: 4, planes: 12, mode: "seq" },
+    { name: "Pauschalreise", mask: grid(7, 9, () => 1), dests: 5, planes: 18, mode: "seq" },
+    { name: "Brückentag", mask: grid(8, 10, (x, y) => !((x === 0 || x === 7) && (y === 0 || y === 9))), dests: 6, planes: 24, mode: "seq" },
+    { name: "Schranken", mask: grid(8, 11, () => 1), dests: 6, planes: 28, mode: "alt" },
     { name: "Jumbo", mask: art([
-      "....#....",
-      "...###...",
-      "..#####..",
-      "#########",
-      "#########",
-      ".#######.",
-      "...###...",
-      "...###...",
-      "..#####..",
-      "..#####..",
-    ]), dests: 4, planes: 15, mode: "alt" },
-    { name: "Nebel", mask: grid(9, 9, (x, y) => Math.abs(x - 4) + Math.abs(y - 4) <= 5), dests: 5, planes: 18, mode: "alt", mystery: 0.25 },
-    { name: "Hangar", mask: grid(8, 10, () => 1), dests: 5, planes: 20, mode: "alt", hangars: 1, hangarSize: 3 },
+      "....##....",
+      "...####...",
+      "...####...",
+      "..######..",
+      "##########",
+      "##########",
+      ".########.",
+      "...####...",
+      "...####...",
+      "...####...",
+      "..######..",
+      "..######..",
+    ]), dests: 7, planes: 28, mode: "alt" },
+    { name: "Nebel", mask: grid(11, 11, (x, y) => Math.abs(x - 5) + Math.abs(y - 5) <= 6), dests: 7, planes: 30, mode: "alt", mystery: 0.25 },
+    { name: "Hangar", mask: grid(9, 12, () => 1), dests: 8, planes: 38, mode: "alt", hangars: 1, hangarSize: 4 },
     { name: "Koffer", mask: art([
-      "..#####..",
-      "..#...#..",
-      "#########",
-      "#########",
-      "#########",
-      "#########",
-      "#########",
-      "#########",
-      "#########",
-    ]), dests: 5, planes: 22, mode: "alt", mystery: 0.25, hangars: 1, hangarSize: 3 },
-    { name: "Weltreise", mask: grid(10, 10, (x, y) => (x - 4.5) ** 2 + (y - 4.5) ** 2 <= 25.5), dests: 6, planes: 24, mode: "alt", mystery: 0.3 },
+      "...####...",
+      "...#..#...",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+      "##########",
+    ]), dests: 8, planes: 40, mode: "alt", mystery: 0.25, hangars: 1, hangarSize: 4 },
+    { name: "Weltreise", mask: grid(11, 12, (x, y) => ((x - 5) / 5.6) ** 2 + ((y - 5.5) / 6.1) ** 2 <= 1), dests: 9, planes: 36, mode: "alt", mystery: 0.3 },
     { name: "Tower", mask: art([
-      "..#####..",
-      ".#######.",
-      "#########",
-      ".#######.",
-      "...###...",
-      "...###...",
-      "..#####..",
-      ".#######.",
-      "#########",
-      "#########",
-      "#########",
-    ]), dests: 6, planes: 26, mode: "alt", mystery: 0.3, hangars: 2, hangarSize: 3 },
+      "..######..",
+      ".########.",
+      "##########",
+      "##########",
+      ".########.",
+      "...####...",
+      "...####...",
+      "...####...",
+      "..######..",
+      ".########.",
+      "##########",
+      "##########",
+      "##########",
+    ]), dests: 10, planes: 42, mode: "alt", mystery: 0.3, hangars: 2, hangarSize: 4 },
   ];
 
   // Flugzeug: (x, y) ist die Nase, der Rumpf liegt entgegen der Richtung.
@@ -185,7 +200,7 @@ window.Abflug = (() => {
     const target = L.planes - hangarPlanes;
     const lens = [2, 2, 2, 2, 3, 3, 3, 4, 4];
     const base = [];
-    for (let t = 0; t < 8000 && base.length < target; t++) {
+    for (let t = 0; t < 14000 && base.length < target; t++) {
       const p = { x: (r() * cols) | 0, y: (r() * rows) | 0, dir: DKEYS[(r() * 4) | 0], len: lens[(r() * lens.length) | 0] };
       const cells = cellsOf(p);
       if (!cells.every(([a, b]) => inMask(a, b) && occ[b][a] === null)) continue;
@@ -264,6 +279,7 @@ window.Abflug = (() => {
       gates: [null, null, null, null, null], gateCount: 4,
       arms: { L: { groups: lv.arms.L.map(g => ({ ...g })), taken: 0 }, R: { groups: lv.arms.R.map(g => ({ ...g })), taken: 0 } },
       active: "L", boarded: 0,
+      ring: new Array(RING * 4).fill(-1), off: 0,
     };
     if (!st.arms.L.groups.length) st.active = "R";
     reveal(st);
@@ -311,54 +327,80 @@ window.Abflug = (() => {
     }
     return a.groups.length ? a : null;
   }
-  function boardOne(st) {
-    const a = frontArm(st);
-    if (!a) return null;
-    const grp = a.groups[0];
-    let target = null;
+  function rowAt(st, pos) { return (((pos - st.off) % RING) + RING) % RING; }
+  function gatePlaneFor(st, dest) {
     for (let i = 0; i < st.gateCount; i++) {
       const id = st.gates[i];
       if (id === null) continue;
       const p = st.planes[id];
-      if (p.where === "gate" && p.dest === grp.dest && p.seatsLeft > 0) { target = p; break; }
+      if (p.where === "gate" && p.dest === dest && p.seatsLeft > 0) return p;
     }
-    if (!target) return null;
-    const side = st.active;
-    grp.n--; a.taken++; target.seatsLeft--; st.boarded++;
-    if (grp.n === 0) {
-      a.groups.shift();
-      const o = side === "L" ? "R" : "L";
-      if (st.mode === "alt" && st.arms[o].groups.length) st.active = o;
-      else if (!a.groups.length) st.active = o;
+    return null;
+  }
+  // Ein Schritt: Der Ring rückt eine Reihe weiter. Am Ausgang steigt ein, wer ein passendes
+  // Flugzeug am Gate hat. Am offenen Zulauf rücken Touristen in freie Plätze nach.
+  function tick(st) {
+    st.off = (st.off + 1) % RING;
+    const boards = [];
+    const j0 = rowAt(st, 0);
+    for (let c = 0; c < 4; c++) {
+      const k = j0 * 4 + c, d = st.ring[k];
+      if (d < 0) continue;
+      const p = gatePlaneFor(st, d);
+      if (!p) continue;
+      st.ring[k] = -1; p.seatsLeft--; st.boarded++;
+      if (!p.seatsLeft) p.where = "full";
+      boards.push({ plane: p.id, dest: d, lane: c, full: !p.seatsLeft });
     }
-    if (target.seatsLeft === 0) target.where = "full";
-    return { plane: target.id, side, dest: grp.dest, full: target.seatsLeft === 0, taken: a.taken };
+    let entered = null;
+    const a = frontArm(st);
+    if (a) {
+      const side = st.active, j = rowAt(st, ENTRY[side]), before = a.taken;
+      for (let c = 0; c < 4 && a.groups.length; c++) {
+        const k = j * 4 + c;
+        if (st.ring[k] >= 0) continue;
+        const grp = a.groups[0];
+        st.ring[k] = grp.dest; grp.n--; a.taken++;
+        if (!grp.n) {
+          a.groups.shift();
+          const o = side === "L" ? "R" : "L";
+          if ((st.mode === "alt" && st.arms[o].groups.length) || !a.groups.length) { st.active = o; break; }
+        }
+      }
+      if (a.taken > before) entered = { side, before, after: a.taken };
+    }
+    return { boards, entered };
   }
   function depart(st, id) { const p = st.planes[id]; st.gates[p.gate] = null; p.where = "gone"; }
   function status(st) {
     const queued = st.arms.L.groups.length + st.arms.R.groups.length;
-    if (!queued && st.planes.every(p => p.where === "gone")) return "win";
+    if (!queued && st.ring.every(d => d < 0) && st.planes.every(p => p.where === "gone")) return "win";
     if (st.planes.some(p => p.where === "taxi" || p.where === "full")) return "busy";
-    const a = frontArm(st);
-    if (a && st.planes.some(p => p.where === "gate" && p.dest === a.groups[0].dest)) return "boarding";
+    const gd = new Set();
+    for (let i = 0; i < st.gateCount; i++) if (st.gates[i] !== null) gd.add(st.planes[st.gates[i]].dest);
+    if (st.ring.some(d => d >= 0 && gd.has(d))) return "boarding";
     for (let i = 0; i < st.gateCount; i++) if (st.gates[i] === null) return "play";
+    if (queued && st.ring.some(d => d < 0)) return "filling";
     return "lose";
   }
 
-  // Spielt die Lösungsreihenfolge stur durch: so früh wie möglich losrollen, sonst einsteigen lassen.
+  // Spielt die Lösungsreihenfolge stur durch: so früh wie möglich losrollen, sonst Ring laufen lassen.
   function solve(lv) {
     const st = createState(lv);
     let idx = 0;
-    for (;;) {
+    for (let n = 0; n < 400000; n++) {
       st.planes.forEach(p => { if (p.where === "full") depart(st, p.id); });
-      if (status(st) === "win") return true;
+      const s = status(st);
+      if (s === "win") return true;
+      if (s === "lose") return false;
       if (idx < lv.sol.length) {
         const r = tap(st, lv.sol[idx]);
         if (r.ok) { arrive(st, lv.sol[idx]); idx++; continue; }
         if (r.reason !== "gates") return false;
       }
-      if (!boardOne(st)) return false;
+      tick(st);
     }
+    return false;
   }
 
   function generate(li) {
@@ -373,7 +415,7 @@ window.Abflug = (() => {
     return best;
   }
 
-  return { SEATS, DIRS, DEST, LEVELS, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, boardOne, depart, status, frontArm, solve };
+  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
 })();
 </script>
 
@@ -387,9 +429,9 @@ window.Abflug = (() => {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
   const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
-  const BOARD_RATE = 0.032;
+  const TICK = 0.11, FLY = 0.32, FULL_WAIT = 0.8;
   const INTRO = {
-    0: "Tippe ein Flugzeug an. Ist der Weg vor der Nase frei, rollt es zu einem <b>Gate</b>.",
+    0: "Tippe ein Flugzeug an. Ist der Weg vor der Nase frei, rollt es zu einem <b>Gate</b>. Die Touristen laufen im Kreis und steigen am Ausgang ein, wenn ihr Flugzeug wartet.",
     3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
     5: "<b>Neu: Ziel unbekannt.</b> Graue Flugzeuge zeigen ihr Ziel, sobald ihr Weg frei ist.",
     6: "<b>Neu: Hangar.</b> Rollt ein Flugzeug heraus, kommt das nächste nach. Die Zahl zeigt, wie viele noch drin sind.",
@@ -398,7 +440,7 @@ window.Abflug = (() => {
   let W = 0, H = 0, DPR = 1, lay = null;
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
   let lv = null, S = null, vis = new Map(), flyers = [], departing = [];
-  let boardTimer = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, last = 0, tick = 0;
+  let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, last = 0, lastPlop = 0, pulse = [];
   const cache = {}, sprites = {};
   const now = () => performance.now() / 1000;
 
@@ -454,6 +496,22 @@ window.Abflug = (() => {
         break;
       case "JP": f("#FFFFFF", x, y, w, h); ctx.fillStyle = "#BC002D"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.3, 0, 7); ctx.fill(); break;
       case "SE": f("#006AA7", x, y, w, h); f("#FECC00", x + w * 0.31, y, w * 0.125, h); f("#FECC00", x, y + h * 0.4, w, h * 0.2); break;
+      case "NL": f("#AE1C28", x, y, w, h / 3 + 0.5); f("#FFFFFF", x, y + h / 3, w, h / 3 + 0.5); f("#21468B", x, y + (2 * h) / 3, w, h / 3 + 0.5); break;
+      case "FR": f("#002654", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE1126", x + (2 * w) / 3, y, w / 3 + 0.5, h); break;
+      case "MX":
+        f("#006847", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE1126", x + (2 * w) / 3, y, w / 3 + 0.5, h);
+        ctx.fillStyle = "#8C5A2B"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.16, 0, 7); ctx.fill();
+        break;
+      case "QA":
+        f("#8A1538", x, y, w, h); f("#FFFFFF", x, y, w * 0.26, h);
+        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(x + w * 0.26, y);
+        for (let i = 0; i < 5; i++) { ctx.lineTo(x + w * 0.36, y + (h * (i + 0.5)) / 5); ctx.lineTo(x + w * 0.26, y + (h * (i + 1)) / 5); }
+        ctx.closePath(); ctx.fill();
+        break;
+      case "EG":
+        f("#CE1126", x, y, w, h / 3 + 0.5); f("#FFFFFF", x, y + h / 3, w, h / 3 + 0.5); f("#1A1A1A", x, y + (2 * h) / 3, w, h / 3 + 0.5);
+        ctx.fillStyle = "#C09300"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.12, 0, 7); ctx.fill();
+        break;
     }
     ctx.restore();
     ctx.strokeStyle = "rgba(20,25,30,.55)"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
@@ -560,31 +618,42 @@ window.Abflug = (() => {
     const sab = parseFloat(getComputedStyle($("#safe")).paddingBottom) || 0;
     const gw = Math.min(W, 520), ox = (W - gw) / 2, top = hudB + 2;
     const avail = H - top - sab - 10;
-    const termH = Math.round(Math.max(150, Math.min(avail * 0.32, 260)));
+    const termH = Math.round(Math.max(170, Math.min(avail * 0.27, 230)));
     const gatesH = Math.round(Math.max(84, Math.min(avail * 0.17, 122)));
     const apronTop = top + termH + gatesH + 12;
     const apronH = H - sab - 12 - apronTop;
     const cell = Math.max(16, Math.floor(Math.min((gw - 28) / S.cols, apronH / S.rows, 64)));
     const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop + Math.max(0, apronH - cell * S.rows) * 0.3;
 
-    const d = Math.max(7, Math.min(11, Math.floor(gw / 40)));
-    const laneW = 4 * d + 8, h = laneW / 2, cx = ox + gw / 2, g = Math.max(h + 7, laneW * 0.8), m = ox + 14;
-    const yT = top + h + 4, yB = top + termH - h - 12;
-    let left;
-    if (yB - yT >= 2 * laneW + 8) {
-      const yM = (yT + yB) / 2;
-      left = [[cx - g, yB], [m + h, yB], [m + h, yT], [cx - g, yT], [cx - g, yM], [m + laneW + h + 14, yM]];
-    } else left = [[cx - g, yB], [m + h, yB], [m + h, yT], [cx - g, yT]];
-    const right = left.map(([x, y]) => [2 * cx - x, y]);
-    const arms = { L: poly(left), R: poly(right) };
+    // Wartering als Stadion, Ausgang unten in der Mitte. Zuläufe kommen von oben.
+    const d = Math.max(7, Math.min(10, Math.floor(gw / 42)));
+    const laneW = 4 * d + 6, cx = ox + gw / 2;
+    // Umfang so knapp, dass die Reihen dicht an dicht laufen.
+    const rr = laneW * 0.85;
+    const straight = Math.max(10, (A.RING * d * 1.45 - 2 * Math.PI * rr) / 2);
+    const cyR = top + termH - 16 - laneW / 2 - rr;
+    const x0 = cx - straight / 2, x1 = cx + straight / 2;
+    const pts = [[cx, cyR + rr], [x0, cyR + rr]];
+    for (let k = 1; k <= 18; k++) { const a = Math.PI / 2 + (Math.PI * k) / 18; pts.push([x0 + rr * Math.cos(a), cyR + rr * Math.sin(a)]); }
+    pts.push([x1, cyR - rr]);
+    for (let k = 1; k <= 18; k++) { const a = -Math.PI / 2 + (Math.PI * k) / 18; pts.push([x1 + rr * Math.cos(a), cyR + rr * Math.sin(a)]); }
+    pts.push([cx, cyR + rr]);
+    const ring = poly(pts);
+    const eL = at(ring, (A.ENTRY.L / A.RING) * ring.total), eR = at(ring, (A.ENTRY.R / A.RING) * ring.total);
+    const armTop = top - 6;
+    const arms = {
+      L: poly([[eL.x, eL.y - laneW / 2 - 3], [eL.x, armTop]]),
+      R: poly([[eR.x, eR.y - laneW / 2 - 3], [eR.x, armTop]]),
+    };
 
     const gy0 = top + termH;
     const slotW = Math.min((gw - 24) / 5, 82), slotH = gatesH - 30;
     const gc = Math.min(slotH / 3.85, slotW * 0.92);
     const gates = [0, 1, 2, 3, 4].map(i => ({ x: cx + (i - 2) * slotW, y: gy0 + 8 + slotH / 2 }));
     lay = {
-      ox, gw, top, termH, gatesH, gy0, slotW, slotH, gc, gates, cell, ax, ay, d, laneW, cx, g, yB, arms,
-      capRows: { L: Math.floor((arms.L.total - d) / d), R: Math.floor((arms.R.total - d) / d) },
+      ox, gw, top, termH, gatesH, gy0, slotW, slotH, gc, gates, cell, ax, ay, d, laneW, cx, arms,
+      ring, rr, cyR, x0, x1, exit: { x: cx, y: cyR + rr },
+      capRows: { L: Math.min(6, Math.floor((arms.L.total - d) / d)), R: Math.min(6, Math.floor((arms.R.total - d) / d)) },
       laneY: gy0 + gatesH + 4, sab,
     };
   }
@@ -596,7 +665,7 @@ window.Abflug = (() => {
     lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
     S = A.createState(lv);
     vis = new Map(); flyers = []; departing = [];
-    boardTimer = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9;
+    ringT = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9; pulse = [];
     $("#overlay").hidden = true;
     $("#lvlTxt").textContent = `Level ${String(levelIdx + 1).padStart(2, "0")} · ${lv.name}`;
     $("#gateBtn").disabled = false;
@@ -668,28 +737,36 @@ window.Abflug = (() => {
       if (v.kind === "taxi" && t - v.t0 >= v.dur) { A.arrive(S, id); vis.delete(id); }
       else if ((v.kind === "bump" && t - v.t0 > 0.32) || (v.kind === "spawn" && t - v.t0 > 0.4)) vis.delete(id);
     }
-    if (!ended) {
-      boardTimer += dt;
-      while (boardTimer >= BOARD_RATE) {
-        boardTimer -= BOARD_RATE;
-        const b = A.boardOne(S);
-        if (!b) { boardTimer = 0; break; }
-        const arm = lay.arms[b.side], p0 = at(arm, 0), gp = lay.gates[S.planes[b.plane].gate];
-        flyers.push({ x0: p0.x, y0: p0.y, x1: gp.x, y1: gp.y, t0: t, dest: b.dest });
-        if (b.taken % 4 === 0) shift[b.side] += lay.d;
-        if (++tick % 3 === 0) sfx.tick();
+    ringT += dt;
+    while (ringT >= TICK) {
+      ringT -= TICK;
+      const r = A.tick(S);
+      for (const b of r.boards) {
+        const p = S.planes[b.plane], gp = lay.gates[p.gate];
+        flyers.push({
+          x0: lay.exit.x + (b.lane - 1.5) * lay.d, y0: lay.exit.y, x1: gp.x, y1: gp.y, t0: t + b.lane * 0.03,
+          dest: b.dest, gate: p.gate, fill: 1 - p.seatsLeft / A.SEATS[p.len], full: b.full,
+        });
         if (b.full) vis.set(b.plane, { kind: "full", t0: t });
       }
+      if (r.entered) shift[r.entered.side] += ((r.entered.after >> 2) - (r.entered.before >> 2)) * lay.d;
     }
+    // Landet ein Tourist im Flugzeug: Plopp, Flugzeug federt, Zähler hüpft.
+    flyers = flyers.filter(f => {
+      if (t - f.t0 < FLY) return true;
+      pulse[f.gate] = t;
+      if (t - lastPlop > 0.025) { sfx.board(f.fill); lastPlop = t; }
+      if (f.full) sfx.full();
+      return false;
+    });
     for (const [id, v] of vis) {
-      if (v.kind === "full" && t - v.t0 > 0.42) {
+      if (v.kind === "full" && t - v.t0 > FULL_WAIT) {
         const p = S.planes[id], gp = lay.gates[p.gate];
         A.depart(S, id); vis.delete(id);
         departing.push({ p, x: gp.x, y: gp.y, t0: t });
         sfx.whoosh();
       }
     }
-    flyers = flyers.filter(f => t - f.t0 < 0.3);
     departing = departing.filter(d => t - d.t0 < 1.4);
     const k = Math.exp(-dt * 12);
     shift.L *= k; shift.R *= k;
@@ -724,7 +801,7 @@ window.Abflug = (() => {
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1}</div>
           <h2>Abflug verzögert</h2>
-          <p>Alle Gates sind belegt, und niemand vorn in der Schlange passt in ein wartendes Flugzeug.</p>
+          <p>Alle Gates sind belegt, und im Wartebereich will niemand zu einem der wartenden Ziele.</p>
           <div class="actions">
             ${canGate ? `<button class="btn" id="extraBtn">Extra-Gate öffnen</button>` : ""}
             <button class="btn ${canGate ? "alt" : ""}" id="againBtn">Level neu starten</button>
@@ -759,8 +836,10 @@ window.Abflug = (() => {
     }
     // Fliegende Touristen
     for (const f of flyers) {
-      const s = Math.min(1, (t - f.t0) / 0.3), x = f.x0 + (f.x1 - f.x0) * s, y = f.y0 + (f.y1 - f.y0) * s - Math.sin(s * Math.PI) * 26;
-      const d = lay.d * (1 - s * 0.4);
+      if (t < f.t0) continue;
+      const s = Math.min(1, (t - f.t0) / FLY), e = s * s * (3 - 2 * s);
+      const x = f.x0 + (f.x1 - f.x0) * e, y = f.y0 + (f.y1 - f.y0) * e - Math.sin(s * Math.PI) * 30;
+      const d = lay.d * (1.15 - s * 0.5);
       ctx.drawImage(ballSprite(f.dest, lay.d), x - d / 2, y - d / 2, d, d);
     }
     // Startende Flugzeuge über allem
@@ -780,23 +859,51 @@ window.Abflug = (() => {
     // Glasfront
     ctx.fillStyle = "#9CB4C5"; ctx.fillRect(0, top + termH - 5, W, 5);
     ctx.fillStyle = "#7F98AA"; for (let x = ox % 44; x < W; x += 44) ctx.fillRect(x, top + termH - 5, 2, 5);
-    // Durchgang zu den Gates
-    ctx.fillStyle = "#CBD3DA"; rrect(lay.cx - lay.g + lay.laneW / 2 + 3, lay.yB - lay.laneW / 2, 2 * lay.g - lay.laneW - 6, top + termH - lay.yB + lay.laneW / 2, 6); ctx.fill();
+    // Durchgang vom Ring zu den Gates
+    const ex = lay.exit;
+    ctx.fillStyle = "#CBD3DA"; rrect(ex.x - lay.laneW / 2 + 4, ex.y, lay.laneW - 8, top + termH - ex.y, 4); ctx.fill();
     ctx.strokeStyle = "#F2C230"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    for (let i = 0; i < 2; i++) {
-      const y = lay.yB - 6 + i * 11;
-      ctx.beginPath(); ctx.moveTo(lay.cx - 6, y); ctx.lineTo(lay.cx, y + 6); ctx.lineTo(lay.cx + 6, y); ctx.stroke();
+    const cy0 = ex.y + lay.laneW / 2 + 2;
+    for (let y = cy0; y < top + termH - 8; y += 10) {
+      ctx.beginPath(); ctx.moveTo(ex.x - 5, y); ctx.lineTo(ex.x, y + 5); ctx.lineTo(ex.x + 5, y); ctx.stroke();
     }
     for (const side of ["L", "R"]) drawArm(side, t);
+    // Wartering
+    const ring = lay.ring, d = lay.d;
+    ctx.beginPath(); ring.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath();
+    ctx.strokeStyle = "#A9B4BE"; ctx.lineWidth = lay.laneW + 6; ctx.stroke();
+    ctx.strokeStyle = "#D2D9DF"; ctx.lineWidth = lay.laneW; ctx.stroke();
+    // Insel in der Mitte
+    const ir = lay.rr - lay.laneW / 2 - 4;
+    if (ir > 6) {
+      ctx.fillStyle = "#8DB07A"; rrect(lay.x0 - ir, lay.cyR - ir, lay.x1 - lay.x0 + 2 * ir, 2 * ir, ir); ctx.fill();
+      ctx.fillStyle = "#6E9460"; rrect(lay.x0 - ir + 4, lay.cyR - ir + 4, lay.x1 - lay.x0 + 2 * ir - 8, 2 * ir - 8, ir - 4); ctx.fill();
+      if (lay.x1 - lay.x0 + 2 * ir > 64) {
+        ctx.fillStyle = "#F4F1E6"; ctx.font = `800 12px "Barlow Condensed", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("DUTY FREE", lay.cx, lay.cyR);
+      }
+    }
+    // Touristen laufen im Kreis
+    const frac = Math.min(1, ringT / TICK);
+    for (let j = 0; j < A.RING; j++) {
+      const pt = at(ring, (((j + S.off + frac) % A.RING) / A.RING) * ring.total);
+      for (let c = 0; c < 4; c++) {
+        const dd = S.ring[j * 4 + c];
+        if (dd < 0) continue;
+        const off = (c - 1.5) * d, x = pt.x - Math.sin(pt.a) * off, y = pt.y + Math.cos(pt.a) * off;
+        ctx.drawImage(ballSprite(dd, d), x - d / 2, y - d / 2, d, d);
+      }
+    }
+    for (const side of ["L", "R"]) drawBarrier(side);
   }
 
   function drawArm(side, t) {
     const pl = lay.arms[side], arm = S.arms[side], d = lay.d;
-    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineCap = "butt"; ctx.lineJoin = "round";
     ctx.beginPath(); pl.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
     ctx.strokeStyle = "#A9B4BE"; ctx.lineWidth = lay.laneW + 6; ctx.stroke();
     ctx.strokeStyle = "#D2D9DF"; ctx.lineWidth = lay.laneW; ctx.stroke();
-    // Touristen
+    // Nur die nächsten Reihen sind zu sehen, der Rest wartet am Check-in.
     let idx = arm.taken % 4, drawn = 0, total = 0;
     const cap = lay.capRows[side];
     for (const g of arm.groups) {
@@ -812,14 +919,14 @@ window.Abflug = (() => {
         drawn++;
       }
     }
-    if (total > drawn) {
-      const end = pl.points[pl.points.length - 1];
-      const txt = "+" + (total - drawn);
-      ctx.font = `700 13px "Barlow Condensed", sans-serif`;
-      const w = ctx.measureText(txt).width + 10;
-      ctx.fillStyle = "#15181C"; rrect(end[0] - w / 2, end[1] - 9, w, 18, 4); ctx.fill();
-      ctx.fillStyle = "#FFC83A"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, end[0], end[1] + 1);
-    }
+    const topY = at(pl, cap * d + 10).y;
+    ctx.fillStyle = "#15181C"; rrect(pl.points[0][0] - lay.laneW / 2 - 3, topY - 14, lay.laneW + 6, 16, 4); ctx.fill();
+    ctx.fillStyle = "#FFC83A"; ctx.font = `700 12px "Barlow Condensed", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(total > drawn ? "+" + (total - drawn) : "CHECK-IN", pl.points[0][0], topY - 5);
+  }
+
+  function drawBarrier(side) {
+    const pl = lay.arms[side], arm = S.arms[side];
     // Schranke am Eingang
     const p0 = at(pl, 0), nx = -Math.sin(p0.a), ny = Math.cos(p0.a), hw = lay.laneW / 2 + 3;
     const open = S.active === side && arm.groups.length > 0;
@@ -861,16 +968,26 @@ window.Abflug = (() => {
       if (id === null) return;
       const p = S.planes[id], v = vis.get(id);
       if (p.where === "taxi") return;
-      let bob = 0;
-      if (v && v.kind === "full") bob = -Math.sin(Math.min(1, (t - v.t0) / 0.42) * Math.PI) * 3;
-      drawPlane(g.x, g.y + bob, -Math.PI / 2, gc, p);
-      // Zähler der fehlenden Plätze
-      const dst = A.DEST[p.dest], txt = String(p.seatsLeft);
-      ctx.font = `800 14px "Barlow Condensed", sans-serif`;
+      const pu = pulse[i] ? Math.max(0, 1 - (t - pulse[i]) / 0.16) : 0;
+      const isFull = v && v.kind === "full" && t - v.t0 > FLY;
+      const dst = A.DEST[p.dest];
+      // Füllstand als Balken am Rand des Gates
+      const seats = A.SEATS[p.len], landed = Math.max(0, seats - p.seatsLeft - flyers.filter(f => f.gate === i).length);
+      const bh = slotH - 24, bx = x + w - 8, bt = y + 18;
+      ctx.fillStyle = "rgba(0,0,0,.35)"; rrect(bx, bt, 4, bh, 2); ctx.fill();
+      const fh = (bh * landed) / seats;
+      if (fh > 0) { ctx.fillStyle = dst.color; rrect(bx, bt + bh - fh, 4, fh, 2); ctx.fill(); }
+      if (pu || isFull) { ctx.fillStyle = `rgba(255,255,255,${isFull ? 0.12 : 0.1 * pu})`; rrect(x, y, w, slotH, 6); ctx.fill(); }
+      drawPlane(g.x, g.y, -Math.PI / 2, gc * (1 + 0.1 * pu), p);
+      // Zähler der fehlenden Plätze, hüpft bei jedem Einsteigen
+      const txt = isFull ? "VOLL!" : String(seats - landed);
+      const fs = 14 * (1 + 0.35 * pu) * (isFull ? 1.1 : 1);
+      ctx.font = `800 ${fs.toFixed(1)}px "Barlow Condensed", sans-serif`;
       const tw = Math.max(26, ctx.measureText(txt).width + 12);
-      ctx.fillStyle = dst.color; rrect(g.x - tw / 2, gy0 + gatesH - 21, tw, 17, 8.5); ctx.fill();
-      if (dst.id === "JP") { ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 1; ctx.stroke(); }
-      ctx.fillStyle = dst.text; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, g.x, gy0 + gatesH - 12);
+      const py = gy0 + gatesH - 21 - 3 * pu;
+      ctx.fillStyle = isFull ? "#FFC83A" : dst.color; rrect(g.x - tw / 2, py, tw, 17, 8.5); ctx.fill();
+      if (dst.id === "JP" && !isFull) { ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 1; ctx.stroke(); }
+      ctx.fillStyle = isFull ? "#15181C" : dst.text; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, g.x, py + 9);
     });
   }
 
@@ -963,7 +1080,17 @@ window.Abflug = (() => {
   const sfx = {
     go: () => tone(420, 0.14, "triangle", 0.12, 1.8),
     bump: () => tone(130, 0.16, "square", 0.06, 0.6),
-    tick: () => tone(980 + Math.random() * 160, 0.04, "sine", 0.03),
+    // Tonleiter steigt mit dem Füllstand: je voller, desto höher.
+    board(fill) {
+      const steps = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
+      const f = 392 * 2 ** (steps[Math.min(steps.length - 1, Math.floor(fill * steps.length))] / 12);
+      tone(f, 0.11, "sine", 0.09, 1.04);
+      tone(f * 2, 0.05, "triangle", 0.03);
+    },
+    full() {
+      [1046.5, 1318.5, 1568, 2093].forEach((f, i) => tone(f, 0.6, "sine", 0.07, 1, i * 0.05));
+      tone(2637, 0.8, "triangle", 0.035, 1, 0.22);
+    },
     whoosh() {
       if (muted || !ac) return;
       const len = 0.9, buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), data = buf.getChannelData(0);
