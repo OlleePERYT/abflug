@@ -429,7 +429,7 @@ window.Abflug = (() => {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
   const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
-  const TICK = 0.11, FLY = 0.32, FULL_WAIT = 0.8;
+  const TICK = 0.2, FLY = 0.32, FULL_WAIT = 0.8;
   const INTRO = {
     0: "Tippe ein Flugzeug an. Ist der Weg vor der Nase frei, rollt es zu einem <b>Gate</b>. Die Touristen laufen im Kreis und steigen am Ausgang ein, wenn ihr Flugzeug wartet.",
     3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
@@ -618,7 +618,7 @@ window.Abflug = (() => {
     const sab = parseFloat(getComputedStyle($("#safe")).paddingBottom) || 0;
     const gw = Math.min(W, 520), ox = (W - gw) / 2, top = hudB + 2;
     const avail = H - top - sab - 10;
-    const termH = Math.round(Math.max(170, Math.min(avail * 0.27, 230)));
+    const termH = Math.round(Math.max(190, Math.min(avail * 0.3, 260)));
     const gatesH = Math.round(Math.max(84, Math.min(avail * 0.17, 122)));
     const apronTop = top + termH + gatesH + 12;
     const apronH = H - sab - 12 - apronTop;
@@ -626,7 +626,7 @@ window.Abflug = (() => {
     const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop + Math.max(0, apronH - cell * S.rows) * 0.3;
 
     // Wartering als Stadion, Ausgang unten in der Mitte. Zuläufe kommen von oben.
-    const d = Math.max(7, Math.min(10, Math.floor(gw / 42)));
+    const d = Math.max(9, Math.min(14, Math.floor(gw / 30)));
     const laneW = 4 * d + 6, cx = ox + gw / 2;
     // Umfang so knapp, dass die Reihen dicht an dicht laufen.
     const rr = laneW * 0.85;
@@ -640,7 +640,7 @@ window.Abflug = (() => {
     pts.push([cx, cyR + rr]);
     const ring = poly(pts);
     const eL = at(ring, (A.ENTRY.L / A.RING) * ring.total), eR = at(ring, (A.ENTRY.R / A.RING) * ring.total);
-    const armTop = top - 6;
+    const armTop = top + 16;
     const arms = {
       L: poly([[eL.x, eL.y - laneW / 2 - 3], [eL.x, armTop]]),
       R: poly([[eR.x, eR.y - laneW / 2 - 3], [eR.x, armTop]]),
