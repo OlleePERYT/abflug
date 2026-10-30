@@ -1,0 +1,999 @@
+<title>Abflug!</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: oben Terminal mit zwei Schlangen, Mitte Gate-Leiste, unten Vorfeld. Ein Look: Flughafen bei Tag. */
+:root {
+  --asphalt: #4C5763;
+  --asphalt-2: #3E4853;
+  --terminal: #E3E8EC;
+  --ink: #1C2530;
+  --board: #15181C;
+  --board-text: #FFC83A;
+  --signal: #F2C230;
+  --card: #FFFFFF;
+  --muted: #5D6875;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--asphalt); color: #fff; font-family: var(--font-body); overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+#app { position: fixed; inset: 0; }
+#cv { position: absolute; inset: 0; display: block; }
+#safe { position: absolute; width: 0; height: 0; padding-bottom: env(safe-area-inset-bottom, 0px); visibility: hidden; }
+.hud { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-block: calc(8px + env(safe-area-inset-top, 0px)) 4px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.board { display: flex; align-items: baseline; gap: 10px; min-width: 0; background: var(--board); color: var(--board-text); border: 0; border-radius: 6px; padding: 5px 11px 6px; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; box-shadow: 0 2px 0 rgba(0,0,0,.3); cursor: pointer; }
+.board-k { font-weight: 800; font-size: 19px; }
+.board-v { font-weight: 600; font-size: 15px; color: #F3EFE2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-right { display: flex; gap: 6px; }
+.chip, .icon { height: 34px; border: 0; border-radius: 6px; background: var(--board); color: #F3EFE2; font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: .05em; box-shadow: 0 2px 0 rgba(0,0,0,.3); cursor: pointer; display: grid; place-items: center; }
+.chip { padding: 0 10px; color: var(--board-text); white-space: nowrap; }
+.chip:disabled { opacity: .35; cursor: default; }
+.icon { width: 34px; }
+.icon svg { width: 18px; height: 18px; }
+button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--board); color: var(--board-text); font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; padding: 8px 16px; border-radius: 6px; pointer-events: none; white-space: nowrap; }
+.hint { position: absolute; left: 50%; top: calc(58px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(92vw, 400px); background: rgba(21,24,28,.92); color: #F3EFE2; border-radius: 10px; padding: 10px 14px; font-size: 15px; line-height: 1.35; text-align: center; pointer-events: none; }
+.hint b { color: var(--board-text); }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(18,23,29,.6); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.card { width: 100%; max-width: 340px; background: var(--card); color: var(--ink); border-radius: 14px; padding: 22px 20px 20px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.card .eyebrow { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .14em; font-size: 13px; color: var(--muted); }
+.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; text-transform: uppercase; letter-spacing: .03em; margin: 6px 0 10px; text-wrap: balance; }
+.card p { margin: 0 0 16px; font-size: 15px; line-height: 1.45; color: #36414D; }
+.actions { display: grid; gap: 8px; }
+.btn { height: 46px; border: 0; border-radius: 8px; font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; background: var(--board); color: var(--board-text); }
+.btn.alt { background: #E4E8EC; color: var(--ink); }
+.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+.levels button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 8px; background: var(--board); color: var(--board-text); font-family: var(--font-display); font-weight: 800; font-size: 20px; cursor: pointer; }
+.levels button:disabled { background: #D9DEE3; color: #9AA4AE; cursor: default; }
+.levels button.cur { outline: 3px solid var(--signal); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+
+<div id="app">
+  <canvas id="cv" aria-label="Spielfeld: Terminal, Gates und Vorfeld"></canvas>
+  <div id="safe"></div>
+  <header class="hud">
+    <button id="lvlBtn" class="board" aria-label="Level wählen"><span class="board-k">Abflug</span><span id="lvlTxt" class="board-v">Level 01</span></button>
+    <div class="hud-right">
+      <button id="gateBtn" class="chip" aria-label="Extra-Gate öffnen">+ Gate</button>
+      <button id="restartBtn" class="icon" aria-label="Level neu starten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button>
+      <button id="muteBtn" class="icon" aria-label="Ton aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path id="muteWave" d="M16.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+    </div>
+  </header>
+  <div id="toast" class="toast" hidden></div>
+  <div id="hint" class="hint" hidden></div>
+  <div id="overlay" class="overlay" hidden><div class="card" id="card"></div></div>
+</div>
+
+<script id="logic">
+// Spiellogik ohne DOM. Wird auch von den Tests geladen.
+window.Abflug = (() => {
+  const SEATS = { 2: 16, 3: 24, 4: 40 };
+  const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
+  const DKEYS = ["U", "D", "L", "R"];
+  const DEST = [
+    { id: "ES", name: "Spanien", color: "#F6C028", text: "#2A2205" },
+    { id: "IT", name: "Italien", color: "#24A157", text: "#FFFFFF" },
+    { id: "GR", name: "Griechenland", color: "#3DB6E8", text: "#06283A" },
+    { id: "TR", name: "Türkei", color: "#E3403A", text: "#FFFFFF" },
+    { id: "JP", name: "Japan", color: "#F5F3EC", text: "#B0162A" },
+    { id: "SE", name: "Schweden", color: "#2453B8", text: "#FFFFFF" },
+  ];
+
+  function rng(seed) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const grid = (c, r, f) => Array.from({ length: r }, (_, y) => Array.from({ length: c }, (_, x) => !!f(x, y)));
+  const art = rows => rows.map(s => [...s].map(ch => ch === "#"));
+
+  const LEVELS = [
+    { name: "Ferienstart", mask: grid(5, 6, () => 1), dests: 3, planes: 7, mode: "seq" },
+    { name: "Pauschalreise", mask: grid(6, 7, () => 1), dests: 3, planes: 10, mode: "seq" },
+    { name: "Brückentag", mask: grid(7, 8, (x, y) => !((x === 0 || x === 6) && (y === 0 || y === 7))), dests: 4, planes: 13, mode: "seq" },
+    { name: "Schranken", mask: grid(7, 8, () => 1), dests: 4, planes: 15, mode: "alt" },
+    { name: "Jumbo", mask: art([
+      "....#....",
+      "...###...",
+      "..#####..",
+      "#########",
+      "#########",
+      ".#######.",
+      "...###...",
+      "...###...",
+      "..#####..",
+      "..#####..",
+    ]), dests: 4, planes: 15, mode: "alt" },
+    { name: "Nebel", mask: grid(9, 9, (x, y) => Math.abs(x - 4) + Math.abs(y - 4) <= 5), dests: 5, planes: 18, mode: "alt", mystery: 0.25 },
+    { name: "Hangar", mask: grid(8, 10, () => 1), dests: 5, planes: 20, mode: "alt", hangars: 1, hangarSize: 3 },
+    { name: "Koffer", mask: art([
+      "..#####..",
+      "..#...#..",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+    ]), dests: 5, planes: 22, mode: "alt", mystery: 0.25, hangars: 1, hangarSize: 3 },
+    { name: "Weltreise", mask: grid(10, 10, (x, y) => (x - 4.5) ** 2 + (y - 4.5) ** 2 <= 25.5), dests: 6, planes: 24, mode: "alt", mystery: 0.3 },
+    { name: "Tower", mask: art([
+      "..#####..",
+      ".#######.",
+      "#########",
+      ".#######.",
+      "...###...",
+      "...###...",
+      "..#####..",
+      ".#######.",
+      "#########",
+      "#########",
+      "#########",
+    ]), dests: 6, planes: 26, mode: "alt", mystery: 0.3, hangars: 2, hangarSize: 3 },
+  ];
+
+  // Flugzeug: (x, y) ist die Nase, der Rumpf liegt entgegen der Richtung.
+  function cellsOf(p) {
+    const [dx, dy] = DIRS[p.dir], out = [];
+    for (let k = 0; k < p.len; k++) out.push([p.x - k * dx, p.y - k * dy]);
+    return out;
+  }
+  function pathOf(p, cols, rows) {
+    const [dx, dy] = DIRS[p.dir], out = [];
+    let x = p.x + dx, y = p.y + dy;
+    while (x >= 0 && y >= 0 && x < cols && y < rows) { out.push([x, y]); x += dx; y += dy; }
+    return out;
+  }
+
+  // Rückwärts bauen: Jedes neue Flugzeug braucht freie Bahn an allen bisherigen vorbei.
+  // Damit ist die umgekehrte Reihenfolge immer eine gültige Lösung fürs Vorfeld.
+  function tryGen(L, r) {
+    const rows = L.mask.length, cols = L.mask[0].length;
+    const occ = Array.from({ length: rows }, () => Array(cols).fill(null));
+    const inMask = (x, y) => x >= 0 && y >= 0 && x < cols && y < rows && L.mask[y][x];
+    const hangars = [];
+    for (let h = 0; h < (L.hangars || 0); h++) {
+      for (let t = 0; t < 400; t++) {
+        const x = (r() * cols) | 0, y = (r() * rows) | 0, dir = DKEYS[(r() * 4) | 0];
+        const [dx, dy] = DIRS[dir];
+        if (!inMask(x, y) || !inMask(x + dx, y + dy) || !inMask(x + 2 * dx, y + 2 * dy)) continue;
+        const ray = [];
+        let cx = x, cy = y, ok = true;
+        while (cx >= 0 && cy >= 0 && cx < cols && cy < rows) {
+          if (occ[cy][cx] !== null) { ok = false; break; }
+          ray.push([cx, cy]); cx += dx; cy += dy;
+        }
+        if (!ok || ray.length < 4) continue;
+        occ[y][x] = "H";
+        ray.slice(1).forEach(([a, b]) => (occ[b][a] = "R"));
+        hangars.push({ x, y, dir });
+        break;
+      }
+    }
+    const hangarPlanes = hangars.length * (L.hangarSize || 0);
+    const target = L.planes - hangarPlanes;
+    const lens = [2, 2, 2, 2, 3, 3, 3, 4, 4];
+    const base = [];
+    for (let t = 0; t < 8000 && base.length < target; t++) {
+      const p = { x: (r() * cols) | 0, y: (r() * rows) | 0, dir: DKEYS[(r() * 4) | 0], len: lens[(r() * lens.length) | 0] };
+      const cells = cellsOf(p);
+      if (!cells.every(([a, b]) => inMask(a, b) && occ[b][a] === null)) continue;
+      if (pathOf(p, cols, rows).some(([a, b]) => occ[b][a] === "H" || typeof occ[b][a] === "number")) continue;
+      const i = base.length;
+      base.push(p);
+      cells.forEach(([a, b]) => (occ[b][a] = i));
+    }
+    if (base.length < 3) return null;
+
+    const planes = base.map((p, i) => ({ id: i, ...p, hangar: -1, mystery: false }));
+    hangars.forEach((h, hi) => {
+      const [dx, dy] = DIRS[h.dir];
+      h.queue = [];
+      for (let k = 0; k < L.hangarSize; k++) {
+        const p = { id: planes.length, x: h.x + 2 * dx, y: h.y + 2 * dy, dir: h.dir, len: 2, hangar: hi, mystery: false };
+        planes.push(p); h.queue.push(p.id);
+      }
+    });
+    const dests = planes.map((_, i) => (i < L.dests ? i : (r() * L.dests) | 0));
+    for (let i = dests.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [dests[i], dests[j]] = [dests[j], dests[i]]; }
+    planes.forEach((p, i) => (p.dest = dests[i]));
+    if (L.mystery) base.forEach((_, i) => (planes[i].mystery = r() < L.mystery));
+
+    // Lösungsreihenfolge inkl. Hangar-Flugzeuge, die gerade im Weg stehen.
+    const cur = hangars.map(h => { const q = [...h.queue]; return { q, p: q.shift() }; });
+    const sol = [];
+    const take = hi => { sol.push(cur[hi].p); cur[hi].p = cur[hi].q.length ? cur[hi].q.shift() : undefined; };
+    for (let bi = base.length - 1; bi >= 0; bi--) {
+      if (cur.length && r() < 0.25) { const hi = (r() * cur.length) | 0; if (cur[hi].p !== undefined) take(hi); }
+      const keys = new Set(pathOf(base[bi], cols, rows).map(([a, b]) => a + "," + b));
+      for (;;) {
+        const hi = cur.findIndex(c => c.p !== undefined && cellsOf(planes[c.p]).some(([a, b]) => keys.has(a + "," + b)));
+        if (hi < 0) break;
+        take(hi);
+      }
+      sol.push(bi);
+    }
+    cur.forEach((c, hi) => { while (c.p !== undefined) take(hi); });
+
+    // Schlange bauen: so, dass drei Gates für diese Reihenfolge reichen. Gespielt wird mit vier.
+    const gates = [], seq = [];
+    let i = 0;
+    while (i < sol.length || gates.length) {
+      while (gates.length < 3 && i < sol.length) { const p = planes[sol[i++]]; gates.push({ p, left: SEATS[p.len] }); }
+      const ds = [...new Set(gates.map(g => g.p.dest))];
+      const d = ds[(r() * ds.length) | 0];
+      const g = gates.find(g => g.p.dest === d);
+      const n = Math.min(g.left, r() < 0.55 ? 8 : 16);
+      g.left -= n;
+      const last = seq[seq.length - 1];
+      if (last && last.dest === d) last.n += n; else seq.push({ dest: d, n });
+      if (!g.left) gates.splice(gates.indexOf(g), 1);
+    }
+    const arms = { L: [], R: [] };
+    if (L.mode === "seq") {
+      const total = seq.reduce((s, g) => s + g.n, 0);
+      let acc = 0;
+      seq.forEach(g => { (acc < total / 2 ? arms.L : arms.R).push(g); acc += g.n; });
+    } else {
+      seq.forEach((g, k) => (k % 2 ? arms.R : arms.L).push(g));
+    }
+    return {
+      name: L.name, cols, rows, mask: L.mask, mode: L.mode, planes,
+      hangars: hangars.map(h => ({ x: h.x, y: h.y, dir: h.dir, queue: h.queue })),
+      arms, sol, tourists: seq.reduce((s, g) => s + g.n, 0),
+    };
+  }
+
+  function createState(lv) {
+    const planes = lv.planes.map(p => ({ ...p, where: p.hangar >= 0 ? "hangar" : "apron", seatsLeft: SEATS[p.len], gate: -1, revealed: !p.mystery }));
+    const hangars = lv.hangars.map(h => ({ x: h.x, y: h.y, dir: h.dir, queue: [...h.queue] }));
+    hangars.forEach(h => { planes[h.queue.shift()].where = "apron"; });
+    const st = {
+      cols: lv.cols, rows: lv.rows, mask: lv.mask, mode: lv.mode, planes, hangars,
+      gates: [null, null, null, null, null], gateCount: 4,
+      arms: { L: { groups: lv.arms.L.map(g => ({ ...g })), taken: 0 }, R: { groups: lv.arms.R.map(g => ({ ...g })), taken: 0 } },
+      active: "L", boarded: 0,
+    };
+    if (!st.arms.L.groups.length) st.active = "R";
+    reveal(st);
+    return st;
+  }
+  function occMap(st) {
+    const m = new Map();
+    st.planes.forEach(p => { if (p.where === "apron") cellsOf(p).forEach(([x, y]) => m.set(x + "," + y, p.id)); });
+    st.hangars.forEach(h => m.set(h.x + "," + h.y, -1));
+    return m;
+  }
+  // -1: Weg frei. Sonst Anzahl freier Felder bis zum Hindernis.
+  function freeRun(st, p, m = occMap(st)) {
+    const path = pathOf(p, st.cols, st.rows);
+    for (let k = 0; k < path.length; k++) if (m.has(path[k][0] + "," + path[k][1])) return k;
+    return -1;
+  }
+  function reveal(st) {
+    const m = occMap(st);
+    st.planes.forEach(p => { if (p.where === "apron" && !p.revealed && freeRun(st, p, m) < 0) p.revealed = true; });
+  }
+  function tap(st, id) {
+    const p = st.planes[id];
+    if (!p || p.where !== "apron") return { ok: false, reason: "none" };
+    const k = freeRun(st, p);
+    if (k >= 0) return { ok: false, reason: "blocked", free: k };
+    let g = -1;
+    for (let i = 0; i < st.gateCount; i++) if (st.gates[i] === null) { g = i; break; }
+    if (g < 0) return { ok: false, reason: "gates" };
+    p.where = "taxi"; p.gate = g; p.revealed = true; st.gates[g] = id;
+    let spawned = null;
+    if (p.hangar >= 0) {
+      const h = st.hangars[p.hangar];
+      if (h.queue.length) { spawned = h.queue.shift(); st.planes[spawned].where = "apron"; }
+    }
+    reveal(st);
+    return { ok: true, gate: g, spawned };
+  }
+  function arrive(st, id) { const p = st.planes[id]; if (p.where === "taxi") p.where = "gate"; }
+  function frontArm(st) {
+    let a = st.arms[st.active];
+    if (!a.groups.length) {
+      const o = st.active === "L" ? "R" : "L";
+      if (st.arms[o].groups.length) { st.active = o; a = st.arms[o]; }
+    }
+    return a.groups.length ? a : null;
+  }
+  function boardOne(st) {
+    const a = frontArm(st);
+    if (!a) return null;
+    const grp = a.groups[0];
+    let target = null;
+    for (let i = 0; i < st.gateCount; i++) {
+      const id = st.gates[i];
+      if (id === null) continue;
+      const p = st.planes[id];
+      if (p.where === "gate" && p.dest === grp.dest && p.seatsLeft > 0) { target = p; break; }
+    }
+    if (!target) return null;
+    const side = st.active;
+    grp.n--; a.taken++; target.seatsLeft--; st.boarded++;
+    if (grp.n === 0) {
+      a.groups.shift();
+      const o = side === "L" ? "R" : "L";
+      if (st.mode === "alt" && st.arms[o].groups.length) st.active = o;
+      else if (!a.groups.length) st.active = o;
+    }
+    if (target.seatsLeft === 0) target.where = "full";
+    return { plane: target.id, side, dest: grp.dest, full: target.seatsLeft === 0, taken: a.taken };
+  }
+  function depart(st, id) { const p = st.planes[id]; st.gates[p.gate] = null; p.where = "gone"; }
+  function status(st) {
+    const queued = st.arms.L.groups.length + st.arms.R.groups.length;
+    if (!queued && st.planes.every(p => p.where === "gone")) return "win";
+    if (st.planes.some(p => p.where === "taxi" || p.where === "full")) return "busy";
+    const a = frontArm(st);
+    if (a && st.planes.some(p => p.where === "gate" && p.dest === a.groups[0].dest)) return "boarding";
+    for (let i = 0; i < st.gateCount; i++) if (st.gates[i] === null) return "play";
+    return "lose";
+  }
+
+  // Spielt die Lösungsreihenfolge stur durch: so früh wie möglich losrollen, sonst einsteigen lassen.
+  function solve(lv) {
+    const st = createState(lv);
+    let idx = 0;
+    for (;;) {
+      st.planes.forEach(p => { if (p.where === "full") depart(st, p.id); });
+      if (status(st) === "win") return true;
+      if (idx < lv.sol.length) {
+        const r = tap(st, lv.sol[idx]);
+        if (r.ok) { arrive(st, lv.sol[idx]); idx++; continue; }
+        if (r.reason !== "gates") return false;
+      }
+      if (!boardOne(st)) return false;
+    }
+  }
+
+  function generate(li) {
+    const L = LEVELS[li];
+    let best = null;
+    for (let a = 0; a < 120; a++) {
+      const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919));
+      if (!lv || !solve(lv)) continue;
+      if (!best || lv.planes.length > best.planes.length) best = lv;
+      if (lv.planes.length >= L.planes) break;
+    }
+    return best;
+  }
+
+  return { SEATS, DIRS, DEST, LEVELS, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, boardOne, depart, status, frontArm, solve };
+})();
+</script>
+
+<script>
+(() => {
+  const A = window.Abflug;
+  const $ = s => document.querySelector(s);
+  const cv = $("#cv"), ctx = cv.getContext("2d");
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
+  const BOARD_RATE = 0.032;
+  const INTRO = {
+    0: "Tippe ein Flugzeug an. Ist der Weg vor der Nase frei, rollt es zu einem <b>Gate</b>.",
+    3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
+    5: "<b>Neu: Ziel unbekannt.</b> Graue Flugzeuge zeigen ihr Ziel, sobald ihr Weg frei ist.",
+    6: "<b>Neu: Hangar.</b> Rollt ein Flugzeug heraus, kommt das nächste nach. Die Zahl zeigt, wie viele noch drin sind.",
+  };
+
+  let W = 0, H = 0, DPR = 1, lay = null;
+  let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
+  let lv = null, S = null, vis = new Map(), flyers = [], departing = [];
+  let boardTimer = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, last = 0, tick = 0;
+  const cache = {}, sprites = {};
+  const now = () => performance.now() / 1000;
+
+  // ---------- Farben und Formen ----------
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    const t = amt < 0 ? 0 : 255, f = Math.abs(amt);
+    r = Math.round(r + (t - r) * f); g = Math.round(g + (t - g) * f); b = Math.round(b + (t - b) * f);
+    return `rgb(${r},${g},${b})`;
+  }
+  function rrect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function ballSprite(dest, d) {
+    const key = dest + ":" + d;
+    if (sprites[key]) return sprites[key];
+    const c = document.createElement("canvas");
+    const s = Math.ceil(d * DPR) + 2;
+    c.width = c.height = s;
+    const g = c.getContext("2d");
+    const col = A.DEST[dest].color, r = s / 2 - 1;
+    const grd = g.createRadialGradient(s * 0.36, s * 0.32, r * 0.1, s / 2, s / 2, r);
+    grd.addColorStop(0, shade(col, 0.5)); grd.addColorStop(0.55, col); grd.addColorStop(1, shade(col, -0.35));
+    g.fillStyle = grd; g.beginPath(); g.arc(s / 2, s / 2, r, 0, Math.PI * 2); g.fill();
+    if (A.DEST[dest].id === "JP") {
+      g.strokeStyle = "rgba(0,0,0,.28)"; g.lineWidth = 1; g.stroke();
+      g.fillStyle = "#C8102E"; g.beginPath(); g.arc(s / 2, s / 2, r * 0.38, 0, Math.PI * 2); g.fill();
+    }
+    sprites[key] = c;
+    return c;
+  }
+  function drawFlag(id, x, y, w, h) {
+    const f = (c, a, b, ww, hh) => { ctx.fillStyle = c; ctx.fillRect(a, b, ww, hh); };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    switch (id) {
+      case "ES": f("#C60B1E", x, y, w, h); f("#FFC400", x, y + h * 0.25, w, h * 0.5); break;
+      case "IT": f("#009246", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE2B37", x + (2 * w) / 3, y, w / 3 + 0.5, h); break;
+      case "GR":
+        for (let i = 0; i < 9; i++) f(i % 2 ? "#FFFFFF" : "#0D5EAF", x, y + (i * h) / 9, w, h / 9 + 0.5);
+        f("#0D5EAF", x, y, w * 0.38, (h * 5) / 9);
+        f("#FFFFFF", x + w * 0.15, y, w * 0.08, (h * 5) / 9);
+        f("#FFFFFF", x, y + (h * 2) / 9, w * 0.38, h / 9);
+        break;
+      case "TR":
+        f("#E30A17", x, y, w, h);
+        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.arc(x + w * 0.38, y + h / 2, h * 0.28, 0, 7); ctx.fill();
+        ctx.fillStyle = "#E30A17"; ctx.beginPath(); ctx.arc(x + w * 0.44, y + h / 2, h * 0.225, 0, 7); ctx.fill();
+        ctx.fillStyle = "#FFFFFF"; star(x + w * 0.64, y + h / 2, h * 0.12);
+        break;
+      case "JP": f("#FFFFFF", x, y, w, h); ctx.fillStyle = "#BC002D"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.3, 0, 7); ctx.fill(); break;
+      case "SE": f("#006AA7", x, y, w, h); f("#FECC00", x + w * 0.31, y, w * 0.125, h); f("#FECC00", x, y + h * 0.4, w, h * 0.2); break;
+    }
+    ctx.restore();
+    ctx.strokeStyle = "rgba(20,25,30,.55)"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  }
+  function star(cx, cy, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r;
+      ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  function planeShape(c, len) {
+    const half = (len * c * 0.92) / 2, fw = c * (0.25 + len * 0.025);
+    ctx.beginPath();
+    // Flügel
+    ctx.moveTo(half * 0.22, -fw * 0.4); ctx.lineTo(-half * 0.14, -c * 0.47); ctx.lineTo(-half * 0.34, -c * 0.47); ctx.lineTo(-half * 0.2, -fw * 0.4);
+    ctx.lineTo(-half * 0.2, fw * 0.4); ctx.lineTo(-half * 0.34, c * 0.47); ctx.lineTo(-half * 0.14, c * 0.47); ctx.lineTo(half * 0.22, fw * 0.4);
+    ctx.closePath();
+    // Leitwerk
+    ctx.moveTo(-half * 0.68, -fw * 0.3); ctx.lineTo(-half * 0.9, -c * 0.22); ctx.lineTo(-half * 1.0, -c * 0.22); ctx.lineTo(-half * 0.95, -fw * 0.3);
+    ctx.lineTo(-half * 0.95, fw * 0.3); ctx.lineTo(-half * 1.0, c * 0.22); ctx.lineTo(-half * 0.9, c * 0.22); ctx.lineTo(-half * 0.68, fw * 0.3);
+    ctx.closePath();
+    return { half, fw };
+  }
+  function fuselage(half, fw) {
+    ctx.beginPath();
+    ctx.moveTo(-half, -fw * 0.28);
+    ctx.lineTo(half - fw * 1.1, -fw / 2);
+    ctx.quadraticCurveTo(half, -fw / 2, half, 0);
+    ctx.quadraticCurveTo(half, fw / 2, half - fw * 1.1, fw / 2);
+    ctx.lineTo(-half, fw * 0.28);
+    ctx.closePath();
+  }
+  function drawPlane(x, y, ang, c, p, alpha = 1, lift = 0) {
+    const mystery = !p.revealed;
+    const body = mystery ? "#8D97A2" : A.DEST[p.dest].color;
+    const edge = shade(body.startsWith("#") ? body : "#8D97A2", -0.42);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // Schatten
+    ctx.save();
+    ctx.translate(x + 2 + lift * 18, y + 3 + lift * 26); ctx.rotate(ang);
+    ctx.fillStyle = "rgba(10,15,20,.28)";
+    const sh = planeShape(c, p.len); ctx.fill(); fuselage(sh.half, sh.fw); ctx.fill();
+    ctx.restore();
+    ctx.translate(x, y); ctx.rotate(ang);
+    const { half, fw } = planeShape(c, p.len);
+    ctx.fillStyle = shade(body, -0.1); ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, c * 0.03);
+    ctx.fill(); ctx.stroke();
+    // Triebwerke
+    ctx.fillStyle = shade(body, -0.3);
+    const eng = p.len >= 4 ? [0.2, 0.35] : p.len === 3 ? [0.24] : [];
+    eng.forEach(o => [-1, 1].forEach(s => { ctx.beginPath(); ctx.ellipse(half * 0.04, s * c * o, c * 0.09, c * 0.05, 0, 0, 7); ctx.fill(); }));
+    fuselage(half, fw);
+    ctx.fillStyle = body; ctx.fill(); ctx.stroke();
+    // Cockpit
+    ctx.fillStyle = "rgba(25,40,60,.75)";
+    ctx.beginPath(); ctx.ellipse(half - fw * 0.75, 0, fw * 0.22, fw * 0.3, 0, 0, 7); ctx.fill();
+    ctx.restore();
+    // Flagge aufrecht, damit man sie lesen kann
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const fwid = Math.max(12, c * 0.48), fh = fwid * 0.66;
+    if (mystery) {
+      ctx.fillStyle = "#2B323A"; ctx.beginPath(); ctx.arc(x, y, fh * 0.62, 0, 7); ctx.fill();
+      ctx.fillStyle = "#FFFFFF"; ctx.font = `800 ${Math.round(fh * 0.95)}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-display")}`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("?", x, y + 1);
+    } else {
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(x - fwid / 2 - 1.5, y - fh / 2 - 1.5, fwid + 3, fh + 3);
+      drawFlag(A.DEST[p.dest].id, x - fwid / 2, y - fh / 2, fwid, fh);
+    }
+    ctx.restore();
+  }
+
+  // ---------- Pfade ----------
+  function poly(points) {
+    const segs = [];
+    let total = 0;
+    for (let i = 1; i < points.length; i++) {
+      const [ax, ay] = points[i - 1], [bx, by] = points[i];
+      const l = Math.hypot(bx - ax, by - ay);
+      segs.push({ ax, ay, bx, by, l, s0: total, a: Math.atan2(by - ay, bx - ax) });
+      total += l;
+    }
+    return { points, segs, total };
+  }
+  function at(pl, s) {
+    s = Math.max(0, Math.min(pl.total, s));
+    let sg = pl.segs[pl.segs.length - 1];
+    for (const g of pl.segs) if (s <= g.s0 + g.l) { sg = g; break; }
+    const t = sg.l ? (s - sg.s0) / sg.l : 0;
+    return { x: sg.ax + (sg.bx - sg.ax) * t, y: sg.ay + (sg.by - sg.ay) * t, a: sg.a };
+  }
+
+  // ---------- Layout ----------
+  function layout() {
+    W = window.innerWidth; H = window.innerHeight; DPR = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    for (const k in sprites) delete sprites[k];
+    if (!S) return;
+    const hudB = $(".hud").getBoundingClientRect().bottom;
+    const sab = parseFloat(getComputedStyle($("#safe")).paddingBottom) || 0;
+    const gw = Math.min(W, 520), ox = (W - gw) / 2, top = hudB + 2;
+    const avail = H - top - sab - 10;
+    const termH = Math.round(Math.max(150, Math.min(avail * 0.32, 260)));
+    const gatesH = Math.round(Math.max(84, Math.min(avail * 0.17, 122)));
+    const apronTop = top + termH + gatesH + 12;
+    const apronH = H - sab - 12 - apronTop;
+    const cell = Math.max(16, Math.floor(Math.min((gw - 28) / S.cols, apronH / S.rows, 64)));
+    const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop + Math.max(0, apronH - cell * S.rows) * 0.3;
+
+    const d = Math.max(7, Math.min(11, Math.floor(gw / 40)));
+    const laneW = 4 * d + 8, h = laneW / 2, cx = ox + gw / 2, g = Math.max(h + 7, laneW * 0.8), m = ox + 14;
+    const yT = top + h + 4, yB = top + termH - h - 12;
+    let left;
+    if (yB - yT >= 2 * laneW + 8) {
+      const yM = (yT + yB) / 2;
+      left = [[cx - g, yB], [m + h, yB], [m + h, yT], [cx - g, yT], [cx - g, yM], [m + laneW + h + 14, yM]];
+    } else left = [[cx - g, yB], [m + h, yB], [m + h, yT], [cx - g, yT]];
+    const right = left.map(([x, y]) => [2 * cx - x, y]);
+    const arms = { L: poly(left), R: poly(right) };
+
+    const gy0 = top + termH;
+    const slotW = Math.min((gw - 24) / 5, 82), slotH = gatesH - 30;
+    const gc = Math.min(slotH / 3.85, slotW * 0.92);
+    const gates = [0, 1, 2, 3, 4].map(i => ({ x: cx + (i - 2) * slotW, y: gy0 + 8 + slotH / 2 }));
+    lay = {
+      ox, gw, top, termH, gatesH, gy0, slotW, slotH, gc, gates, cell, ax, ay, d, laneW, cx, g, yB, arms,
+      capRows: { L: Math.floor((arms.L.total - d) / d), R: Math.floor((arms.R.total - d) / d) },
+      laneY: gy0 + gatesH + 4, sab,
+    };
+  }
+
+  // ---------- Level ----------
+  function startLevel(i) {
+    levelIdx = Math.max(0, Math.min(A.LEVELS.length - 1, i));
+    store.set("abflug.level", levelIdx);
+    lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
+    S = A.createState(lv);
+    vis = new Map(); flyers = []; departing = [];
+    boardTimer = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9;
+    $("#overlay").hidden = true;
+    $("#lvlTxt").textContent = `Level ${String(levelIdx + 1).padStart(2, "0")} · ${lv.name}`;
+    $("#gateBtn").disabled = false;
+    layout();
+    if (INTRO[levelIdx]) showHint(INTRO[levelIdx]); else hideHint();
+  }
+  function planeCenter(p) {
+    const [dx, dy] = A.DIRS[p.dir], c = lay.cell;
+    const nx = lay.ax + (p.x + 0.5) * c, ny = lay.ay + (p.y + 0.5) * c;
+    return { x: nx - (dx * (p.len - 1) * c) / 2, y: ny - (dy * (p.len - 1) * c) / 2 };
+  }
+  function taxiPath(p) {
+    const c = lay.cell, [dx, dy] = A.DIRS[p.dir], cen = planeCenter(p);
+    const steps = dx > 0 ? S.cols - 1 - p.x : dx < 0 ? p.x : dy > 0 ? S.rows - 1 - p.y : p.y;
+    const out = (steps + p.len / 2 + 0.7) * c;
+    const g = lay.gates[p.gate], ly = lay.laneY;
+    const minX = lay.ox + lay.cell * 0.5, maxX = lay.ox + lay.gw - lay.cell * 0.5;
+    const pts = [[cen.x, cen.y]];
+    if (dy < 0) pts.push([cen.x, ly]);
+    else if (dy > 0) {
+      const y1 = Math.min(H - 6, cen.y + out);
+      const sideX = cen.x < lay.cx ? Math.max(lay.ox + 10, lay.ax - c * 0.55) : Math.min(lay.ox + lay.gw - 10, lay.ax + S.cols * c + c * 0.55);
+      pts.push([cen.x, y1], [sideX, y1], [sideX, ly]);
+    } else {
+      const x1 = Math.max(minX, Math.min(maxX, cen.x + dx * out));
+      pts.push([x1, cen.y], [x1, ly]);
+    }
+    pts.push([g.x, ly], [g.x, g.y]);
+    const pl = poly(pts);
+    return { pl, firstLen: pl.segs[0].l, dur: Math.max(0.5, pl.total / 1150 + 0.12) };
+  }
+
+  // ---------- Eingabe ----------
+  function onTap(e) {
+    audioInit();
+    if (ended || !S || !$("#overlay").hidden) return;
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const c = lay.cell;
+    const gx = Math.floor((x - lay.ax) / c), gy = Math.floor((y - lay.ay) / c);
+    let hit = null;
+    for (const p of S.planes) {
+      if (p.where !== "apron") continue;
+      if (A.cellsOf(p).some(([a, b]) => a === gx && b === gy)) { hit = p; break; }
+    }
+    if (!hit) return;
+    const v = vis.get(hit.id);
+    if (v && v.kind === "spawn" && now() - v.t0 < 0.35) return;
+    const res = A.tap(S, hit.id);
+    const t = now();
+    if (res.ok) {
+      const tp = taxiPath(hit);
+      vis.set(hit.id, { kind: "taxi", t0: t, ...tp });
+      if (res.spawned !== null) vis.set(res.spawned, { kind: "spawn", t0: t });
+      sfx.go();
+      if (levelIdx === 0 && $("#hint").dataset.stage !== "2") showHint("Touristen steigen nur in Flugzeuge mit <b>ihrer Flagge</b>. Halb volle Flugzeuge warten am Gate.", "2");
+    } else if (res.reason === "blocked") {
+      vis.set(hit.id, { kind: "bump", t0: t, dist: (res.free + 0.22) * c });
+      sfx.bump();
+    } else if (res.reason === "gates") {
+      gateFlash = t; toast("Alle Gates belegt"); sfx.bump();
+    }
+  }
+  cv.addEventListener("pointerdown", onTap);
+
+  // ---------- Ablauf ----------
+  function update(t, dt) {
+    if (!S) return;
+    for (const [id, v] of vis) {
+      if (v.kind === "taxi" && t - v.t0 >= v.dur) { A.arrive(S, id); vis.delete(id); }
+      else if ((v.kind === "bump" && t - v.t0 > 0.32) || (v.kind === "spawn" && t - v.t0 > 0.4)) vis.delete(id);
+    }
+    if (!ended) {
+      boardTimer += dt;
+      while (boardTimer >= BOARD_RATE) {
+        boardTimer -= BOARD_RATE;
+        const b = A.boardOne(S);
+        if (!b) { boardTimer = 0; break; }
+        const arm = lay.arms[b.side], p0 = at(arm, 0), gp = lay.gates[S.planes[b.plane].gate];
+        flyers.push({ x0: p0.x, y0: p0.y, x1: gp.x, y1: gp.y, t0: t, dest: b.dest });
+        if (b.taken % 4 === 0) shift[b.side] += lay.d;
+        if (++tick % 3 === 0) sfx.tick();
+        if (b.full) vis.set(b.plane, { kind: "full", t0: t });
+      }
+    }
+    for (const [id, v] of vis) {
+      if (v.kind === "full" && t - v.t0 > 0.42) {
+        const p = S.planes[id], gp = lay.gates[p.gate];
+        A.depart(S, id); vis.delete(id);
+        departing.push({ p, x: gp.x, y: gp.y, t0: t });
+        sfx.whoosh();
+      }
+    }
+    flyers = flyers.filter(f => t - f.t0 < 0.3);
+    departing = departing.filter(d => t - d.t0 < 1.4);
+    const k = Math.exp(-dt * 12);
+    shift.L *= k; shift.R *= k;
+    if (!ended && !flyers.length && ![...vis.values()].some(v => v.kind === "taxi" || v.kind === "full")) {
+      const s = A.status(S);
+      if (s === "win") finish(true);
+      else if (s === "lose") finish(false);
+    }
+  }
+
+  function finish(won) {
+    ended = true;
+    setTimeout(() => {
+      if (won) {
+        maxLevel = Math.max(maxLevel, levelIdx + 1);
+        store.set("abflug.max", maxLevel);
+        sfx.win();
+        const lastLvl = levelIdx >= A.LEVELS.length - 1;
+        showCard(`
+          <div class="eyebrow">Level ${levelIdx + 1} geschafft</div>
+          <h2>Alle im Urlaub!</h2>
+          <p>${lv.tourists} Touristen sind in ${lv.planes.length} Flugzeugen abgeflogen.</p>
+          <div class="actions">
+            ${lastLvl ? `<p><b>Alle ${A.LEVELS.length} Level geschafft.</b></p>` : `<button class="btn" id="nextBtn">Weiter zu Level ${levelIdx + 2}</button>`}
+            <button class="btn alt" id="againBtn">Nochmal spielen</button>
+          </div>`);
+        $("#nextBtn")?.addEventListener("click", () => startLevel(levelIdx + 1));
+        $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
+      } else {
+        sfx.lose();
+        const canGate = S.gateCount < 5;
+        showCard(`
+          <div class="eyebrow">Level ${levelIdx + 1}</div>
+          <h2>Abflug verzögert</h2>
+          <p>Alle Gates sind belegt, und niemand vorn in der Schlange passt in ein wartendes Flugzeug.</p>
+          <div class="actions">
+            ${canGate ? `<button class="btn" id="extraBtn">Extra-Gate öffnen</button>` : ""}
+            <button class="btn ${canGate ? "alt" : ""}" id="againBtn">Level neu starten</button>
+          </div>`);
+        $("#extraBtn")?.addEventListener("click", () => { openExtraGate(); $("#overlay").hidden = true; ended = false; });
+        $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
+      }
+    }, won ? 700 : 350);
+  }
+  function openExtraGate() {
+    if (!S || S.gateCount >= 5) return;
+    S.gateCount = 5; $("#gateBtn").disabled = true; sfx.go();
+  }
+
+  // ---------- Zeichnen ----------
+  function draw(t) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = "#4C5763"; ctx.fillRect(0, 0, W, H);
+    if (!S || !lay) return;
+    drawTerminal(t);
+    drawGates(t);
+    drawApron(t);
+    // Rollende Flugzeuge
+    for (const [id, v] of vis) {
+      if (v.kind !== "taxi") continue;
+      const p = S.planes[id];
+      const s = Math.min(1, (t - v.t0) / v.dur), e = s < 0.5 ? 2 * s * s : 1 - (-2 * s + 2) ** 2 / 2;
+      const dist = e * v.pl.total, pt = at(v.pl, dist), ahead = at(v.pl, dist + 6);
+      const ang = dist >= v.pl.total - 1 ? -Math.PI / 2 : Math.atan2(ahead.y - pt.y, ahead.x - pt.x) || pt.a;
+      const k = Math.max(0, Math.min(1, (dist - v.firstLen) / Math.max(1, v.pl.total - v.firstLen)));
+      drawPlane(pt.x, pt.y, ang, lay.cell + (lay.gc - lay.cell) * k, p);
+    }
+    // Fliegende Touristen
+    for (const f of flyers) {
+      const s = Math.min(1, (t - f.t0) / 0.3), x = f.x0 + (f.x1 - f.x0) * s, y = f.y0 + (f.y1 - f.y0) * s - Math.sin(s * Math.PI) * 26;
+      const d = lay.d * (1 - s * 0.4);
+      ctx.drawImage(ballSprite(f.dest, lay.d), x - d / 2, y - d / 2, d, d);
+    }
+    // Startende Flugzeuge über allem
+    for (const d of departing) {
+      const s = (t - d.t0) / 1.4, y = d.y - (d.y + 120) * s * s * 1.05;
+      const alpha = s < 0.7 ? 1 : Math.max(0, 1 - (s - 0.7) / 0.3);
+      drawPlane(d.x, y, -Math.PI / 2, lay.gc * (1 + s * 1.3), d.p, alpha, s);
+    }
+  }
+
+  function drawTerminal(t) {
+    const { ox, gw, top, termH } = lay;
+    ctx.fillStyle = "#E3E8EC"; ctx.fillRect(0, 0, W, top + termH);
+    ctx.strokeStyle = "rgba(40,60,80,.06)"; ctx.lineWidth = 1;
+    for (let x = ox % 26; x < W; x += 26) { ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, top + termH); ctx.stroke(); }
+    for (let y = 0; y < top + termH; y += 26) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); ctx.stroke(); }
+    // Glasfront
+    ctx.fillStyle = "#9CB4C5"; ctx.fillRect(0, top + termH - 5, W, 5);
+    ctx.fillStyle = "#7F98AA"; for (let x = ox % 44; x < W; x += 44) ctx.fillRect(x, top + termH - 5, 2, 5);
+    // Durchgang zu den Gates
+    ctx.fillStyle = "#CBD3DA"; rrect(lay.cx - lay.g + lay.laneW / 2 + 3, lay.yB - lay.laneW / 2, 2 * lay.g - lay.laneW - 6, top + termH - lay.yB + lay.laneW / 2, 6); ctx.fill();
+    ctx.strokeStyle = "#F2C230"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (let i = 0; i < 2; i++) {
+      const y = lay.yB - 6 + i * 11;
+      ctx.beginPath(); ctx.moveTo(lay.cx - 6, y); ctx.lineTo(lay.cx, y + 6); ctx.lineTo(lay.cx + 6, y); ctx.stroke();
+    }
+    for (const side of ["L", "R"]) drawArm(side, t);
+  }
+
+  function drawArm(side, t) {
+    const pl = lay.arms[side], arm = S.arms[side], d = lay.d;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); pl.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.strokeStyle = "#A9B4BE"; ctx.lineWidth = lay.laneW + 6; ctx.stroke();
+    ctx.strokeStyle = "#D2D9DF"; ctx.lineWidth = lay.laneW; ctx.stroke();
+    // Touristen
+    let idx = arm.taken % 4, drawn = 0, total = 0;
+    const cap = lay.capRows[side];
+    for (const g of arm.groups) {
+      total += g.n;
+      const spr = ballSprite(g.dest, d);
+      for (let k = 0; k < g.n; k++, idx++) {
+        const row = idx >> 2;
+        if (row >= cap) continue;
+        const pt = at(pl, row * d + d / 2 + 4 + shift[side]);
+        const off = ((idx & 3) - 1.5) * d;
+        const x = pt.x - Math.sin(pt.a) * off, y = pt.y + Math.cos(pt.a) * off;
+        ctx.drawImage(spr, x - d / 2, y - d / 2, d, d);
+        drawn++;
+      }
+    }
+    if (total > drawn) {
+      const end = pl.points[pl.points.length - 1];
+      const txt = "+" + (total - drawn);
+      ctx.font = `700 13px "Barlow Condensed", sans-serif`;
+      const w = ctx.measureText(txt).width + 10;
+      ctx.fillStyle = "#15181C"; rrect(end[0] - w / 2, end[1] - 9, w, 18, 4); ctx.fill();
+      ctx.fillStyle = "#FFC83A"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, end[0], end[1] + 1);
+    }
+    // Schranke am Eingang
+    const p0 = at(pl, 0), nx = -Math.sin(p0.a), ny = Math.cos(p0.a), hw = lay.laneW / 2 + 3;
+    const open = S.active === side && arm.groups.length > 0;
+    const bx = p0.x - Math.cos(p0.a) * 2, by = p0.y - Math.sin(p0.a) * 2;
+    const px = bx + nx * hw, py = by + ny * hw;
+    if (open) {
+      ctx.strokeStyle = "rgba(60,70,80,.35)"; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(p0.a) * -lay.laneW * 0.45, py + Math.sin(p0.a) * -lay.laneW * 0.45); ctx.stroke();
+    } else {
+      const ex = bx - nx * hw, ey = by - ny * hw;
+      for (let i = 0; i < 6; i++) {
+        ctx.strokeStyle = i % 2 ? "#FFFFFF" : "#D9312B"; ctx.lineWidth = 5; ctx.lineCap = "butt";
+        ctx.beginPath(); ctx.moveTo(px + (ex - px) * (i / 6), py + (ey - py) * (i / 6)); ctx.lineTo(px + (ex - px) * ((i + 1) / 6), py + (ey - py) * ((i + 1) / 6)); ctx.stroke();
+      }
+    }
+    ctx.fillStyle = "#2B323A"; ctx.beginPath(); ctx.arc(px, py, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = open ? "#3BD16F" : "#FF4A3D"; ctx.beginPath(); ctx.arc(px, py, 2.6, 0, 7); ctx.fill();
+  }
+
+  function drawGates(t) {
+    const { gy0, gatesH, slotW, slotH, gates, gc } = lay;
+    ctx.fillStyle = "#3E4853"; ctx.fillRect(0, gy0, W, gatesH);
+    ctx.fillStyle = "#353E48"; ctx.fillRect(0, gy0 + gatesH - 3, W, 3);
+    const flash = t - gateFlash < 0.6 ? 1 - (t - gateFlash) / 0.6 : 0;
+    gates.forEach((g, i) => {
+      const x = g.x - slotW / 2 + 3, y = gy0 + 8, w = slotW - 6;
+      const locked = i >= S.gateCount;
+      ctx.fillStyle = locked ? "#343C45" : flash ? `rgba(227,64,58,${0.35 * flash + 0.08})` : "rgba(255,255,255,.05)";
+      rrect(x, y, w, slotH, 6); ctx.fill();
+      ctx.setLineDash(locked ? [4, 4] : []);
+      ctx.strokeStyle = locked ? "rgba(255,255,255,.25)" : "#F2C230"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = `700 12px "Barlow Condensed", sans-serif`; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillStyle = locked ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.6)"; ctx.fillText("A" + (i + 1), x + 5, y + 4);
+      if (locked) {
+        ctx.font = `800 22px "Barlow Condensed", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillText("+", g.x, g.y);
+      }
+      const id = S.gates[i];
+      if (id === null) return;
+      const p = S.planes[id], v = vis.get(id);
+      if (p.where === "taxi") return;
+      let bob = 0;
+      if (v && v.kind === "full") bob = -Math.sin(Math.min(1, (t - v.t0) / 0.42) * Math.PI) * 3;
+      drawPlane(g.x, g.y + bob, -Math.PI / 2, gc, p);
+      // Zähler der fehlenden Plätze
+      const dst = A.DEST[p.dest], txt = String(p.seatsLeft);
+      ctx.font = `800 14px "Barlow Condensed", sans-serif`;
+      const tw = Math.max(26, ctx.measureText(txt).width + 12);
+      ctx.fillStyle = dst.color; rrect(g.x - tw / 2, gy0 + gatesH - 21, tw, 17, 8.5); ctx.fill();
+      if (dst.id === "JP") { ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 1; ctx.stroke(); }
+      ctx.fillStyle = dst.text; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, g.x, gy0 + gatesH - 12);
+    });
+  }
+
+  function drawApron(t) {
+    const { ax, ay, cell: c } = lay;
+    // Stellflächen
+    for (let y = 0; y < S.rows; y++) for (let x = 0; x < S.cols; x++) {
+      if (!S.mask[y][x]) continue;
+      ctx.fillStyle = (x + y) % 2 ? "#56626E" : "#5A6672";
+      ctx.fillRect(ax + x * c, ay + y * c, c, c);
+    }
+    ctx.strokeStyle = "rgba(242,194,48,.18)"; ctx.lineWidth = 1;
+    for (let y = 0; y < S.rows; y++) for (let x = 0; x < S.cols; x++) {
+      if (S.mask[y][x]) ctx.strokeRect(ax + x * c + 0.5, ay + y * c + 0.5, c - 1, c - 1);
+    }
+    // Hangar mit Rollbahn
+    for (const h of S.hangars) {
+      const [dx, dy] = A.DIRS[h.dir];
+      const hx = ax + (h.x + 0.5) * c, hy = ay + (h.y + 0.5) * c;
+      let ex = h.x, ey = h.y;
+      while (ex + dx >= 0 && ey + dy >= 0 && ex + dx < S.cols && ey + dy < S.rows) { ex += dx; ey += dy; }
+      ctx.setLineDash([c * 0.18, c * 0.14]); ctx.strokeStyle = "rgba(242,194,48,.75)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(ax + (ex + 0.5 + dx * 0.5) * c, ay + (ey + 0.5 + dy * 0.5) * c); ctx.stroke(); ctx.setLineDash([]);
+      ctx.save(); ctx.translate(hx, hy); ctx.rotate(ANG[h.dir] + Math.PI / 2);
+      ctx.fillStyle = "#2E353D"; rrect(-c * 0.44 + 2, -c * 0.44 + 3, c * 0.88, c * 0.88, 6); ctx.fill();
+      ctx.fillStyle = "#C9D0D7"; rrect(-c * 0.44, -c * 0.44, c * 0.88, c * 0.88, 6); ctx.fill();
+      ctx.fillStyle = "#A4AEB8"; for (let i = 1; i < 4; i++) ctx.fillRect(-c * 0.44 + 4, -c * 0.44 + i * c * 0.2, c * 0.88 - 8, 2);
+      ctx.fillStyle = "#2B323A"; ctx.fillRect(-c * 0.3, -c * 0.46, c * 0.6, c * 0.16);
+      ctx.restore();
+      if (h.queue.length) {
+        const r = Math.max(9, c * 0.2);
+        ctx.fillStyle = "#15181C"; ctx.beginPath(); ctx.arc(hx + c * 0.3, hy + c * 0.3, r, 0, 7); ctx.fill();
+        ctx.fillStyle = "#FFC83A"; ctx.font = `800 ${Math.round(r * 1.3)}px "Barlow Condensed", sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(h.queue.length, hx + c * 0.3, hy + c * 0.3 + 1);
+      }
+    }
+    // Flugzeuge auf dem Vorfeld
+    for (const p of S.planes) {
+      if (p.where !== "apron") continue;
+      const v = vis.get(p.id), [dx, dy] = A.DIRS[p.dir];
+      let { x, y } = planeCenter(p), alpha = 1;
+      if (v && v.kind === "bump") { const s = Math.min(1, (t - v.t0) / 0.32), o = Math.sin(s * Math.PI) * v.dist; x += dx * o; y += dy * o; }
+      if (v && v.kind === "spawn") { const s = Math.min(1, (t - v.t0) / 0.4), o = (1 - s) * c * 1.4; x -= dx * o; y -= dy * o; alpha = s; }
+      drawPlane(x, y, ANG[p.dir], c, p, alpha);
+    }
+  }
+
+  // ---------- Hinweise und Karten ----------
+  let toastTimer = 0, hintTimer = 0;
+  function toast(msg) {
+    const el = $("#toast"); el.textContent = msg; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 1100);
+  }
+  function showHint(html, stage = "1") {
+    const el = $("#hint"); el.innerHTML = html; el.dataset.stage = stage; el.hidden = false;
+    clearTimeout(hintTimer); hintTimer = setTimeout(hideHint, 6500);
+  }
+  function hideHint() { $("#hint").hidden = true; }
+  function showCard(html) { $("#card").innerHTML = html; $("#overlay").hidden = false; }
+
+  $("#lvlBtn").addEventListener("click", () => {
+    const btns = A.LEVELS.map((L, i) => `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx ? "cur" : ""}" aria-label="Level ${i + 1}: ${L.name}">${i + 1}</button>`).join("");
+    showCard(`
+      <div class="eyebrow">Abflugtafel</div>
+      <h2>Level wählen</h2>
+      <div class="levels">${btns}</div>
+      <div class="actions"><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
+    $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => startLevel(+b.dataset.l)));
+    $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
+  });
+  $("#restartBtn").addEventListener("click", () => startLevel(levelIdx));
+  $("#gateBtn").addEventListener("click", () => { audioInit(); openExtraGate(); });
+  function syncMute() { $("#muteWave").style.opacity = muted ? 0 : 1; $("#muteBtn").setAttribute("aria-label", muted ? "Ton an" : "Ton aus"); }
+  $("#muteBtn").addEventListener("click", () => { muted = !muted; store.set("abflug.muted", muted); syncMute(); audioInit(); });
+
+  // ---------- Ton ----------
+  let ac = null;
+  function audioInit() {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } }
+    if (ac.state === "suspended") ac.resume();
+  }
+  function tone(freq, dur, type = "sine", vol = 0.12, slide = 1, delay = 0) {
+    if (muted || !ac) return;
+    const t0 = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    if (slide !== 1) o.frequency.exponentialRampToValueAtTime(freq * slide, t0 + dur);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  const sfx = {
+    go: () => tone(420, 0.14, "triangle", 0.12, 1.8),
+    bump: () => tone(130, 0.16, "square", 0.06, 0.6),
+    tick: () => tone(980 + Math.random() * 160, 0.04, "sine", 0.03),
+    whoosh() {
+      if (muted || !ac) return;
+      const len = 0.9, buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t0 = ac.currentTime;
+      src.buffer = buf; f.type = "bandpass"; f.Q.value = 1.2;
+      f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(2400, t0 + len);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+      src.connect(f).connect(g).connect(ac.destination); src.start(t0);
+    },
+    win: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.28, "triangle", 0.1, 1, i * 0.11)),
+    lose: () => [392, 330, 262].forEach((f, i) => tone(f, 0.3, "triangle", 0.09, 1, i * 0.14)),
+  };
+
+  // ---------- Start ----------
+  function frame() {
+    const t = now(), dt = Math.min(0.05, t - last || 0);
+    last = t;
+    update(t, dt);
+    draw(t);
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener("resize", layout);
+  syncMute();
+  window.claude?.hot?.snapshot?.(() => ({ levelIdx }));
+  const boot = data => {
+    startLevel(data?.levelIdx ?? store.get("abflug.level", 0));
+    last = now();
+    requestAnimationFrame(frame);
+  };
+  window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+})();
+</script>
