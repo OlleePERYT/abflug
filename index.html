@@ -182,7 +182,7 @@ window.Abflug = (() => {
 
   // Rückwärts bauen: Jedes neue Flugzeug braucht freie Bahn an allen bisherigen vorbei.
   // Damit ist die umgekehrte Reihenfolge immer eine gültige Lösung fürs Vorfeld.
-  function tryGen(L, r) {
+  function tryGen(L, r, dig) {
     const rows = L.mask.length, cols = L.mask[0].length;
     const occ = Array.from({ length: rows }, () => Array(cols).fill(null));
     const inMask = (x, y) => x >= 0 && y >= 0 && x < cols && y < rows && L.mask[y][x];
@@ -229,41 +229,24 @@ window.Abflug = (() => {
         planes.push(p); h.queue.push(p.id);
       }
     });
-    const dests = planes.map((_, i) => (i < L.dests ? i : (r() * L.dests) | 0));
-    for (let i = dests.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [dests[i], dests[j]] = [dests[j], dests[i]]; }
-    planes.forEach((p, i) => (p.dest = dests[i]));
+    // Ziele verteilen: Ein oder zwei "versteckte" Ziele bekommen nur Flugzeuge, die anfangs
+    // zugeparkt sind. So muss man genau die zuerst gefragten Länder erst freispielen.
+    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const st0 = createState({ cols, rows, mask: L.mask, mode: L.mode, planes: planes.map(p => ({ ...p, dest: 0 })), hangars, arms: { L: [], R: [] } });
+    const freeIds = new Set(st0.planes.filter(p => p.where === "apron" && freeRun(st0, p) < 0).map(p => p.id));
+    const perm = shuffle([...Array(L.dests).keys()]);
+    const hidden = perm.slice(0, L.dests >= 5 ? 2 : 1), open = perm.slice(hidden.length);
+    const per = Math.max(1, Math.round(planes.length / L.dests));
+    const blocked = shuffle(planes.filter(p => p.hangar < 0 && !freeIds.has(p.id)).map(p => p.id));
+    const used = new Set();
+    hidden.forEach(d => { for (let k = 0; k < per && blocked.length; k++) { const id = blocked.pop(); planes[id].dest = d; used.add(id); } });
+    const rest = shuffle(planes.filter(p => !used.has(p.id)).map(p => p.id));
+    rest.forEach((id, k) => (planes[id].dest = k < open.length ? open[k] : open[(r() * open.length) | 0]));
     if (L.mystery) base.forEach((_, i) => (planes[i].mystery = r() < L.mystery));
 
-    // Lösungsreihenfolge inkl. Hangar-Flugzeuge, die gerade im Weg stehen.
-    const cur = hangars.map(h => { const q = [...h.queue]; return { q, p: q.shift() }; });
-    const sol = [];
-    const take = hi => { sol.push(cur[hi].p); cur[hi].p = cur[hi].q.length ? cur[hi].q.shift() : undefined; };
-    for (let bi = base.length - 1; bi >= 0; bi--) {
-      if (cur.length && r() < 0.25) { const hi = (r() * cur.length) | 0; if (cur[hi].p !== undefined) take(hi); }
-      const keys = new Set(pathOf(base[bi], cols, rows).map(([a, b]) => a + "," + b));
-      for (;;) {
-        const hi = cur.findIndex(c => c.p !== undefined && cellsOf(planes[c.p]).some(([a, b]) => keys.has(a + "," + b)));
-        if (hi < 0) break;
-        take(hi);
-      }
-      sol.push(bi);
-    }
-    cur.forEach((c, hi) => { while (c.p !== undefined) take(hi); });
-
-    // Schlange bauen: so, dass drei Gates für diese Reihenfolge reichen. Gespielt wird mit vier.
-    const gates = [], seq = [];
-    let i = 0;
-    while (i < sol.length || gates.length) {
-      while (gates.length < 3 && i < sol.length) { const p = planes[sol[i++]]; gates.push({ p, left: SEATS[p.len] }); }
-      const ds = [...new Set(gates.map(g => g.p.dest))];
-      const d = ds[(r() * ds.length) | 0];
-      const g = gates.find(g => g.p.dest === d);
-      const n = Math.min(g.left, r() < 0.55 ? 8 : 16);
-      g.left -= n;
-      const last = seq[seq.length - 1];
-      if (last && last.dest === d) last.n += n; else seq.push({ dest: d, n });
-      if (!g.left) gates.splice(gates.indexOf(g), 1);
-    }
+    const built = buildQueue({ cols, rows, mask: L.mask, mode: L.mode, planes, hangars }, r, dig.p, dig.maxB);
+    if (!built) return null;
+    const { sol, seq } = built;
     const arms = { L: [], R: [] };
     if (L.mode === "seq") {
       const total = seq.reduce((s, g) => s + g.n, 0);
@@ -277,6 +260,75 @@ window.Abflug = (() => {
       hangars: hangars.map(h => ({ x: h.x, y: h.y, dir: h.dir, queue: h.queue })),
       arms, sol, tourists: seq.reduce((s, g) => s + g.n, 0),
     };
+  }
+
+  // Alle Flugzeuge, die weg müssen, bevor p frei ist. null, wenn ein Hangar-Flugzeug im Weg steht.
+  function blockersOf(st, p) {
+    const need = new Set(), stack = [p.id], m = occMap(st);
+    while (stack.length) {
+      const q = st.planes[stack.pop()];
+      for (const [x, y] of pathOf(q, st.cols, st.rows)) {
+        const o = m.get(x + "," + y);
+        if (o === undefined) continue;
+        if (o < 0 || st.planes[o].hangar >= 0) return null;
+        if (!need.has(o)) { need.add(o); stack.push(o); }
+      }
+    }
+    return need;
+  }
+
+  // Schlange bauen, indem ein Spiel mit vier Gates simuliert wird. Mit Wahrscheinlichkeit dig
+  // kommen zuerst Touristen für ein zugeparktes Flugzeug: Man muss es freispielen und die
+  // Blocker so lange an den Gates parken. Die Reihenfolge der Abflüge ist die Lösung.
+  function buildQueue(base, r, dig, maxB) {
+    const st = createState({ ...base, arms: { L: [], R: [] } });
+    const need = {}, sol = [], seq = [];
+    st.planes.forEach(p => (need[p.id] = SEATS[p.len]));
+    const freeGates = () => st.gates.slice(0, st.gateCount).filter(g => g === null).length;
+    const send = id => { if (!tap(st, id).ok) throw new Error("send"); arrive(st, id); sol.push(id); };
+    const emit = (id, n) => {
+      const p = st.planes[id];
+      n = Math.min(n, need[id]); need[id] -= n;
+      const last = seq[seq.length - 1];
+      if (last && last.dest === p.dest) last.n += n; else seq.push({ dest: p.dest, n });
+      if (!need[id]) depart(st, id);
+    };
+    let first = true;
+    for (let guard = 0; guard < 20000; guard++) {
+      if (st.planes.every(p => p.where === "gone")) return { sol, seq };
+      const fg = freeGates();
+      const onApron = st.planes.filter(p => p.where === "apron");
+      if (fg >= 2 && onApron.length && (first || r() < dig)) {
+        const cands = [];
+        // Nur Ziele, für die gerade kein Flugzeug frei steht oder am Gate wartet.
+        const easy = new Set(st.planes.filter(q => (q.where === "apron" && freeRun(st, q) < 0) || (q.where === "gate" && need[q.id] > 0)).map(q => q.dest));
+        for (const p of onApron) {
+          if (easy.has(p.dest)) continue;
+          const b = blockersOf(st, p);
+          if (b && b.size <= maxB && b.size + 1 <= fg) cands.push([p, b]);
+        }
+        if (cands.length) {
+          const most = Math.max(...cands.map(c => c[1].size));
+          const top = cands.filter(c => c[1].size === most);
+          const [p, b] = top[(r() * top.length) | 0];
+          const todo = new Set(b);
+          for (let g2 = 0; todo.size && g2 < 50; g2++) {
+            for (const id of [...todo]) if (freeRun(st, st.planes[id]) < 0) { send(id); todo.delete(id); }
+          }
+          if (todo.size) return null;
+          send(p.id);
+          emit(p.id, r() < 0.5 ? need[p.id] : 8);
+          first = false;
+          continue;
+        }
+      }
+      const atGate = st.planes.filter(p => p.where === "gate" && need[p.id] > 0);
+      const free = onApron.filter(p => freeRun(st, p) < 0);
+      if (fg > 0 && free.length && (!atGate.length || r() < 0.3)) { send(free[(r() * free.length) | 0].id); continue; }
+      if (atGate.length) { emit(atGate[(r() * atGate.length) | 0].id, r() < 0.55 ? 8 : 16); first = false; continue; }
+      return null;
+    }
+    return null;
   }
 
   function createState(lv) {
@@ -428,10 +480,11 @@ window.Abflug = (() => {
     if (L.fixed) return fixedLevel(L);
     let best = null;
     for (let a = 0; a < 120; a++) {
-      const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919));
+      // Freispielen wird mit dem Level häufiger und tiefer.
+      const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919), { p: Math.min(0.75, 0.12 + 0.07 * li), maxB: Math.min(3, 1 + (li >> 1)) });
       if (!lv || !solve(lv)) continue;
       if (!best || lv.planes.length > best.planes.length) best = lv;
-      if (lv.planes.length >= L.planes) break;
+      if (lv.planes.length >= L.planes * 0.9) break;
     }
     return best;
   }
