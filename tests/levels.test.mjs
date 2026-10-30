@@ -26,6 +26,14 @@ A.LEVELS.forEach((L, i) => {
     const dests = new Set(lv.planes.map(p => p.dest));
     assert.equal(dests.size, L.dests, "alle Ziele kommen vor");
     if (L.hangars) assert.equal(lv.hangars.length, L.hangars, "Hangars gesetzt");
+    if (L.tutorial) {
+      // Tutorial-Schritte brauchen: 0 frei, 1 blockiert, 2 frei und steht vor 1.
+      const st = A.createState(lv);
+      assert.equal(A.freeRun(st, st.planes[0]), -1, "Tutorial: Flugzeug 0 frei");
+      assert.ok(A.freeRun(st, st.planes[1]) >= 0, "Tutorial: Flugzeug 1 blockiert");
+      assert.equal(A.freeRun(st, st.planes[2]), -1, "Tutorial: Flugzeug 2 frei");
+      assert.equal(lv.arms.L[0].dest, st.planes[0].dest, "Tutorial: erste Gruppe passt zu Flugzeug 0");
+    }
 
     // Zufälliges Spielen darf nie abstürzen und muss mit win oder lose enden.
     let wins = 0;

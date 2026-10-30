@@ -2,57 +2,56 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap">
 <style>
-/* Layout: oben Terminal mit zwei Schlangen, Mitte Gate-Leiste, unten Vorfeld. Ein Look: Flughafen bei Tag. */
+/* Layout: Insel-Flughafen. Oben Terminal mit Wartering, Mitte Gates, unten Vorfeld, rundherum Meer. */
 :root {
-  --asphalt: #4C5763;
-  --asphalt-2: #3E4853;
-  --terminal: #E3E8EC;
-  --ink: #1C2530;
-  --board: #15181C;
-  --board-text: #FFC83A;
-  --signal: #F2C230;
-  --card: #FFFFFF;
-  --muted: #5D6875;
-  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --sea: #1FA9C6;
+  --teal: #0E5E6F;
+  --teal-dark: #08414D;
+  --sun: #FFE066;
+  --coral: #FF6F61;
+  --coral-dark: #C9483D;
+  --ink: #16323A;
+  --muted: #4E6A72;
+  --card: #FFFDF7;
+  --font-display: "Baloo 2", "Nunito", system-ui, sans-serif;
   --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: dark;
+  color-scheme: light;
 }
 html, body { height: 100%; }
-body { background: var(--asphalt); color: #fff; font-family: var(--font-body); overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+body { background: var(--sea); color: var(--ink); font-family: var(--font-body); overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 #app { position: fixed; inset: 0; }
 #cv { position: absolute; inset: 0; display: block; }
 #safe { position: absolute; width: 0; height: 0; padding-bottom: env(safe-area-inset-bottom, 0px); visibility: hidden; }
 .hud { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-block: calc(8px + env(safe-area-inset-top, 0px)) 4px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); pointer-events: none; }
 .hud > * { pointer-events: auto; }
-.board { display: flex; align-items: baseline; gap: 10px; min-width: 0; background: var(--board); color: var(--board-text); border: 0; border-radius: 6px; padding: 5px 11px 6px; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; box-shadow: 0 2px 0 rgba(0,0,0,.3); cursor: pointer; }
-.board-k { font-weight: 800; font-size: 19px; }
-.board-v { font-weight: 600; font-size: 15px; color: #F3EFE2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board { display: flex; align-items: baseline; gap: 8px; min-width: 0; background: var(--teal); color: var(--sun); border: 0; border-radius: 14px; padding: 1px 13px 2px; font-family: var(--font-display); box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; }
+.board-k { font-weight: 800; font-size: 21px; }
+.board-v { font-weight: 700; font-size: 15px; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hud-right { display: flex; gap: 6px; }
-.chip, .icon { height: 34px; border: 0; border-radius: 6px; background: var(--board); color: #F3EFE2; font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: .05em; box-shadow: 0 2px 0 rgba(0,0,0,.3); cursor: pointer; display: grid; place-items: center; }
-.chip { padding: 0 10px; color: var(--board-text); white-space: nowrap; }
-.chip:disabled { opacity: .35; cursor: default; }
-.icon { width: 34px; }
+.chip, .icon { height: 36px; border: 0; border-radius: 12px; background: var(--teal); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 16px; box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; display: grid; place-items: center; }
+.chip { padding: 0 11px; color: var(--sun); white-space: nowrap; }
+.chip:disabled { opacity: .4; cursor: default; }
+.icon { width: 36px; }
 .icon svg { width: 18px; height: 18px; }
-button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
-.toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--board); color: var(--board-text); font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; padding: 8px 16px; border-radius: 6px; pointer-events: none; white-space: nowrap; }
-.hint { position: absolute; left: 50%; top: calc(58px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(92vw, 400px); background: rgba(21,24,28,.92); color: #F3EFE2; border-radius: 10px; padding: 10px 14px; font-size: 15px; line-height: 1.35; text-align: center; pointer-events: none; }
-.hint b { color: var(--board-text); }
-.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(18,23,29,.6); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.card { width: 100%; max-width: 340px; background: var(--card); color: var(--ink); border-radius: 14px; padding: 22px 20px 20px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
-.card .eyebrow { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .14em; font-size: 13px; color: var(--muted); }
-.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; text-transform: uppercase; letter-spacing: .03em; margin: 6px 0 10px; text-wrap: balance; }
-.card p { margin: 0 0 16px; font-size: 15px; line-height: 1.45; color: #36414D; }
-.actions { display: grid; gap: 8px; }
-.btn { height: 46px; border: 0; border-radius: 8px; font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; background: var(--board); color: var(--board-text); }
-.btn.alt { background: #E4E8EC; color: var(--ink); }
-.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
-.levels button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 8px; background: var(--board); color: var(--board-text); font-family: var(--font-display); font-weight: 800; font-size: 20px; cursor: pointer; }
-.levels button:disabled { background: #D9DEE3; color: #9AA4AE; cursor: default; }
-.levels button.cur { outline: 3px solid var(--signal); outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+.toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--coral); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 21px; padding: 6px 20px; border-radius: 999px; box-shadow: 0 4px 0 var(--coral-dark); pointer-events: none; white-space: nowrap; }
+.hint { position: absolute; left: 50%; top: calc(60px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(92vw, 400px); background: rgba(255,253,247,.97); color: var(--ink); border: 3px solid #FFFFFF; border-radius: 18px; padding: 10px 16px; font-size: 15px; font-weight: 700; line-height: 1.4; text-align: center; pointer-events: none; box-shadow: 0 8px 24px rgba(8,65,77,.28); }
+.hint b { color: var(--coral); }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,65,77,.45); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.card { width: 100%; max-width: 340px; background: var(--card); color: var(--ink); border: 4px solid #FFFFFF; border-radius: 26px; padding: 22px 20px 20px; text-align: center; box-shadow: 0 14px 40px rgba(8,65,77,.35); }
+.card .eyebrow { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--muted); }
+.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1.05; color: var(--teal); margin: 4px 0 10px; text-wrap: balance; }
+.card p { margin: 0 0 16px; font-size: 15px; line-height: 1.45; color: #34525A; }
+.actions { display: grid; gap: 10px; }
+.btn { height: 48px; border: 0; border-radius: 16px; font-family: var(--font-display); font-weight: 800; font-size: 20px; cursor: pointer; background: var(--coral); color: #FFFFFF; box-shadow: 0 4px 0 var(--coral-dark); }
+.btn.alt { background: #E6F5F2; color: var(--teal); box-shadow: 0 4px 0 #C4DED9; }
+.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+.levels button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 14px; background: var(--teal); color: var(--sun); font-family: var(--font-display); font-weight: 800; font-size: 22px; box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; }
+.levels button:disabled { background: #E1E9E8; color: #9FB2B5; box-shadow: none; cursor: default; }
+.levels button.cur { outline: 3px solid var(--coral); outline-offset: 2px; }
 </style>
 
 <div id="app">
@@ -106,9 +105,19 @@ window.Abflug = (() => {
   const RING = 20, ENTRY = { L: 7, R: 13 };
 
   const LEVELS = [
-    { name: "Ferienstart", mask: grid(6, 8, () => 1), dests: 4, planes: 12, mode: "seq" },
-    { name: "Pauschalreise", mask: grid(7, 9, () => 1), dests: 5, planes: 18, mode: "seq" },
-    { name: "Brückentag", mask: grid(8, 10, (x, y) => !((x === 0 || x === 7) && (y === 0 || y === 9))), dests: 6, planes: 24, mode: "seq" },
+    // Tutorial: festes Level. Flugzeug 0 ist frei, 1 wird von 2 blockiert.
+    { name: "Erster Flug", tutorial: true, dests: 3, planes: 8, mode: "seq", fixed: {
+      cols: 5, rows: 6,
+      planes: [
+        [1, 1, "U", 2, 1], [2, 3, "R", 3, 0], [3, 4, "D", 2, 3], [0, 5, "L", 2, 0],
+        [4, 0, "U", 3, 3], [3, 1, "R", 2, 1], [2, 5, "D", 2, 0], [0, 1, "U", 2, 3],
+      ],
+      L: [[1, 16], [3, 16], [0, 24], [3, 24]],
+      R: [[1, 16], [0, 16], [3, 16], [0, 16]],
+      sol: [0, 2, 1, 4, 5, 3, 7, 6],
+    } },
+    { name: "Inselhüpfer", mask: grid(7, 9, () => 1), dests: 5, planes: 18, mode: "seq" },
+    { name: "Kokosbucht", mask: grid(8, 10, (x, y) => !((x === 0 || x === 7) && (y === 0 || y === 9))), dests: 6, planes: 24, mode: "seq" },
     { name: "Schranken", mask: grid(8, 11, () => 1), dests: 6, planes: 28, mode: "alt" },
     { name: "Jumbo", mask: art([
       "....##....",
@@ -124,7 +133,7 @@ window.Abflug = (() => {
       "..######..",
       "..######..",
     ]), dests: 7, planes: 28, mode: "alt" },
-    { name: "Nebel", mask: grid(11, 11, (x, y) => Math.abs(x - 5) + Math.abs(y - 5) <= 6), dests: 7, planes: 30, mode: "alt", mystery: 0.25 },
+    { name: "Tropennebel", mask: grid(11, 11, (x, y) => Math.abs(x - 5) + Math.abs(y - 5) <= 6), dests: 7, planes: 30, mode: "alt", mystery: 0.25 },
     { name: "Hangar", mask: grid(9, 12, () => 1), dests: 8, planes: 38, mode: "alt", hangars: 1, hangarSize: 4 },
     { name: "Koffer", mask: art([
       "...####...",
@@ -403,8 +412,20 @@ window.Abflug = (() => {
     return false;
   }
 
+  function fixedLevel(L) {
+    const F = L.fixed;
+    const planes = F.planes.map(([x, y, dir, len, dest], id) => ({ id, x, y, dir, len, dest, hangar: -1, mystery: false }));
+    const g = a => a.map(([dest, n]) => ({ dest, n }));
+    const arms = { L: g(F.L), R: g(F.R) };
+    return {
+      name: L.name, cols: F.cols, rows: F.rows, mask: grid(F.cols, F.rows, () => 1), mode: L.mode, planes, hangars: [],
+      arms, sol: F.sol, tourists: [...arms.L, ...arms.R].reduce((s, x) => s + x.n, 0),
+    };
+  }
+
   function generate(li) {
     const L = LEVELS[li];
+    if (L.fixed) return fixedLevel(L);
     let best = null;
     for (let a = 0; a < 120; a++) {
       const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919));
@@ -429,22 +450,38 @@ window.Abflug = (() => {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
   const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
-  const TICK = 0.2, FLY = 0.32, FULL_WAIT = 0.8;
+  const TICK = 0.2, FLY = 0.5, FULL_WAIT = 1.0;
+  const FONT = '"Baloo 2", "Nunito", system-ui, sans-serif';
+  // Insel-Palette: Meer, Sand, Pastell-Häuser, Korallenrot, Sonnengelb.
+  const C = {
+    sea1: "#3FD3E0", sea2: "#1494B8", sand: "#F8E4B2", sand2: "#EFCF8C", floor: "#FFF6E4", lane: "#F5DFAF",
+    band: "#FF6F61", post: "#1F7F90", asphalt: "#6E7C8A", line: "#FFD23F", teal: "#0E5E6F", sun: "#FFE066", ink: "#16323A",
+  };
+  const PASTEL = ["#FF8F7E", "#7FD9B8", "#FFD56B", "#8FCBFF", "#C9A6FF"];
+  const SKIN = ["#F6D2B0", "#E7B58B", "#C68A5E", "#9A6542", "#FADFC7"];
   const INTRO = {
-    0: "Tippe ein Flugzeug an. Ist der Weg vor der Nase frei, rollt es zu einem <b>Gate</b>. Die Touristen laufen im Kreis und steigen am Ausgang ein, wenn ihr Flugzeug wartet.",
     3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
     5: "<b>Neu: Ziel unbekannt.</b> Graue Flugzeuge zeigen ihr Ziel, sobald ihr Weg frei ist.",
     6: "<b>Neu: Hangar.</b> Rollt ein Flugzeug heraus, kommt das nächste nach. Die Zahl zeigt, wie viele noch drin sind.",
   };
+  // Tutorial in Level 1: Pfeil zeigt auf das Flugzeug, das als Nächstes dran ist.
+  const TUT = [
+    { text: "Tippe das <b>grüne Flugzeug</b> an. Ist der Weg vor seiner Nase frei, rollt es zu einem Gate.", target: 0, on: "go" },
+    { text: "Die Touristen laufen im Kreis. Wer sein Flugzeug am Gate sieht, steigt ein. Ist es voll, hebt es ab.", lock: true, on: "depart", id: 0 },
+    { text: "Tippe jetzt das <b>gelbe Flugzeug</b> an.", target: 1, on: "bump" },
+    { text: "Blockiert! Das <b>rote Flugzeug</b> steht im Weg. Schick es zuerst los.", target: 2, on: "go" },
+    { text: "Jetzt du! Schick Flugzeuge los, deren Touristen bald dran sind. Sind alle Gates belegt und niemand passt, ist das Spiel vorbei.", timeout: 9 },
+  ];
 
   let W = 0, H = 0, DPR = 1, lay = null;
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
-  let lv = null, S = null, vis = new Map(), flyers = [], departing = [];
-  let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, last = 0, lastPlop = 0, pulse = [];
-  const cache = {}, sprites = {};
+  let lv = null, S = null, vis = new Map(), flyers = [], departing = [], confetti = [], sparks = [];
+  let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, shakeT = -9, last = 0, lastPlop = 0, pulse = [], tut = null;
+  const cache = {};
+  let sprites = {}, pats = {};
   const now = () => performance.now() / 1000;
 
-  // ---------- Farben und Formen ----------
+  // ---------- Hilfen ----------
   function shade(hex, amt) {
     const n = parseInt(hex.slice(1), 16);
     let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
@@ -452,142 +489,18 @@ window.Abflug = (() => {
     r = Math.round(r + (t - r) * f); g = Math.round(g + (t - g) * f); b = Math.round(b + (t - b) * f);
     return `rgb(${r},${g},${b})`;
   }
-  function rrect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  function rr(g, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    g.beginPath();
+    g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
-  function ballSprite(dest, d) {
-    const key = dest + ":" + d;
-    if (sprites[key]) return sprites[key];
+  function offscreen(w, h) {
     const c = document.createElement("canvas");
-    const s = Math.ceil(d * DPR) + 2;
-    c.width = c.height = s;
-    const g = c.getContext("2d");
-    const col = A.DEST[dest].color, r = s / 2 - 1;
-    const grd = g.createRadialGradient(s * 0.36, s * 0.32, r * 0.1, s / 2, s / 2, r);
-    grd.addColorStop(0, shade(col, 0.5)); grd.addColorStop(0.55, col); grd.addColorStop(1, shade(col, -0.35));
-    g.fillStyle = grd; g.beginPath(); g.arc(s / 2, s / 2, r, 0, Math.PI * 2); g.fill();
-    if (A.DEST[dest].id === "JP") {
-      g.strokeStyle = "rgba(0,0,0,.28)"; g.lineWidth = 1; g.stroke();
-      g.fillStyle = "#C8102E"; g.beginPath(); g.arc(s / 2, s / 2, r * 0.38, 0, Math.PI * 2); g.fill();
-    }
-    sprites[key] = c;
-    return c;
+    c.width = Math.ceil(w * DPR); c.height = Math.ceil(h * DPR);
+    const g = c.getContext("2d"); g.scale(DPR, DPR);
+    return { c, g, w, h };
   }
-  function drawFlag(id, x, y, w, h) {
-    const f = (c, a, b, ww, hh) => { ctx.fillStyle = c; ctx.fillRect(a, b, ww, hh); };
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-    switch (id) {
-      case "ES": f("#C60B1E", x, y, w, h); f("#FFC400", x, y + h * 0.25, w, h * 0.5); break;
-      case "IT": f("#009246", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE2B37", x + (2 * w) / 3, y, w / 3 + 0.5, h); break;
-      case "GR":
-        for (let i = 0; i < 9; i++) f(i % 2 ? "#FFFFFF" : "#0D5EAF", x, y + (i * h) / 9, w, h / 9 + 0.5);
-        f("#0D5EAF", x, y, w * 0.38, (h * 5) / 9);
-        f("#FFFFFF", x + w * 0.15, y, w * 0.08, (h * 5) / 9);
-        f("#FFFFFF", x, y + (h * 2) / 9, w * 0.38, h / 9);
-        break;
-      case "TR":
-        f("#E30A17", x, y, w, h);
-        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.arc(x + w * 0.38, y + h / 2, h * 0.28, 0, 7); ctx.fill();
-        ctx.fillStyle = "#E30A17"; ctx.beginPath(); ctx.arc(x + w * 0.44, y + h / 2, h * 0.225, 0, 7); ctx.fill();
-        ctx.fillStyle = "#FFFFFF"; star(x + w * 0.64, y + h / 2, h * 0.12);
-        break;
-      case "JP": f("#FFFFFF", x, y, w, h); ctx.fillStyle = "#BC002D"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.3, 0, 7); ctx.fill(); break;
-      case "SE": f("#006AA7", x, y, w, h); f("#FECC00", x + w * 0.31, y, w * 0.125, h); f("#FECC00", x, y + h * 0.4, w, h * 0.2); break;
-      case "NL": f("#AE1C28", x, y, w, h / 3 + 0.5); f("#FFFFFF", x, y + h / 3, w, h / 3 + 0.5); f("#21468B", x, y + (2 * h) / 3, w, h / 3 + 0.5); break;
-      case "FR": f("#002654", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE1126", x + (2 * w) / 3, y, w / 3 + 0.5, h); break;
-      case "MX":
-        f("#006847", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE1126", x + (2 * w) / 3, y, w / 3 + 0.5, h);
-        ctx.fillStyle = "#8C5A2B"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.16, 0, 7); ctx.fill();
-        break;
-      case "QA":
-        f("#8A1538", x, y, w, h); f("#FFFFFF", x, y, w * 0.26, h);
-        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(x + w * 0.26, y);
-        for (let i = 0; i < 5; i++) { ctx.lineTo(x + w * 0.36, y + (h * (i + 0.5)) / 5); ctx.lineTo(x + w * 0.26, y + (h * (i + 1)) / 5); }
-        ctx.closePath(); ctx.fill();
-        break;
-      case "EG":
-        f("#CE1126", x, y, w, h / 3 + 0.5); f("#FFFFFF", x, y + h / 3, w, h / 3 + 0.5); f("#1A1A1A", x, y + (2 * h) / 3, w, h / 3 + 0.5);
-        ctx.fillStyle = "#C09300"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * 0.12, 0, 7); ctx.fill();
-        break;
-    }
-    ctx.restore();
-    ctx.strokeStyle = "rgba(20,25,30,.55)"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-  }
-  function star(cx, cy, r) {
-    ctx.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r;
-      ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
-    }
-    ctx.closePath(); ctx.fill();
-  }
-  function planeShape(c, len) {
-    const half = (len * c * 0.92) / 2, fw = c * (0.25 + len * 0.025);
-    ctx.beginPath();
-    // Flügel
-    ctx.moveTo(half * 0.22, -fw * 0.4); ctx.lineTo(-half * 0.14, -c * 0.47); ctx.lineTo(-half * 0.34, -c * 0.47); ctx.lineTo(-half * 0.2, -fw * 0.4);
-    ctx.lineTo(-half * 0.2, fw * 0.4); ctx.lineTo(-half * 0.34, c * 0.47); ctx.lineTo(-half * 0.14, c * 0.47); ctx.lineTo(half * 0.22, fw * 0.4);
-    ctx.closePath();
-    // Leitwerk
-    ctx.moveTo(-half * 0.68, -fw * 0.3); ctx.lineTo(-half * 0.9, -c * 0.22); ctx.lineTo(-half * 1.0, -c * 0.22); ctx.lineTo(-half * 0.95, -fw * 0.3);
-    ctx.lineTo(-half * 0.95, fw * 0.3); ctx.lineTo(-half * 1.0, c * 0.22); ctx.lineTo(-half * 0.9, c * 0.22); ctx.lineTo(-half * 0.68, fw * 0.3);
-    ctx.closePath();
-    return { half, fw };
-  }
-  function fuselage(half, fw) {
-    ctx.beginPath();
-    ctx.moveTo(-half, -fw * 0.28);
-    ctx.lineTo(half - fw * 1.1, -fw / 2);
-    ctx.quadraticCurveTo(half, -fw / 2, half, 0);
-    ctx.quadraticCurveTo(half, fw / 2, half - fw * 1.1, fw / 2);
-    ctx.lineTo(-half, fw * 0.28);
-    ctx.closePath();
-  }
-  function drawPlane(x, y, ang, c, p, alpha = 1, lift = 0) {
-    const mystery = !p.revealed;
-    const body = mystery ? "#8D97A2" : A.DEST[p.dest].color;
-    const edge = shade(body.startsWith("#") ? body : "#8D97A2", -0.42);
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    // Schatten
-    ctx.save();
-    ctx.translate(x + 2 + lift * 18, y + 3 + lift * 26); ctx.rotate(ang);
-    ctx.fillStyle = "rgba(10,15,20,.28)";
-    const sh = planeShape(c, p.len); ctx.fill(); fuselage(sh.half, sh.fw); ctx.fill();
-    ctx.restore();
-    ctx.translate(x, y); ctx.rotate(ang);
-    const { half, fw } = planeShape(c, p.len);
-    ctx.fillStyle = shade(body, -0.1); ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, c * 0.03);
-    ctx.fill(); ctx.stroke();
-    // Triebwerke
-    ctx.fillStyle = shade(body, -0.3);
-    const eng = p.len >= 4 ? [0.2, 0.35] : p.len === 3 ? [0.24] : [];
-    eng.forEach(o => [-1, 1].forEach(s => { ctx.beginPath(); ctx.ellipse(half * 0.04, s * c * o, c * 0.09, c * 0.05, 0, 0, 7); ctx.fill(); }));
-    fuselage(half, fw);
-    ctx.fillStyle = body; ctx.fill(); ctx.stroke();
-    // Cockpit
-    ctx.fillStyle = "rgba(25,40,60,.75)";
-    ctx.beginPath(); ctx.ellipse(half - fw * 0.75, 0, fw * 0.22, fw * 0.3, 0, 0, 7); ctx.fill();
-    ctx.restore();
-    // Flagge aufrecht, damit man sie lesen kann
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    const fwid = Math.max(12, c * 0.48), fh = fwid * 0.66;
-    if (mystery) {
-      ctx.fillStyle = "#2B323A"; ctx.beginPath(); ctx.arc(x, y, fh * 0.62, 0, 7); ctx.fill();
-      ctx.fillStyle = "#FFFFFF"; ctx.font = `800 ${Math.round(fh * 0.95)}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-display")}`;
-      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("?", x, y + 1);
-    } else {
-      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(x - fwid / 2 - 1.5, y - fh / 2 - 1.5, fwid + 3, fh + 3);
-      drawFlag(A.DEST[p.dest].id, x - fwid / 2, y - fh / 2, fwid, fh);
-    }
-    ctx.restore();
-  }
-
-  // ---------- Pfade ----------
   function poly(points) {
     const segs = [];
     let total = 0;
@@ -607,54 +520,289 @@ window.Abflug = (() => {
     return { x: sg.ax + (sg.bx - sg.ax) * t, y: sg.ay + (sg.by - sg.ay) * t, a: sg.a };
   }
 
+  // ---------- Flaggen ----------
+  function drawFlag(g, id, x, y, w, h) {
+    const f = (c, a, b, ww, hh) => { g.fillStyle = c; g.fillRect(a, b, ww, hh); };
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+    switch (id) {
+      case "ES": f("#C60B1E", x, y, w, h); f("#FFC400", x, y + h * 0.25, w, h * 0.5); break;
+      case "IT": f("#009246", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE2B37", x + (2 * w) / 3, y, w / 3 + 0.5, h); break;
+      case "GR":
+        for (let i = 0; i < 9; i++) f(i % 2 ? "#FFFFFF" : "#0D5EAF", x, y + (i * h) / 9, w, h / 9 + 0.5);
+        f("#0D5EAF", x, y, w * 0.38, (h * 5) / 9); f("#FFFFFF", x + w * 0.15, y, w * 0.08, (h * 5) / 9); f("#FFFFFF", x, y + (h * 2) / 9, w * 0.38, h / 9);
+        break;
+      case "TR":
+        f("#E30A17", x, y, w, h);
+        g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(x + w * 0.38, y + h / 2, h * 0.28, 0, 7); g.fill();
+        g.fillStyle = "#E30A17"; g.beginPath(); g.arc(x + w * 0.44, y + h / 2, h * 0.225, 0, 7); g.fill();
+        g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(x + w * 0.64, y + h / 2, h * 0.09, 0, 7); g.fill();
+        break;
+      case "JP": f("#FFFFFF", x, y, w, h); g.fillStyle = "#BC002D"; g.beginPath(); g.arc(x + w / 2, y + h / 2, h * 0.3, 0, 7); g.fill(); break;
+      case "SE": f("#006AA7", x, y, w, h); f("#FECC00", x + w * 0.31, y, w * 0.125, h); f("#FECC00", x, y + h * 0.4, w, h * 0.2); break;
+      case "NL": f("#AE1C28", x, y, w, h / 3 + 0.5); f("#FFFFFF", x, y + h / 3, w, h / 3 + 0.5); f("#21468B", x, y + (2 * h) / 3, w, h / 3 + 0.5); break;
+      case "FR": f("#002654", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE1126", x + (2 * w) / 3, y, w / 3 + 0.5, h); break;
+      case "MX":
+        f("#006847", x, y, w / 3 + 0.5, h); f("#FFFFFF", x + w / 3, y, w / 3 + 0.5, h); f("#CE1126", x + (2 * w) / 3, y, w / 3 + 0.5, h);
+        g.fillStyle = "#8C5A2B"; g.beginPath(); g.arc(x + w / 2, y + h / 2, h * 0.16, 0, 7); g.fill();
+        break;
+      case "QA":
+        f("#8A1538", x, y, w, h); f("#FFFFFF", x, y, w * 0.26, h);
+        g.fillStyle = "#FFFFFF"; g.beginPath(); g.moveTo(x + w * 0.26, y);
+        for (let i = 0; i < 5; i++) { g.lineTo(x + w * 0.36, y + (h * (i + 0.5)) / 5); g.lineTo(x + w * 0.26, y + (h * (i + 1)) / 5); }
+        g.closePath(); g.fill();
+        break;
+      case "EG":
+        f("#CE1126", x, y, w, h / 3 + 0.5); f("#FFFFFF", x, y + h / 3, w, h / 3 + 0.5); f("#1A1A1A", x, y + (2 * h) / 3, w, h / 3 + 0.5);
+        g.fillStyle = "#C09300"; g.beginPath(); g.arc(x + w / 2, y + h / 2, h * 0.12, 0, 7); g.fill();
+        break;
+    }
+    g.restore();
+  }
+  function badgeSprite(dest, w) {
+    const key = "b" + dest + ":" + w;
+    if (sprites[key]) return sprites[key];
+    const h = w * 0.66, o = offscreen(w + 6, h + 7);
+    o.g.fillStyle = "rgba(0,0,0,.22)"; rr(o.g, 3, 4, w, h + 1, 4); o.g.fill();
+    o.g.fillStyle = "#FFFFFF"; rr(o.g, 1, 1, w + 4, h + 4, 4); o.g.fill();
+    if (dest < 0) {
+      o.g.fillStyle = C.teal; rr(o.g, 3, 3, w, h, 3); o.g.fill();
+      o.g.fillStyle = "#FFFFFF"; o.g.font = `800 ${Math.round(h * 1.05)}px ${FONT}`; o.g.textAlign = "center"; o.g.textBaseline = "middle";
+      o.g.fillText("?", 3 + w / 2, 3 + h / 2 + h * 0.08);
+    } else {
+      o.g.save(); rr(o.g, 3, 3, w, h, 2.5); o.g.clip(); drawFlag(o.g, A.DEST[dest].id, 3, 3, w, h); o.g.restore();
+    }
+    return (sprites[key] = o);
+  }
+
+  // ---------- Flugzeuge: rundlich, mit Gesicht ----------
+  function paintPlane(g, len, c, body, flat) {
+    const half = len * c * 0.46, fw = c * (0.34 + len * 0.015);
+    const dark = shade(body, -0.4), light = shade(body, 0.45);
+    g.lineJoin = "round"; g.lineCap = "round";
+    g.lineWidth = Math.max(1.2, c * 0.035); g.strokeStyle = dark;
+    const fill = st => { g.fillStyle = flat ? "#000" : st; g.fill(); if (!flat) g.stroke(); };
+    let wg = "#000";
+    if (!flat) { wg = g.createLinearGradient(half * 0.25, 0, -half * 0.4, 0); wg.addColorStop(0, light); wg.addColorStop(1, shade(body, -0.14)); }
+    for (const s of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(half * 0.24, s * fw * 0.3);
+      g.quadraticCurveTo(half * 0.02, s * c * 0.34, -half * 0.1, s * c * 0.45);
+      g.quadraticCurveTo(-half * 0.22, s * c * 0.54, -half * 0.33, s * c * 0.44);
+      g.lineTo(-half * 0.26, s * fw * 0.3);
+      g.closePath(); fill(wg);
+    }
+    if (!flat) {
+      const pods = len >= 4 ? [0.22, 0.36] : len === 3 ? [0.26] : [0.25];
+      pods.forEach(o => [-1, 1].forEach(s => {
+        g.beginPath(); g.ellipse(half * 0.02, s * c * o, c * 0.1, c * 0.065, 0, 0, 7); fill(shade(body, -0.18));
+        g.fillStyle = "#33414D"; g.beginPath(); g.ellipse(half * 0.02 + c * 0.085, s * c * o, c * 0.025, c * 0.045, 0, 0, 7); g.fill();
+      }));
+    }
+    for (const s of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(-half * 0.66, s * fw * 0.25);
+      g.quadraticCurveTo(-half * 0.8, s * c * 0.27, -half * 0.9, s * c * 0.27);
+      g.quadraticCurveTo(-half * 1.0, s * c * 0.26, -half * 0.94, s * fw * 0.2);
+      g.closePath(); fill(wg);
+    }
+    let fg = "#000";
+    if (!flat) { fg = g.createLinearGradient(0, -fw / 2, 0, fw / 2); fg.addColorStop(0, light); fg.addColorStop(0.42, body); fg.addColorStop(1, shade(body, -0.3)); }
+    g.beginPath();
+    g.moveTo(-half * 0.93, -fw * 0.34);
+    g.quadraticCurveTo(-half * 1.03, 0, -half * 0.93, fw * 0.34);
+    g.lineTo(half - fw * 0.5, fw / 2);
+    g.arc(half - fw * 0.5, 0, fw / 2, Math.PI / 2, -Math.PI / 2, true);
+    g.closePath(); fill(fg);
+    if (flat) return;
+    // Zierstreifen und Leitwerk
+    g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = fw * 0.11;
+    g.beginPath(); g.moveTo(-half * 0.78, fw * 0.2); g.lineTo(half - fw * 0.95, fw * 0.2); g.stroke();
+    g.fillStyle = "#FFFFFF"; g.strokeStyle = dark; g.lineWidth = Math.max(1, c * 0.03);
+    rr(g, -half * 0.97, -fw * 0.11, half * 0.3, fw * 0.22, fw * 0.1); g.fill(); g.stroke();
+    // Gesicht
+    const ex = half - fw * 0.62, er = fw * 0.17;
+    g.fillStyle = "rgba(255,120,150,.45)";
+    for (const s of [-1, 1]) { g.beginPath(); g.ellipse(ex - er * 1.7, s * fw * 0.3, er * 0.7, er * 0.45, 0, 0, 7); g.fill(); }
+    for (const s of [-1, 1]) {
+      g.fillStyle = "#FFFFFF"; g.strokeStyle = "rgba(20,40,50,.55)"; g.lineWidth = Math.max(0.8, c * 0.02);
+      g.beginPath(); g.arc(ex, s * fw * 0.19, er, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = "#1E2B33"; g.beginPath(); g.arc(ex + er * 0.35, s * fw * 0.19, er * 0.58, 0, 7); g.fill();
+      g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(ex + er * 0.5, s * fw * 0.19 - er * 0.28, er * 0.22, 0, 7); g.fill();
+    }
+    g.strokeStyle = "rgba(30,43,51,.7)"; g.lineWidth = Math.max(1, c * 0.025);
+    g.beginPath(); g.arc(half - fw * 0.42, 0, fw * 0.13, -0.9, 0.9); g.stroke();
+  }
+  function planeSprite(len, dest, mystery, c) {
+    const key = `p${len}:${dest}:${mystery ? 1 : 0}:${c}`;
+    if (sprites[key]) return sprites[key];
+    const w = len * c * 0.95 + c * 0.3, h = c * 1.25, o = offscreen(w, h);
+    o.g.translate(w / 2, h / 2);
+    paintPlane(o.g, len, c, mystery ? "#A3ACB6" : A.DEST[dest].color, false);
+    return (sprites[key] = o);
+  }
+  function shadowSprite(len, c) {
+    const key = `s${len}:${c}`;
+    if (sprites[key]) return sprites[key];
+    const w = len * c * 0.95 + c * 0.6, h = c * 1.5, o = offscreen(w, h);
+    if ("filter" in o.g) o.g.filter = `blur(${Math.max(1, c * 0.06)}px)`;
+    o.g.translate(w / 2, h / 2);
+    paintPlane(o.g, len, c, "#000000", true);
+    return (sprites[key] = o);
+  }
+  function drawPlane(x, y, ang, c, p, alpha = 1, lift = 0, scale = 1) {
+    const base = Math.round(c);
+    const spr = planeSprite(p.len, p.dest, !p.revealed, base), sh = shadowSprite(p.len, base);
+    const k = (c / base) * scale;
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.26;
+    ctx.translate(x + c * 0.08 + lift * 34, y + c * 0.14 + lift * 46); ctx.rotate(ang); ctx.scale(k, k);
+    ctx.drawImage(sh.c, -sh.w / 2, -sh.h / 2, sh.w, sh.h);
+    ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y); ctx.rotate(ang); ctx.scale(k, k);
+    ctx.drawImage(spr.c, -spr.w / 2, -spr.h / 2, spr.w, spr.h);
+    ctx.restore();
+    const bw = Math.max(13, c * 0.44) * scale, b = badgeSprite(p.revealed ? p.dest : -1, Math.round(bw));
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.drawImage(b.c, x - b.w / 2, y - b.h / 2 + c * 0.04, b.w, b.h);
+    ctx.restore();
+  }
+
+  // ---------- Touristen: kleine runde Figuren ----------
+  function touristSprite(dest, v, d) {
+    const key = `t${dest}:${v}:${d}`;
+    if (sprites[key]) return sprites[key];
+    const w = d * 1.3, h = d * 1.75, o = offscreen(w, h), g = o.g, cx = w / 2;
+    const col = A.DEST[dest].color;
+    const bg = g.createLinearGradient(cx - d * 0.45, 0, cx + d * 0.45, 0);
+    bg.addColorStop(0, shade(col, 0.4)); bg.addColorStop(0.5, col); bg.addColorStop(1, shade(col, -0.25));
+    g.fillStyle = bg; g.beginPath(); g.ellipse(cx, h * 0.68, d * 0.44, d * 0.42, 0, 0, 7); g.fill();
+    if (A.DEST[dest].id === "JP") { g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 1; g.stroke(); }
+    const hy = h * 0.32, hr = d * 0.34;
+    g.fillStyle = SKIN[v % SKIN.length]; g.beginPath(); g.arc(cx, hy, hr, 0, 7); g.fill();
+    const kind = v % 4;
+    if (kind === 2) {
+      g.fillStyle = "#1E2B33"; g.beginPath(); g.ellipse(cx - d * 0.12, hy + d * 0.02, d * 0.1, d * 0.07, 0, 0, 7); g.ellipse(cx + d * 0.12, hy + d * 0.02, d * 0.1, d * 0.07, 0, 0, 7); g.fill();
+    } else {
+      g.fillStyle = "#2A2A2A"; g.beginPath(); g.arc(cx - d * 0.11, hy + d * 0.03, d * 0.045, 0, 7); g.arc(cx + d * 0.11, hy + d * 0.03, d * 0.045, 0, 7); g.fill();
+      g.fillStyle = "rgba(255,120,150,.5)"; g.beginPath(); g.arc(cx - d * 0.2, hy + d * 0.12, d * 0.06, 0, 7); g.arc(cx + d * 0.2, hy + d * 0.12, d * 0.06, 0, 7); g.fill();
+    }
+    if (kind === 0) {
+      g.fillStyle = "#F2CF72"; g.beginPath(); g.ellipse(cx, hy - hr * 0.55, d * 0.46, d * 0.13, 0, 0, 7); g.fill();
+      g.beginPath(); g.ellipse(cx, hy - hr * 0.8, d * 0.24, d * 0.17, 0, 0, 7); g.fill();
+      g.fillStyle = col; g.fillRect(cx - d * 0.24, hy - hr * 0.72, d * 0.48, d * 0.06);
+    } else if (kind === 1) {
+      g.fillStyle = "#FF6FA8"; g.beginPath(); g.arc(cx + hr * 0.7, hy - hr * 0.55, d * 0.1, 0, 7); g.fill();
+      g.fillStyle = "#FFE066"; g.beginPath(); g.arc(cx + hr * 0.7, hy - hr * 0.55, d * 0.04, 0, 7); g.fill();
+    }
+    g.fillStyle = "rgba(255,255,255,.45)"; g.beginPath(); g.arc(cx - hr * 0.35, hy - hr * 0.35, hr * 0.22, 0, 7); g.fill();
+    return (sprites[key] = o);
+  }
+  function drawTourist(x, y, dest, v, d, t, scale = 1) {
+    const spr = touristSprite(dest, v % 20, d);
+    const bob = Math.abs(Math.sin(t * 7 + v * 1.7)) * d * 0.16;
+    const w = spr.w * scale, h = spr.h * scale;
+    ctx.fillStyle = "rgba(60,40,10,.16)"; ctx.beginPath(); ctx.ellipse(x, y, d * 0.42 * scale, d * 0.14 * scale, 0, 0, 7); ctx.fill();
+    ctx.drawImage(spr.c, x - w / 2, y - h + d * 0.08 * scale - bob * scale, w, h);
+  }
+
+  // ---------- Landschaft ----------
+  function pattern(name, make) {
+    if (!pats[name]) pats[name] = ctx.createPattern(make(), "repeat");
+    return pats[name];
+  }
+  const asphaltPat = () => pattern("asphalt", () => {
+    const c = document.createElement("canvas"); c.width = c.height = 96;
+    const g = c.getContext("2d"); g.fillStyle = C.asphalt; g.fillRect(0, 0, 96, 96);
+    for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? "255,255,255" : "0,0,0"},${Math.random() * 0.07})`; g.fillRect(Math.random() * 96, Math.random() * 96, 1.4, 1.4); }
+    return c;
+  });
+  const tilePat = () => pattern("tile", () => {
+    const c = document.createElement("canvas"); c.width = c.height = 32;
+    const g = c.getContext("2d"); g.fillStyle = C.floor; g.fillRect(0, 0, 32, 32);
+    g.fillStyle = "rgba(230,160,90,.10)"; g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16);
+    return c;
+  });
+  function palm(x, y, s, t, seed) {
+    ctx.fillStyle = "rgba(70,50,10,.16)"; ctx.beginPath(); ctx.ellipse(x + s * 0.55, y + s * 0.06, s * 0.95, s * 0.24, 0, 0, 7); ctx.fill();
+    const tx = x + s * 0.28, ty = y - s * 1.25;
+    ctx.strokeStyle = "#A8743F"; ctx.lineWidth = s * 0.17; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - s * 0.08, y - s * 0.7, tx, ty); ctx.stroke();
+    ctx.strokeStyle = "#8C5E2F"; ctx.lineWidth = s * 0.04;
+    for (let k = 1; k < 5; k++) {
+      const u = k / 5, px = (1 - u) * (1 - u) * x + 2 * (1 - u) * u * (x - s * 0.08) + u * u * tx, py = (1 - u) * (1 - u) * y + 2 * (1 - u) * u * (y - s * 0.7) + u * u * ty;
+      ctx.beginPath(); ctx.moveTo(px - s * 0.08, py); ctx.lineTo(px + s * 0.08, py - s * 0.03); ctx.stroke();
+    }
+    for (let k = 0; k < 7; k++) {
+      const a = -Math.PI / 2 + (k - 3) * 0.62 + Math.sin(t * 1.4 + seed + k) * 0.05;
+      ctx.save(); ctx.translate(tx, ty); ctx.rotate(a);
+      const lg = ctx.createLinearGradient(0, 0, s * 0.9, 0); lg.addColorStop(0, "#2E9A4C"); lg.addColorStop(1, "#57C46A");
+      ctx.fillStyle = lg;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(s * 0.45, -s * 0.24, s * 0.92, s * 0.1); ctx.quadraticCurveTo(s * 0.45, s * 0.05, 0, 0); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = "#7A4E24";
+    for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(tx - s * 0.08 + k * s * 0.09, ty + s * 0.06 + (k % 2) * s * 0.04, s * 0.075, 0, 7); ctx.fill(); }
+  }
+  function umbrella(x, y, r, t) {
+    ctx.fillStyle = "rgba(70,50,10,.15)"; ctx.beginPath(); ctx.ellipse(x + r * 0.3, y + r * 0.35, r, r * 0.45, 0, 0, 7); ctx.fill();
+    for (let k = 0; k < 8; k++) {
+      ctx.fillStyle = k % 2 ? "#FFFFFF" : C.band;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, (k * Math.PI) / 4 + t * 0.2, ((k + 1) * Math.PI) / 4 + t * 0.2); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = "#FFE066"; ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, 7); ctx.fill();
+  }
+
   // ---------- Layout ----------
   function layout() {
     W = window.innerWidth; H = window.innerHeight; DPR = Math.min(2, window.devicePixelRatio || 1);
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
     cv.style.width = W + "px"; cv.style.height = H + "px";
-    for (const k in sprites) delete sprites[k];
+    sprites = {}; pats = {};
     if (!S) return;
     const hudB = $(".hud").getBoundingClientRect().bottom;
     const sab = parseFloat(getComputedStyle($("#safe")).paddingBottom) || 0;
     const gw = Math.min(W, 520), ox = (W - gw) / 2, top = hudB + 2;
     const avail = H - top - sab - 10;
-    const termH = Math.round(Math.max(190, Math.min(avail * 0.3, 260)));
-    const gatesH = Math.round(Math.max(84, Math.min(avail * 0.17, 122)));
-    const apronTop = top + termH + gatesH + 12;
-    const apronH = H - sab - 12 - apronTop;
-    const cell = Math.max(16, Math.floor(Math.min((gw - 28) / S.cols, apronH / S.rows, 64)));
+    const termH = Math.round(Math.max(200, Math.min(avail * 0.31, 270)));
+    const gatesH = Math.round(Math.max(92, Math.min(avail * 0.17, 126)));
+    const apronTop = top + termH + gatesH + 16;
+    const apronH = H - sab - 30 - apronTop;
+    const cell = Math.max(16, Math.floor(Math.min((gw - 40) / S.cols, apronH / S.rows, 64)));
     const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop + Math.max(0, apronH - cell * S.rows) * 0.3;
 
     // Wartering als Stadion, Ausgang unten in der Mitte. Zuläufe kommen von oben.
-    const d = Math.max(9, Math.min(14, Math.floor(gw / 30)));
+    const d = Math.max(10, Math.min(15, Math.floor(gw / 30)));
     const laneW = 4 * d + 6, cx = ox + gw / 2;
-    // Umfang so knapp, dass die Reihen dicht an dicht laufen.
-    const rr = laneW * 0.85;
-    const straight = Math.max(10, (A.RING * d * 1.45 - 2 * Math.PI * rr) / 2);
-    const cyR = top + termH - 16 - laneW / 2 - rr;
+    const rad = laneW * 0.85;
+    const straight = Math.max(10, (A.RING * d * 1.45 - 2 * Math.PI * rad) / 2);
+    const gy0 = top + termH;
+    const cyR = gy0 - 26 - laneW / 2 - rad;
     const x0 = cx - straight / 2, x1 = cx + straight / 2;
-    const pts = [[cx, cyR + rr], [x0, cyR + rr]];
-    for (let k = 1; k <= 18; k++) { const a = Math.PI / 2 + (Math.PI * k) / 18; pts.push([x0 + rr * Math.cos(a), cyR + rr * Math.sin(a)]); }
-    pts.push([x1, cyR - rr]);
-    for (let k = 1; k <= 18; k++) { const a = -Math.PI / 2 + (Math.PI * k) / 18; pts.push([x1 + rr * Math.cos(a), cyR + rr * Math.sin(a)]); }
-    pts.push([cx, cyR + rr]);
+    const pts = [[cx, cyR + rad], [x0, cyR + rad]];
+    for (let k = 1; k <= 18; k++) { const a = Math.PI / 2 + (Math.PI * k) / 18; pts.push([x0 + rad * Math.cos(a), cyR + rad * Math.sin(a)]); }
+    pts.push([x1, cyR - rad]);
+    for (let k = 1; k <= 18; k++) { const a = -Math.PI / 2 + (Math.PI * k) / 18; pts.push([x1 + rad * Math.cos(a), cyR + rad * Math.sin(a)]); }
+    pts.push([cx, cyR + rad]);
     const ring = poly(pts);
     const eL = at(ring, (A.ENTRY.L / A.RING) * ring.total), eR = at(ring, (A.ENTRY.R / A.RING) * ring.total);
-    const armTop = top + 16;
+    const armTop = top + 18;
     const arms = {
       L: poly([[eL.x, eL.y - laneW / 2 - 3], [eL.x, armTop]]),
       R: poly([[eR.x, eR.y - laneW / 2 - 3], [eR.x, armTop]]),
     };
 
-    const gy0 = top + termH;
     const slotW = Math.min((gw - 24) / 5, 82), slotH = gatesH - 30;
     const gc = Math.min(slotH / 3.85, slotW * 0.92);
-    const gates = [0, 1, 2, 3, 4].map(i => ({ x: cx + (i - 2) * slotW, y: gy0 + 8 + slotH / 2 }));
+    const gates = [0, 1, 2, 3, 4].map(i => ({ x: cx + (i - 2) * slotW, y: gy0 + 12 + slotH / 2 }));
+    const islandBottom = Math.min(H - sab - 4, ay + cell * S.rows + 26);
     lay = {
       ox, gw, top, termH, gatesH, gy0, slotW, slotH, gc, gates, cell, ax, ay, d, laneW, cx, arms,
-      ring, rr, cyR, x0, x1, exit: { x: cx, y: cyR + rr },
-      capRows: { L: Math.min(6, Math.floor((arms.L.total - d) / d)), R: Math.min(6, Math.floor((arms.R.total - d) / d)) },
-      laneY: gy0 + gatesH + 4, sab,
+      ring, rad, cyR, x0, x1, exit: { x: cx, y: cyR + rad },
+      capRows: { L: Math.min(5, Math.floor((arms.L.total - d) / d)), R: Math.min(5, Math.floor((arms.R.total - d) / d)) },
+      laneY: gy0 + gatesH + 6, sab,
+      island: { x: ox + 4, y: -40, w: gw - 8, h: islandBottom + 40 },
     };
   }
 
@@ -664,14 +812,25 @@ window.Abflug = (() => {
     store.set("abflug.level", levelIdx);
     lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
     S = A.createState(lv);
-    vis = new Map(); flyers = []; departing = [];
-    ringT = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9; pulse = [];
+    vis = new Map(); flyers = []; departing = []; confetti = []; sparks = [];
+    ringT = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9; shakeT = -9; pulse = [];
     $("#overlay").hidden = true;
-    $("#lvlTxt").textContent = `Level ${String(levelIdx + 1).padStart(2, "0")} · ${lv.name}`;
+    $("#lvlTxt").textContent = `Level ${levelIdx + 1} · ${lv.name}`;
     $("#gateBtn").disabled = false;
     layout();
-    if (INTRO[levelIdx]) showHint(INTRO[levelIdx]); else hideHint();
+    tut = null;
+    if (A.LEVELS[levelIdx].tutorial) { tut = { step: -1 }; tutNext(); }
+    else if (INTRO[levelIdx]) showHint(INTRO[levelIdx], 6.5); else hideHint();
   }
+  function tutNext() {
+    tut.step++;
+    if (tut.step >= TUT.length) { tut = null; hideHint(); return; }
+    const s = TUT[tut.step];
+    showHint(s.text, 0);
+    if (s.timeout) setTimeout(() => { if (tut && TUT[tut.step] === s) tutNext(); }, s.timeout * 1000);
+  }
+  // Am Gate: kleine Flugzeuge größer zeichnen, damit jedes Gate gut gefüllt ist.
+  function gateC(p) { return Math.min(lay.slotW * 0.8, (lay.slotH * 0.95) / (p.len * 0.95)); }
   function planeCenter(p) {
     const [dx, dy] = A.DIRS[p.dir], c = lay.cell;
     const nx = lay.ax + (p.x + 0.5) * c, ny = lay.ay + (p.y + 0.5) * c;
@@ -682,12 +841,12 @@ window.Abflug = (() => {
     const steps = dx > 0 ? S.cols - 1 - p.x : dx < 0 ? p.x : dy > 0 ? S.rows - 1 - p.y : p.y;
     const out = (steps + p.len / 2 + 0.7) * c;
     const g = lay.gates[p.gate], ly = lay.laneY;
-    const minX = lay.ox + lay.cell * 0.5, maxX = lay.ox + lay.gw - lay.cell * 0.5;
+    const minX = lay.ox + c * 0.5, maxX = lay.ox + lay.gw - c * 0.5;
     const pts = [[cen.x, cen.y]];
     if (dy < 0) pts.push([cen.x, ly]);
     else if (dy > 0) {
       const y1 = Math.min(H - 6, cen.y + out);
-      const sideX = cen.x < lay.cx ? Math.max(lay.ox + 10, lay.ax - c * 0.55) : Math.min(lay.ox + lay.gw - 10, lay.ax + S.cols * c + c * 0.55);
+      const sideX = cen.x < lay.cx ? Math.max(lay.ox + 12, lay.ax - c * 0.6) : Math.min(lay.ox + lay.gw - 12, lay.ax + S.cols * c + c * 0.6);
       pts.push([cen.x, y1], [sideX, y1], [sideX, ly]);
     } else {
       const x1 = Math.max(minX, Math.min(maxX, cen.x + dx * out));
@@ -695,7 +854,13 @@ window.Abflug = (() => {
     }
     pts.push([g.x, ly], [g.x, g.y]);
     const pl = poly(pts);
-    return { pl, firstLen: pl.segs[0].l, dur: Math.max(0.5, pl.total / 1150 + 0.12) };
+    return { pl, firstLen: pl.segs[0].l, dur: Math.max(0.55, pl.total / 1100 + 0.15) };
+  }
+  // Weg eines Touristen: Ring-Ausgang, an der Glasfront entlang, durch die Fluggastbrücke ins Flugzeug.
+  function walkPath(gi, lane) {
+    const g = lay.gates[gi], p = S.planes[S.gates[gi]];
+    const bx = g.x + lay.slotW * 0.3, doorY = g.y - p.len * gateC(p) * 0.22;
+    return poly([[lay.exit.x + (lane - 1.5) * lay.d * 0.8, lay.exit.y], [lay.cx, lay.gy0 - 10], [bx, lay.gy0 - 10], [bx, doorY], [g.x + lay.gc * 0.12, doorY]]);
   }
 
   // ---------- Eingabe ----------
@@ -703,34 +868,41 @@ window.Abflug = (() => {
     audioInit();
     if (ended || !S || !$("#overlay").hidden) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    const c = lay.cell;
-    const gx = Math.floor((x - lay.ax) / c), gy = Math.floor((y - lay.ay) / c);
+    const c = lay.cell, gx = Math.floor((x - lay.ax) / c), gy = Math.floor((y - lay.ay) / c);
     let hit = null;
     for (const p of S.planes) {
       if (p.where !== "apron") continue;
       if (A.cellsOf(p).some(([a, b]) => a === gx && b === gy)) { hit = p; break; }
     }
     if (!hit) return;
+    const step = tut && TUT[tut.step];
+    if (step && (step.lock || (step.target !== undefined && hit.id !== step.target))) return;
     const v = vis.get(hit.id);
     if (v && v.kind === "spawn" && now() - v.t0 < 0.35) return;
-    const res = A.tap(S, hit.id);
-    const t = now();
+    const res = A.tap(S, hit.id), t = now();
     if (res.ok) {
-      const tp = taxiPath(hit);
-      vis.set(hit.id, { kind: "taxi", t0: t, ...tp });
+      vis.set(hit.id, { kind: "taxi", t0: t, ...taxiPath(hit) });
       if (res.spawned !== null) vis.set(res.spawned, { kind: "spawn", t0: t });
       sfx.go();
-      if (levelIdx === 0 && $("#hint").dataset.stage !== "2") showHint("Touristen steigen nur in Flugzeuge mit <b>ihrer Flagge</b>. Halb volle Flugzeuge warten am Gate.", "2");
+      if (step && step.on === "go") tutNext();
     } else if (res.reason === "blocked") {
       vis.set(hit.id, { kind: "bump", t0: t, dist: (res.free + 0.22) * c });
       sfx.bump();
+      if (step && step.on === "bump") tutNext();
     } else if (res.reason === "gates") {
-      gateFlash = t; toast("Alle Gates belegt"); sfx.bump();
+      gateFlash = t; shakeT = t; toast("Alle Gates belegt"); sfx.bump();
     }
   }
   cv.addEventListener("pointerdown", onTap);
 
   // ---------- Ablauf ----------
+  function burst(x, y, dest) {
+    const cols = [A.DEST[dest].color, "#FFFFFF", ...PASTEL];
+    for (let k = 0; k < 28; k++) {
+      const a = Math.random() * Math.PI * 2, v = 60 + Math.random() * 140;
+      confetti.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 90, r: Math.random() * 6, vr: (Math.random() - 0.5) * 14, c: cols[k % cols.length], t0: now() });
+    }
+  }
   function update(t, dt) {
     if (!S) return;
     for (const [id, v] of vis) {
@@ -742,21 +914,20 @@ window.Abflug = (() => {
       ringT -= TICK;
       const r = A.tick(S);
       for (const b of r.boards) {
-        const p = S.planes[b.plane], gp = lay.gates[p.gate];
-        flyers.push({
-          x0: lay.exit.x + (b.lane - 1.5) * lay.d, y0: lay.exit.y, x1: gp.x, y1: gp.y, t0: t + b.lane * 0.03,
-          dest: b.dest, gate: p.gate, fill: 1 - p.seatsLeft / A.SEATS[p.len], full: b.full,
-        });
+        const p = S.planes[b.plane];
+        flyers.push({ pl: walkPath(p.gate, b.lane), t0: t + b.lane * 0.05, dest: b.dest, v: (b.plane * 7 + b.lane + p.seatsLeft) % 20, gate: p.gate, fill: 1 - p.seatsLeft / A.SEATS[p.len], full: b.full });
         if (b.full) vis.set(b.plane, { kind: "full", t0: t });
       }
       if (r.entered) shift[r.entered.side] += ((r.entered.after >> 2) - (r.entered.before >> 2)) * lay.d;
     }
-    // Landet ein Tourist im Flugzeug: Plopp, Flugzeug federt, Zähler hüpft.
+    // Landet ein Tourist im Flugzeug: Steeldrum-Ton, Flugzeug federt, Funke.
     flyers = flyers.filter(f => {
       if (t - f.t0 < FLY) return true;
+      const g = lay.gates[f.gate];
       pulse[f.gate] = t;
-      if (t - lastPlop > 0.025) { sfx.board(f.fill); lastPlop = t; }
-      if (f.full) sfx.full();
+      sparks.push({ x: g.x + (Math.random() - 0.5) * lay.gc, y: g.y + (Math.random() - 0.5) * lay.gc * 1.5, t0: t });
+      if (t - lastPlop > 0.03) { sfx.board(f.fill); lastPlop = t; }
+      if (f.full) { sfx.full(); burst(g.x, g.y, f.dest); }
       return false;
     });
     for (const [id, v] of vis) {
@@ -765,9 +936,14 @@ window.Abflug = (() => {
         A.depart(S, id); vis.delete(id);
         departing.push({ p, x: gp.x, y: gp.y, t0: t });
         sfx.whoosh();
+        const step = tut && TUT[tut.step];
+        if (step && step.on === "depart" && step.id === id) tutNext();
       }
     }
-    departing = departing.filter(d => t - d.t0 < 1.4);
+    departing = departing.filter(d => t - d.t0 < 1.6);
+    sparks = sparks.filter(s => t - s.t0 < 0.45);
+    confetti = confetti.filter(p => t - p.t0 < 1.6);
+    for (const p of confetti) { p.vy += 260 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.985; p.r += p.vr * dt; }
     const k = Math.exp(-dt * 12);
     shift.L *= k; shift.R *= k;
     if (!ended && !flyers.length && ![...vis.values()].some(v => v.kind === "taxi" || v.kind === "full")) {
@@ -779,6 +955,7 @@ window.Abflug = (() => {
 
   function finish(won) {
     ended = true;
+    if (tut) { tut = null; hideHint(); }
     setTimeout(() => {
       if (won) {
         maxLevel = Math.max(maxLevel, levelIdx + 1);
@@ -809,7 +986,7 @@ window.Abflug = (() => {
         $("#extraBtn")?.addEventListener("click", () => { openExtraGate(); $("#overlay").hidden = true; ended = false; });
         $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
       }
-    }, won ? 700 : 350);
+    }, won ? 900 : 350);
   }
   function openExtraGate() {
     if (!S || S.gateCount >= 5) return;
@@ -819,12 +996,14 @@ window.Abflug = (() => {
   // ---------- Zeichnen ----------
   function draw(t) {
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.fillStyle = "#4C5763"; ctx.fillRect(0, 0, W, H);
+    drawSea(t);
     if (!S || !lay) return;
+    const sh = t - shakeT < 0.3 ? (1 - (t - shakeT) / 0.3) * 4 : 0;
+    if (sh) ctx.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
+    drawIsland(t);
     drawTerminal(t);
     drawGates(t);
     drawApron(t);
-    // Rollende Flugzeuge
     for (const [id, v] of vis) {
       if (v.kind !== "taxi") continue;
       const p = S.planes[id];
@@ -832,207 +1011,312 @@ window.Abflug = (() => {
       const dist = e * v.pl.total, pt = at(v.pl, dist), ahead = at(v.pl, dist + 6);
       const ang = dist >= v.pl.total - 1 ? -Math.PI / 2 : Math.atan2(ahead.y - pt.y, ahead.x - pt.x) || pt.a;
       const k = Math.max(0, Math.min(1, (dist - v.firstLen) / Math.max(1, v.pl.total - v.firstLen)));
-      drawPlane(pt.x, pt.y, ang, lay.cell + (lay.gc - lay.cell) * k, p);
+      drawPlane(pt.x, pt.y, ang, lay.cell + (gateC(p) - lay.cell) * k, p);
     }
-    // Fliegende Touristen
     for (const f of flyers) {
       if (t < f.t0) continue;
-      const s = Math.min(1, (t - f.t0) / FLY), e = s * s * (3 - 2 * s);
-      const x = f.x0 + (f.x1 - f.x0) * e, y = f.y0 + (f.y1 - f.y0) * e - Math.sin(s * Math.PI) * 30;
-      const d = lay.d * (1.15 - s * 0.5);
-      ctx.drawImage(ballSprite(f.dest, lay.d), x - d / 2, y - d / 2, d, d);
+      const s = Math.min(1, (t - f.t0) / FLY), pt = at(f.pl, s * f.pl.total);
+      drawTourist(pt.x, pt.y + lay.d * 0.3, f.dest, f.v, lay.d, t * 2, 0.8);
     }
-    // Startende Flugzeuge über allem
+    for (const s of sparks) {
+      const u = (t - s.t0) / 0.45, r = 3 + u * 5;
+      ctx.save(); ctx.globalAlpha = 1 - u; ctx.fillStyle = "#FFF6B0"; ctx.translate(s.x, s.y - u * 10); ctx.rotate(u * 2);
+      ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4, rr2 = i % 2 ? r * 0.35 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } ctx.fill(); ctx.restore();
+    }
     for (const d of departing) {
-      const s = (t - d.t0) / 1.4, y = d.y - (d.y + 120) * s * s * 1.05;
-      const alpha = s < 0.7 ? 1 : Math.max(0, 1 - (s - 0.7) / 0.3);
-      drawPlane(d.x, y, -Math.PI / 2, lay.gc * (1 + s * 1.3), d.p, alpha, s);
+      const s = (t - d.t0) / 1.6, y = d.y - (d.y + 160) * s * s;
+      const alpha = s < 0.75 ? 1 : Math.max(0, 1 - (s - 0.75) / 0.25);
+      if (s > 0.15) {
+        const len = Math.min(140, (s - 0.15) * 260), cg = ctx.createLinearGradient(0, y, 0, y + len + 20);
+        cg.addColorStop(0, `rgba(255,255,255,${0.8 * alpha})`); cg.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = cg;
+        const off = lay.gc * 0.28 * (1 + s * 1.4);
+        ctx.fillRect(d.x - off - 2, y + 10, 4, len); ctx.fillRect(d.x + off - 2, y + 10, 4, len);
+      }
+      drawPlane(d.x, y, -Math.PI / 2, gateC(d.p), d.p, alpha, s, 1 + s * 1.4);
     }
+    for (const p of confetti) {
+      const u = (t - p.t0) / 1.6;
+      ctx.save(); ctx.globalAlpha = 1 - u * u; ctx.translate(p.x, p.y); ctx.rotate(p.r);
+      ctx.fillStyle = p.c; ctx.fillRect(-3, -2, 6, 4); ctx.restore();
+    }
+    drawTutorial(t);
+  }
+
+  function drawSea(t) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, C.sea1); g.addColorStop(1, C.sea2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    for (let i = 0; i < Math.ceil(H / 34) + 1; i++) {
+      const y = ((i * 34 + t * 8) % (H + 34)) - 17, ph = i * 1.7;
+      for (let x0 = (i % 2) * 40 - 40; x0 < W; x0 += 80) {
+        ctx.beginPath();
+        for (let x = 0; x <= 34; x += 3) ctx.lineTo(x0 + x, y + Math.sin(x / 34 * Math.PI * 2 + t * 1.5 + ph) * 3);
+        ctx.stroke();
+      }
+    }
+  }
+  function drawIsland(t) {
+    const I = lay.island;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 8;
+    ctx.setLineDash([14, 10]); ctx.lineDashOffset = -t * 12;
+    rr(ctx, I.x - 6, I.y - 6, I.w + 12, I.h + 12, 40); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = "#E9F9FA"; rr(ctx, I.x - 3, I.y - 3, I.w + 6, I.h + 6, 37); ctx.fill();
+    const sg = ctx.createLinearGradient(0, I.y + I.h - 40, 0, I.y + I.h);
+    sg.addColorStop(0, C.sand); sg.addColorStop(1, C.sand2);
+    ctx.fillStyle = sg; rr(ctx, I.x, I.y, I.w, I.h, 34); ctx.fill();
+    // Palmen und Schirm am Strand
+    const b = I.y + I.h, side = lay.ax - I.x;
+    palm(I.x + 16, b - 12, 22, t, 1);
+    palm(I.x + I.w - 30, b - 10, 20, t, 2);
+    if (side > 44) {
+      palm(I.x + side * 0.4, lay.ay + lay.cell * S.rows * 0.45, Math.min(30, side * 0.45), t, 3);
+      palm(I.x + I.w - side * 0.55, lay.ay + lay.cell * S.rows * 0.7, Math.min(28, side * 0.42), t, 4);
+    }
+    if (b - (lay.ay + lay.cell * S.rows) > 22) umbrella(I.x + I.w * 0.5, b - 12, 9, t);
   }
 
   function drawTerminal(t) {
-    const { ox, gw, top, termH } = lay;
-    ctx.fillStyle = "#E3E8EC"; ctx.fillRect(0, 0, W, top + termH);
-    ctx.strokeStyle = "rgba(40,60,80,.06)"; ctx.lineWidth = 1;
-    for (let x = ox % 26; x < W; x += 26) { ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, top + termH); ctx.stroke(); }
-    for (let y = 0; y < top + termH; y += 26) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); ctx.stroke(); }
-    // Glasfront
-    ctx.fillStyle = "#9CB4C5"; ctx.fillRect(0, top + termH - 5, W, 5);
-    ctx.fillStyle = "#7F98AA"; for (let x = ox % 44; x < W; x += 44) ctx.fillRect(x, top + termH - 5, 2, 5);
-    // Durchgang vom Ring zu den Gates
+    const { top, gy0, ox, gw } = lay, I = lay.island;
+    ctx.fillStyle = tilePat(); ctx.fillRect(I.x, 0, I.w, gy0);
+    // Markise unter der Kopfzeile
+    const aw = 22, ah = top + 6;
+    for (let x = I.x, k = 0; x < I.x + I.w; x += aw, k++) {
+      ctx.fillStyle = k % 2 ? "#FFFFFF" : PASTEL[(k >> 1) % PASTEL.length];
+      ctx.fillRect(x, 0, aw, ah);
+      ctx.beginPath(); ctx.arc(x + aw / 2, ah, aw / 2, 0, Math.PI); ctx.fill();
+    }
+    // Pflanzen in den Ecken
+    for (const [px, s] of [[ox + 22, 1], [ox + gw - 34, 2]]) {
+      ctx.fillStyle = "#E58B5A"; rr(ctx, px - 9, gy0 - 40, 18, 14, 4); ctx.fill();
+      palm(px, gy0 - 40, 18, t, s);
+    }
+    // Weg vom Ring zur Glasfront
     const ex = lay.exit;
-    ctx.fillStyle = "#CBD3DA"; rrect(ex.x - lay.laneW / 2 + 4, ex.y, lay.laneW - 8, top + termH - ex.y, 4); ctx.fill();
-    ctx.strokeStyle = "#F2C230"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    const cy0 = ex.y + lay.laneW / 2 + 2;
-    for (let y = cy0; y < top + termH - 8; y += 10) {
+    ctx.fillStyle = C.lane; rr(ctx, ex.x - lay.laneW / 2 + 6, ex.y, lay.laneW - 12, gy0 - ex.y, 6); ctx.fill();
+    ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (let y = ex.y + lay.laneW / 2 + 2; y < gy0 - 12; y += 10) {
       ctx.beginPath(); ctx.moveTo(ex.x - 5, y); ctx.lineTo(ex.x, y + 5); ctx.lineTo(ex.x + 5, y); ctx.stroke();
     }
-    for (const side of ["L", "R"]) drawArm(side, t);
-    // Wartering
-    const ring = lay.ring, d = lay.d;
-    ctx.beginPath(); ring.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath();
-    ctx.strokeStyle = "#A9B4BE"; ctx.lineWidth = lay.laneW + 6; ctx.stroke();
-    ctx.strokeStyle = "#D2D9DF"; ctx.lineWidth = lay.laneW; ctx.stroke();
-    // Insel in der Mitte
-    const ir = lay.rr - lay.laneW / 2 - 4;
-    if (ir > 6) {
-      ctx.fillStyle = "#8DB07A"; rrect(lay.x0 - ir, lay.cyR - ir, lay.x1 - lay.x0 + 2 * ir, 2 * ir, ir); ctx.fill();
-      ctx.fillStyle = "#6E9460"; rrect(lay.x0 - ir + 4, lay.cyR - ir + 4, lay.x1 - lay.x0 + 2 * ir - 8, 2 * ir - 8, ir - 4); ctx.fill();
-      if (lay.x1 - lay.x0 + 2 * ir > 64) {
-        ctx.fillStyle = "#F4F1E6"; ctx.font = `800 12px "Barlow Condensed", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("DUTY FREE", lay.cx, lay.cyR);
-      }
-    }
-    // Touristen laufen im Kreis
-    const frac = Math.min(1, ringT / TICK);
+    for (const side of ["L", "R"]) drawArmLane(side);
+    drawRingLane(t);
+    // Figuren nach Höhe sortiert zeichnen, damit sie sich richtig überdecken
+    const figs = [];
+    const frac = Math.min(1, ringT / TICK), ring = lay.ring, d = lay.d;
     for (let j = 0; j < A.RING; j++) {
       const pt = at(ring, (((j + S.off + frac) % A.RING) / A.RING) * ring.total);
       for (let c = 0; c < 4; c++) {
         const dd = S.ring[j * 4 + c];
         if (dd < 0) continue;
-        const off = (c - 1.5) * d, x = pt.x - Math.sin(pt.a) * off, y = pt.y + Math.cos(pt.a) * off;
-        ctx.drawImage(ballSprite(dd, d), x - d / 2, y - d / 2, d, d);
+        const off = (c - 1.5) * d * 0.95;
+        figs.push([pt.x - Math.sin(pt.a) * off, pt.y + Math.cos(pt.a) * off + d * 0.35, dd, j * 4 + c]);
       }
     }
-    for (const side of ["L", "R"]) drawBarrier(side);
+    const hidden = {};
+    for (const side of ["L", "R"]) {
+      const pl = lay.arms[side], arm = S.arms[side], cap = lay.capRows[side];
+      let idx = arm.taken % 4, drawn = 0, total = 0;
+      for (const g of arm.groups) {
+        total += g.n;
+        for (let k = 0; k < g.n; k++, idx++) {
+          const row = idx >> 2;
+          if (row >= cap) continue;
+          const pt = at(pl, row * d + d / 2 + 4 + shift[side]);
+          figs.push([pt.x + ((idx & 3) - 1.5) * d * 0.95, pt.y + d * 0.35, g.dest, idx + 100]);
+          drawn++;
+        }
+      }
+      hidden[side] = total - drawn;
+    }
+    figs.sort((a, b) => a[1] - b[1]);
+    for (const [x, y, dd, v] of figs) drawTourist(x, y, dd, v, d, t);
+    for (const side of ["L", "R"]) {
+      const pl = lay.arms[side], cap = lay.capRows[side], topY = at(pl, cap * d + 12).y;
+      const txt = hidden[side] > 0 ? "+" + hidden[side] : "Check-in";
+      ctx.font = `800 13px ${FONT}`;
+      const w = Math.max(lay.laneW, ctx.measureText(txt).width + 16);
+      ctx.fillStyle = C.teal; rr(ctx, pl.points[0][0] - w / 2, topY - 17, w, 19, 9.5); ctx.fill();
+      ctx.fillStyle = C.sun; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, pl.points[0][0], topY - 7);
+      drawBarrier(side, t);
+    }
+    // Glasfront mit bunten Häuschen pro Gate
+    lay.gates.forEach((g, i) => {
+      ctx.fillStyle = PASTEL[i % PASTEL.length]; ctx.fillRect(g.x - lay.slotW / 2, gy0 - 12, lay.slotW, 12);
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      for (let k = 0; k < 3; k++) rr(ctx, g.x - lay.slotW * 0.36 + k * lay.slotW * 0.26, gy0 - 9, lay.slotW * 0.18, 6, 2), ctx.fill();
+    });
   }
-
-  function drawArm(side, t) {
-    const pl = lay.arms[side], arm = S.arms[side], d = lay.d;
-    ctx.lineCap = "butt"; ctx.lineJoin = "round";
-    ctx.beginPath(); pl.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-    ctx.strokeStyle = "#A9B4BE"; ctx.lineWidth = lay.laneW + 6; ctx.stroke();
-    ctx.strokeStyle = "#D2D9DF"; ctx.lineWidth = lay.laneW; ctx.stroke();
-    // Nur die nächsten Reihen sind zu sehen, der Rest wartet am Check-in.
-    let idx = arm.taken % 4, drawn = 0, total = 0;
-    const cap = lay.capRows[side];
-    for (const g of arm.groups) {
-      total += g.n;
-      const spr = ballSprite(g.dest, d);
-      for (let k = 0; k < g.n; k++, idx++) {
-        const row = idx >> 2;
-        if (row >= cap) continue;
-        const pt = at(pl, row * d + d / 2 + 4 + shift[side]);
-        const off = ((idx & 3) - 1.5) * d;
-        const x = pt.x - Math.sin(pt.a) * off, y = pt.y + Math.cos(pt.a) * off;
-        ctx.drawImage(spr, x - d / 2, y - d / 2, d, d);
-        drawn++;
+  function stadium(k) {
+    const { x0, x1, cyR, rad } = lay, r = rad + k;
+    ctx.beginPath();
+    ctx.moveTo(x0, cyR + r); ctx.arc(x0, cyR, r, Math.PI / 2, (3 * Math.PI) / 2); ctx.lineTo(x1, cyR - r);
+    ctx.arc(x1, cyR, r, -Math.PI / 2, Math.PI / 2); ctx.closePath();
+  }
+  function drawRingLane(t) {
+    const hw = lay.laneW / 2 + 4;
+    ctx.fillStyle = C.lane; stadium(hw); ctx.fill();
+    // Insel mit Strandbar
+    ctx.fillStyle = C.sand; stadium(-hw); ctx.fill();
+    ctx.fillStyle = "#7FD9B8"; stadium(-hw - 4); ctx.fill();
+    const ir = lay.rad - hw;
+    if (ir > 8) { umbrella(lay.cx - (lay.x1 - lay.x0) * 0.25, lay.cyR, Math.min(12, ir * 0.75), t); palm(lay.cx + (lay.x1 - lay.x0) * 0.3, lay.cyR + ir * 0.5, Math.min(14, ir * 0.9), t, 5); }
+    // Absperrbänder mit Pfosten
+    for (const k of [hw, -hw]) {
+      ctx.strokeStyle = C.band; ctx.lineWidth = 3; stadium(k); ctx.stroke();
+      const r = lay.rad + k, P = 2 * (lay.x1 - lay.x0) + 2 * Math.PI * r, n = Math.max(8, Math.round(P / 26));
+      const pl = poly(stadiumPts(k));
+      for (let i = 0; i < n; i++) {
+        const p = at(pl, (i / n) * pl.total);
+        ctx.fillStyle = C.post; ctx.beginPath(); ctx.arc(p.x, p.y, 3.4, 0, 7); ctx.fill();
+        ctx.fillStyle = "#BFEFF5"; ctx.beginPath(); ctx.arc(p.x - 1, p.y - 1, 1.3, 0, 7); ctx.fill();
       }
     }
-    const topY = at(pl, cap * d + 10).y;
-    ctx.fillStyle = "#15181C"; rrect(pl.points[0][0] - lay.laneW / 2 - 3, topY - 14, lay.laneW + 6, 16, 4); ctx.fill();
-    ctx.fillStyle = "#FFC83A"; ctx.font = `700 12px "Barlow Condensed", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(total > drawn ? "+" + (total - drawn) : "CHECK-IN", pl.points[0][0], topY - 5);
   }
-
-  function drawBarrier(side) {
+  function stadiumPts(k) {
+    const { x0, x1, cyR, rad } = lay, r = rad + k, pts = [[x0, cyR + r]];
+    for (let i = 1; i <= 12; i++) { const a = Math.PI / 2 + (Math.PI * i) / 12; pts.push([x0 + r * Math.cos(a), cyR + r * Math.sin(a)]); }
+    pts.push([x1, cyR - r]);
+    for (let i = 1; i <= 12; i++) { const a = -Math.PI / 2 + (Math.PI * i) / 12; pts.push([x1 + r * Math.cos(a), cyR + r * Math.sin(a)]); }
+    pts.push([x0, cyR + r]);
+    return pts;
+  }
+  function drawArmLane(side) {
+    const pl = lay.arms[side], x = pl.points[0][0], y0 = pl.points[1][1], y1 = pl.points[0][1] + 8, hw = lay.laneW / 2 + 4;
+    ctx.fillStyle = C.lane; ctx.fillRect(x - hw, y0 - 4, hw * 2, y1 - y0 + 4);
+    ctx.strokeStyle = C.band; ctx.lineWidth = 3;
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(x + s * hw, y0); ctx.lineTo(x + s * hw, y1 - 6); ctx.stroke();
+      for (let y = y0; y < y1; y += 24) { ctx.fillStyle = C.post; ctx.beginPath(); ctx.arc(x + s * hw, y, 3.4, 0, 7); ctx.fill(); }
+    }
+  }
+  function drawBarrier(side, t) {
     const pl = lay.arms[side], arm = S.arms[side];
-    // Schranke am Eingang
-    const p0 = at(pl, 0), nx = -Math.sin(p0.a), ny = Math.cos(p0.a), hw = lay.laneW / 2 + 3;
+    const x = pl.points[0][0], y = pl.points[0][1] - 2, hw = lay.laneW / 2 + 4;
     const open = S.active === side && arm.groups.length > 0;
-    const bx = p0.x - Math.cos(p0.a) * 2, by = p0.y - Math.sin(p0.a) * 2;
-    const px = bx + nx * hw, py = by + ny * hw;
-    if (open) {
-      ctx.strokeStyle = "rgba(60,70,80,.35)"; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(p0.a) * -lay.laneW * 0.45, py + Math.sin(p0.a) * -lay.laneW * 0.45); ctx.stroke();
-    } else {
-      const ex = bx - nx * hw, ey = by - ny * hw;
-      for (let i = 0; i < 6; i++) {
-        ctx.strokeStyle = i % 2 ? "#FFFFFF" : "#D9312B"; ctx.lineWidth = 5; ctx.lineCap = "butt";
-        ctx.beginPath(); ctx.moveTo(px + (ex - px) * (i / 6), py + (ey - py) * (i / 6)); ctx.lineTo(px + (ex - px) * ((i + 1) / 6), py + (ey - py) * ((i + 1) / 6)); ctx.stroke();
-      }
-    }
-    ctx.fillStyle = "#2B323A"; ctx.beginPath(); ctx.arc(px, py, 5, 0, 7); ctx.fill();
-    ctx.fillStyle = open ? "#3BD16F" : "#FF4A3D"; ctx.beginPath(); ctx.arc(px, py, 2.6, 0, 7); ctx.fill();
+    const px = side === "L" ? x - hw : x + hw, dir = side === "L" ? 1 : -1;
+    ctx.save(); ctx.translate(px, y);
+    ctx.rotate(open ? -dir * Math.PI * 0.42 : 0);
+    const len = hw * 2 - 4;
+    for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? "#FFFFFF" : C.band; rr(ctx, dir > 0 ? (i * len) / 6 : -((i + 1) * len) / 6, -2.5, len / 6 + 0.5, 5, 2); ctx.fill(); }
+    ctx.restore();
+    ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(px, y, 6, 0, 7); ctx.fill();
+    ctx.fillStyle = open ? "#5BE38A" : "#FF5A4E"; ctx.beginPath(); ctx.arc(px, y, 3.2, 0, 7); ctx.fill();
   }
 
   function drawGates(t) {
-    const { gy0, gatesH, slotW, slotH, gates, gc } = lay;
-    ctx.fillStyle = "#3E4853"; ctx.fillRect(0, gy0, W, gatesH);
-    ctx.fillStyle = "#353E48"; ctx.fillRect(0, gy0 + gatesH - 3, W, 3);
+    const { gy0, gatesH, slotW, slotH, gates, gc } = lay, I = lay.island;
+    ctx.fillStyle = asphaltPat(); ctx.fillRect(I.x, gy0, I.w, gatesH + 16);
+    ctx.setLineDash([10, 8]); ctx.strokeStyle = C.line; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(I.x + 10, lay.laneY); ctx.lineTo(I.x + I.w - 10, lay.laneY); ctx.stroke(); ctx.setLineDash([]);
     const flash = t - gateFlash < 0.6 ? 1 - (t - gateFlash) / 0.6 : 0;
     gates.forEach((g, i) => {
-      const x = g.x - slotW / 2 + 3, y = gy0 + 8, w = slotW - 6;
+      const x = g.x - slotW / 2 + 4, y = gy0 + 6, w = slotW - 8;
       const locked = i >= S.gateCount;
-      ctx.fillStyle = locked ? "#343C45" : flash ? `rgba(227,64,58,${0.35 * flash + 0.08})` : "rgba(255,255,255,.05)";
-      rrect(x, y, w, slotH, 6); ctx.fill();
-      ctx.setLineDash(locked ? [4, 4] : []);
-      ctx.strokeStyle = locked ? "rgba(255,255,255,.25)" : "#F2C230"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
-      ctx.font = `700 12px "Barlow Condensed", sans-serif`; ctx.textAlign = "left"; ctx.textBaseline = "top";
-      ctx.fillStyle = locked ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.6)"; ctx.fillText("A" + (i + 1), x + 5, y + 4);
-      if (locked) {
-        ctx.font = `800 22px "Barlow Condensed", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.fillText("+", g.x, g.y);
-      }
+      ctx.fillStyle = locked ? "rgba(0,0,0,.18)" : flash ? `rgba(255,111,97,${0.45 * flash + 0.06})` : "rgba(255,255,255,.07)";
+      rr(ctx, x, y, w, slotH + 6, 10); ctx.fill();
+      ctx.setLineDash([6, 5]); ctx.strokeStyle = locked ? "rgba(255,255,255,.3)" : "rgba(255,255,255,.8)"; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = `800 12px ${FONT}`; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.fillText("A" + (i + 1), x + 6, y + 3);
       const id = S.gates[i];
-      if (id === null) return;
-      const p = S.planes[id], v = vis.get(id);
-      if (p.where === "taxi") return;
+      const p = id === null ? null : S.planes[id];
+      const docked = p && p.where !== "taxi";
+      // Fluggastbrücke: fährt aus, sobald ein Flugzeug steht
+      const bx = g.x + slotW * 0.3, doorY = docked ? g.y - p.len * gateC(p) * 0.22 : gy0 + 10;
+      ctx.fillStyle = "rgba(0,0,0,.22)"; rr(ctx, bx - 3, gy0, 12, doorY - gy0 + 8, 4); ctx.fill();
+      ctx.fillStyle = PASTEL[i % PASTEL.length]; rr(ctx, bx - 6, gy0 - 2, 12, doorY - gy0 + 6, 4); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.fillRect(bx - 4, gy0, 3, doorY - gy0);
+      if (locked) {
+        ctx.font = `800 24px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillText("+", g.x, g.y + 4);
+      }
+      if (!docked) return;
+      const v = vis.get(id), dst = A.DEST[p.dest];
       const pu = pulse[i] ? Math.max(0, 1 - (t - pulse[i]) / 0.16) : 0;
-      const isFull = v && v.kind === "full" && t - v.t0 > FLY;
-      const dst = A.DEST[p.dest];
-      // Füllstand als Balken am Rand des Gates
+      const isFull = v && v.kind === "full" && t - v.t0 > FLY + 0.1;
       const seats = A.SEATS[p.len], landed = Math.max(0, seats - p.seatsLeft - flyers.filter(f => f.gate === i).length);
-      const bh = slotH - 24, bx = x + w - 8, bt = y + 18;
-      ctx.fillStyle = "rgba(0,0,0,.35)"; rrect(bx, bt, 4, bh, 2); ctx.fill();
+      const bh = slotH - 18, bxx = x + 5, bt = y + 20;
+      ctx.fillStyle = "rgba(0,0,0,.3)"; rr(ctx, bxx, bt, 5, bh, 2.5); ctx.fill();
       const fh = (bh * landed) / seats;
-      if (fh > 0) { ctx.fillStyle = dst.color; rrect(bx, bt + bh - fh, 4, fh, 2); ctx.fill(); }
-      if (pu || isFull) { ctx.fillStyle = `rgba(255,255,255,${isFull ? 0.12 : 0.1 * pu})`; rrect(x, y, w, slotH, 6); ctx.fill(); }
-      drawPlane(g.x, g.y, -Math.PI / 2, gc * (1 + 0.1 * pu), p);
-      // Zähler der fehlenden Plätze, hüpft bei jedem Einsteigen
+      if (fh > 0) { ctx.fillStyle = dst.color; rr(ctx, bxx, bt + bh - fh, 5, fh, 2.5); ctx.fill(); }
+      drawPlane(g.x, g.y, -Math.PI / 2, gateC(p), p, 1, 0, 1 + 0.1 * pu);
+      const gcp = gateC(p);
+      // Kabine der Brücke dockt an der Tür an
+      ctx.fillStyle = shade(PASTEL[i % PASTEL.length], -0.12); rr(ctx, g.x + gcp * 0.1, doorY - 5, bx - g.x - gcp * 0.1 + 6, 10, 4); ctx.fill();
       const txt = isFull ? "VOLL!" : String(seats - landed);
-      const fs = 14 * (1 + 0.35 * pu) * (isFull ? 1.1 : 1);
-      ctx.font = `800 ${fs.toFixed(1)}px "Barlow Condensed", sans-serif`;
-      const tw = Math.max(26, ctx.measureText(txt).width + 12);
-      const py = gy0 + gatesH - 21 - 3 * pu;
-      ctx.fillStyle = isFull ? "#FFC83A" : dst.color; rrect(g.x - tw / 2, py, tw, 17, 8.5); ctx.fill();
-      if (dst.id === "JP" && !isFull) { ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 1; ctx.stroke(); }
-      ctx.fillStyle = isFull ? "#15181C" : dst.text; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, g.x, py + 9);
+      const fs = 15 * (1 + 0.35 * pu);
+      ctx.font = `800 ${fs.toFixed(1)}px ${FONT}`;
+      const tw = Math.max(30, ctx.measureText(txt).width + 14), py = gy0 + gatesH - 22 - 3 * pu;
+      ctx.fillStyle = "rgba(0,0,0,.2)"; rr(ctx, g.x - tw / 2, py + 2, tw, 19, 9.5); ctx.fill();
+      ctx.fillStyle = isFull ? C.sun : dst.color; rr(ctx, g.x - tw / 2, py, tw, 19, 9.5); ctx.fill();
+      ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = isFull ? C.teal : dst.text; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, g.x, py + 10.5);
     });
   }
 
   function drawApron(t) {
     const { ax, ay, cell: c } = lay;
-    // Stellflächen
+    ctx.fillStyle = asphaltPat();
     for (let y = 0; y < S.rows; y++) for (let x = 0; x < S.cols; x++) {
-      if (!S.mask[y][x]) continue;
-      ctx.fillStyle = (x + y) % 2 ? "#56626E" : "#5A6672";
-      ctx.fillRect(ax + x * c, ay + y * c, c, c);
+      if (S.mask[y][x]) { rr(ctx, ax + x * c - 4, ay + y * c - 4, c + 8, c + 8, 10); ctx.fill(); }
     }
-    ctx.strokeStyle = "rgba(242,194,48,.18)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,.3)"; ctx.lineWidth = 1.3;
     for (let y = 0; y < S.rows; y++) for (let x = 0; x < S.cols; x++) {
-      if (S.mask[y][x]) ctx.strokeRect(ax + x * c + 0.5, ay + y * c + 0.5, c - 1, c - 1);
+      if (S.mask[y][x]) { rr(ctx, ax + x * c + 3, ay + y * c + 3, c - 6, c - 6, 6); ctx.stroke(); }
     }
-    // Hangar mit Rollbahn
     for (const h of S.hangars) {
       const [dx, dy] = A.DIRS[h.dir];
       const hx = ax + (h.x + 0.5) * c, hy = ay + (h.y + 0.5) * c;
       let ex = h.x, ey = h.y;
       while (ex + dx >= 0 && ey + dy >= 0 && ex + dx < S.cols && ey + dy < S.rows) { ex += dx; ey += dy; }
-      ctx.setLineDash([c * 0.18, c * 0.14]); ctx.strokeStyle = "rgba(242,194,48,.75)"; ctx.lineWidth = 2;
+      ctx.setLineDash([c * 0.18, c * 0.14]); ctx.strokeStyle = "rgba(255,210,63,.85)"; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(ax + (ex + 0.5 + dx * 0.5) * c, ay + (ey + 0.5 + dy * 0.5) * c); ctx.stroke(); ctx.setLineDash([]);
       ctx.save(); ctx.translate(hx, hy); ctx.rotate(ANG[h.dir] + Math.PI / 2);
-      ctx.fillStyle = "#2E353D"; rrect(-c * 0.44 + 2, -c * 0.44 + 3, c * 0.88, c * 0.88, 6); ctx.fill();
-      ctx.fillStyle = "#C9D0D7"; rrect(-c * 0.44, -c * 0.44, c * 0.88, c * 0.88, 6); ctx.fill();
-      ctx.fillStyle = "#A4AEB8"; for (let i = 1; i < 4; i++) ctx.fillRect(-c * 0.44 + 4, -c * 0.44 + i * c * 0.2, c * 0.88 - 8, 2);
-      ctx.fillStyle = "#2B323A"; ctx.fillRect(-c * 0.3, -c * 0.46, c * 0.6, c * 0.16);
+      ctx.fillStyle = "rgba(0,0,0,.25)"; rr(ctx, -c * 0.42 + 2, -c * 0.42 + 4, c * 0.84, c * 0.84, c * 0.25); ctx.fill();
+      ctx.fillStyle = "#FFB4A8"; rr(ctx, -c * 0.42, -c * 0.42, c * 0.84, c * 0.84, c * 0.25); ctx.fill();
+      ctx.fillStyle = "#FFFFFF"; for (let i = 0; i < 3; i++) ctx.fillRect(-c * 0.32, -c * 0.2 + i * c * 0.18, c * 0.64, c * 0.07);
+      ctx.fillStyle = "#33414D"; rr(ctx, -c * 0.26, -c * 0.47, c * 0.52, c * 0.18, 4); ctx.fill();
       ctx.restore();
       if (h.queue.length) {
-        const r = Math.max(9, c * 0.2);
-        ctx.fillStyle = "#15181C"; ctx.beginPath(); ctx.arc(hx + c * 0.3, hy + c * 0.3, r, 0, 7); ctx.fill();
-        ctx.fillStyle = "#FFC83A"; ctx.font = `800 ${Math.round(r * 1.3)}px "Barlow Condensed", sans-serif`;
+        const r = Math.max(9, c * 0.22);
+        ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(hx + c * 0.3, hy + c * 0.3, r, 0, 7); ctx.fill();
+        ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = C.sun; ctx.font = `800 ${Math.round(r * 1.25)}px ${FONT}`;
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(h.queue.length, hx + c * 0.3, hy + c * 0.3 + 1);
       }
     }
-    // Flugzeuge auf dem Vorfeld
     for (const p of S.planes) {
       if (p.where !== "apron") continue;
       const v = vis.get(p.id), [dx, dy] = A.DIRS[p.dir];
-      let { x, y } = planeCenter(p), alpha = 1;
-      if (v && v.kind === "bump") { const s = Math.min(1, (t - v.t0) / 0.32), o = Math.sin(s * Math.PI) * v.dist; x += dx * o; y += dy * o; }
+      let { x, y } = planeCenter(p), alpha = 1, ang = ANG[p.dir];
+      if (v && v.kind === "bump") {
+        const s = Math.min(1, (t - v.t0) / 0.32), o = Math.sin(s * Math.PI) * v.dist;
+        x += dx * o; y += dy * o; ang += Math.sin(s * Math.PI * 4) * 0.06 * (1 - s);
+      }
       if (v && v.kind === "spawn") { const s = Math.min(1, (t - v.t0) / 0.4), o = (1 - s) * c * 1.4; x -= dx * o; y -= dy * o; alpha = s; }
-      drawPlane(x, y, ANG[p.dir], c, p, alpha);
+      drawPlane(x, y, ang, c, p, alpha);
     }
+  }
+
+  function drawTutorial(t) {
+    const step = tut && TUT[tut.step];
+    if (!step || step.target === undefined) return;
+    const p = S.planes[step.target];
+    if (p.where !== "apron") return;
+    const { x, y } = planeCenter(p), c = lay.cell;
+    const k = 1 + Math.sin(t * 5) * 0.08;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,.95)"; ctx.lineWidth = 4; ctx.setLineDash([8, 6]); ctx.lineDashOffset = -t * 20;
+    ctx.beginPath(); ctx.ellipse(x, y, (p.len * c * 0.55 + 6) * k, (c * 0.62) * k, ANG[p.dir], 0, 7); ctx.stroke();
+    ctx.restore();
+    const by = y - c * 0.9 - Math.abs(Math.sin(t * 5)) * 10;
+    ctx.fillStyle = C.band; ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 3; ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(x, by + 14); ctx.lineTo(x - 13, by); ctx.lineTo(x - 6, by); ctx.lineTo(x - 6, by - 16);
+    ctx.lineTo(x + 6, by - 16); ctx.lineTo(x + 6, by); ctx.lineTo(x + 13, by); ctx.closePath();
+    ctx.stroke(); ctx.fill();
   }
 
   // ---------- Hinweise und Karten ----------
@@ -1041,9 +1325,10 @@ window.Abflug = (() => {
     const el = $("#toast"); el.textContent = msg; el.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 1100);
   }
-  function showHint(html, stage = "1") {
-    const el = $("#hint"); el.innerHTML = html; el.dataset.stage = stage; el.hidden = false;
-    clearTimeout(hintTimer); hintTimer = setTimeout(hideHint, 6500);
+  function showHint(html, seconds) {
+    const el = $("#hint"); el.innerHTML = html; el.hidden = false;
+    clearTimeout(hintTimer);
+    if (seconds) hintTimer = setTimeout(hideHint, seconds * 1000);
   }
   function hideHint() { $("#hint").hidden = true; }
   function showCard(html) { $("#card").innerHTML = html; $("#overlay").hidden = false; }
@@ -1063,7 +1348,7 @@ window.Abflug = (() => {
   function syncMute() { $("#muteWave").style.opacity = muted ? 0 : 1; $("#muteBtn").setAttribute("aria-label", muted ? "Ton an" : "Ton aus"); }
   $("#muteBtn").addEventListener("click", () => { muted = !muted; store.set("abflug.muted", muted); syncMute(); audioInit(); });
 
-  // ---------- Ton ----------
+  // ---------- Ton: Steeldrum ----------
   let ac = null;
   function audioInit() {
     if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } }
@@ -1077,32 +1362,38 @@ window.Abflug = (() => {
     g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.02);
   }
+  function steel(f, dur = 0.4, vol = 0.08, delay = 0) {
+    if (muted || !ac) return;
+    const t0 = ac.currentTime + delay, g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    g.connect(ac.destination);
+    [[1, 1], [2, 0.42], [3, 0.12], [4.2, 0.07]].forEach(([m, a]) => {
+      const o = ac.createOscillator(), og = ac.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(f * m, t0); og.gain.value = a;
+      o.connect(og).connect(g); o.start(t0); o.stop(t0 + dur + 0.05);
+    });
+  }
   const sfx = {
-    go: () => tone(420, 0.14, "triangle", 0.12, 1.8),
-    bump: () => tone(130, 0.16, "square", 0.06, 0.6),
+    go: () => { steel(330, 0.25, 0.06); steel(494, 0.3, 0.05, 0.06); },
+    bump: () => tone(190, 0.2, "sine", 0.12, 0.55),
     // Tonleiter steigt mit dem Füllstand: je voller, desto höher.
     board(fill) {
       const steps = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
-      const f = 392 * 2 ** (steps[Math.min(steps.length - 1, Math.floor(fill * steps.length))] / 12);
-      tone(f, 0.11, "sine", 0.09, 1.04);
-      tone(f * 2, 0.05, "triangle", 0.03);
+      steel(392 * 2 ** (steps[Math.min(steps.length - 1, Math.floor(fill * steps.length))] / 12), 0.32, 0.07);
     },
-    full() {
-      [1046.5, 1318.5, 1568, 2093].forEach((f, i) => tone(f, 0.6, "sine", 0.07, 1, i * 0.05));
-      tone(2637, 0.8, "triangle", 0.035, 1, 0.22);
-    },
+    full: () => [523, 659, 784, 1046].forEach((f, i) => steel(f, 0.5, 0.08, i * 0.07)),
     whoosh() {
       if (muted || !ac) return;
-      const len = 0.9, buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), data = buf.getChannelData(0);
+      const len = 1.0, buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), data = buf.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
       const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t0 = ac.currentTime;
       src.buffer = buf; f.type = "bandpass"; f.Q.value = 1.2;
       f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(2400, t0 + len);
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.1, t0 + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
       src.connect(f).connect(g).connect(ac.destination); src.start(t0);
     },
-    win: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.28, "triangle", 0.1, 1, i * 0.11)),
-    lose: () => [392, 330, 262].forEach((f, i) => tone(f, 0.3, "triangle", 0.09, 1, i * 0.14)),
+    win: () => [523, 659, 784, 659, 784, 1046].forEach((f, i) => steel(f, 0.45, 0.08, i * 0.13)),
+    lose: () => [392, 330, 262].forEach((f, i) => steel(f, 0.5, 0.07, i * 0.16)),
   };
 
   // ---------- Start ----------
