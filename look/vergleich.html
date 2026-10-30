@@ -1,0 +1,365 @@
+<title>Abflug Look-Vergleich</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: zwei Handy-Rahmen nebeneinander, darunter je drei Zeilen Einordnung. */
+:root {
+  --bg: #EEF1F4; --fg: #1C2530; --muted: #5D6875; --frame: #15181C; --accent: #FFC83A; --card: #FFFFFF; --line: #D5DBE1;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Nunito", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14181D; --fg: #E9EDF1; --muted: #9AA6B2; --frame: #000000; --card: #1D232A; --line: #2C343D; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #14181D; --fg: #E9EDF1; --muted: #9AA6B2; --frame: #000000; --card: #1D232A; --line: #2C343D; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); margin: 0; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 24px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 34px; letter-spacing: .03em; text-transform: uppercase; margin: 0 0 4px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0 0 22px; max-width: 62ch; line-height: 1.45; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.col { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.tag { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .05em; text-transform: uppercase; display: flex; gap: 10px; align-items: baseline; }
+.tag b { background: var(--frame); color: var(--accent); padding: 2px 9px; border-radius: 5px; }
+.phone { background: var(--frame); border-radius: 26px; padding: 10px; max-width: 380px; width: 100%; box-sizing: border-box; }
+.phone canvas { display: block; width: 100%; aspect-ratio: 9 / 16; border-radius: 18px; background: #4C5763; }
+ul { margin: 0; padding-left: 18px; line-height: 1.45; color: var(--fg); }
+li + li { margin-top: 4px; }
+li span { color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <h1>Zwei Looks für Abflug!</h1>
+  <p class="lead">Beide Szenen zeigen denselben Ausschnitt: Wartebereich, Gates und Vorfeld. Es sind Probebilder, nicht das fertige Spiel. Antippen geht hier noch nicht.</p>
+  <div class="grid">
+    <section class="col">
+      <div class="tag"><b>A</b> 2D-Spielzeug</div>
+      <div class="phone"><canvas id="a" aria-label="Variante A: plastischer 2D-Look"></canvas></div>
+      <ul>
+        <li>Läuft auch auf älteren Handys flüssig. <span>Nur Zeichnen im Code, keine Zusatzbibliothek.</span></li>
+        <li>Fluggastbrücken, Absperrbänder, Figuren mit Koffer.</li>
+        <li>Wirkt wie ein Brettspiel von oben. <span>Weniger Tiefe als das Original.</span></li>
+      </ul>
+    </section>
+    <section class="col">
+      <div class="tag"><b>B</b> Echtes 3D</div>
+      <div class="phone"><canvas id="b" aria-label="Variante B: 3D-Look mit Licht und Schatten"></canvas></div>
+      <ul>
+        <li>Schräge Kamera, Licht und Schatten. <span>Am nächsten am Original.</span></li>
+        <li>Flugzeuge und Figuren als einfache 3D-Körper.</li>
+        <li>Deutlich mehr Arbeit, Antippen muss neu gebaut werden. <span>Bei vielen Figuren Ruckelgefahr.</span></li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ---------- gemeinsam ----------
+const DEST = {
+  ES: "#F6C028", IT: "#24A157", GR: "#3DB6E8", TR: "#E3403A", JP: "#F5F3EC", SE: "#2453B8", NL: "#F28A1E", MX: "#EC5FA8", FR: "#8E5BD0",
+};
+const KEYS = Object.keys(DEST);
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const t = amt < 0 ? 0 : 255, f = Math.abs(amt);
+  return `rgb(${Math.round(r + (t - r) * f)},${Math.round(g + (t - g) * f)},${Math.round(b + (t - b) * f)})`;
+}
+function drawFlag(ctx, id, x, y, w, h) {
+  const f = (c, a, b, ww, hh) => { ctx.fillStyle = c; ctx.fillRect(a, b, ww, hh); };
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  switch (id) {
+    case "ES": f("#C60B1E", x, y, w, h); f("#FFC400", x, y + h * .25, w, h * .5); break;
+    case "IT": f("#009246", x, y, w / 3 + .5, h); f("#fff", x + w / 3, y, w / 3 + .5, h); f("#CE2B37", x + 2 * w / 3, y, w / 3 + .5, h); break;
+    case "FR": f("#002654", x, y, w / 3 + .5, h); f("#fff", x + w / 3, y, w / 3 + .5, h); f("#CE1126", x + 2 * w / 3, y, w / 3 + .5, h); break;
+    case "MX": f("#006847", x, y, w / 3 + .5, h); f("#fff", x + w / 3, y, w / 3 + .5, h); f("#CE1126", x + 2 * w / 3, y, w / 3 + .5, h); break;
+    case "NL": f("#AE1C28", x, y, w, h / 3 + .5); f("#fff", x, y + h / 3, w, h / 3 + .5); f("#21468B", x, y + 2 * h / 3, w, h / 3 + .5); break;
+    case "GR": for (let i = 0; i < 9; i++) f(i % 2 ? "#fff" : "#0D5EAF", x, y + i * h / 9, w, h / 9 + .5); f("#0D5EAF", x, y, w * .38, h * 5 / 9); f("#fff", x + w * .15, y, w * .08, h * 5 / 9); f("#fff", x, y + h * 2 / 9, w * .38, h / 9); break;
+    case "TR": f("#E30A17", x, y, w, h); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x + w * .38, y + h / 2, h * .28, 0, 7); ctx.fill(); ctx.fillStyle = "#E30A17"; ctx.beginPath(); ctx.arc(x + w * .44, y + h / 2, h * .225, 0, 7); ctx.fill(); break;
+    case "JP": f("#fff", x, y, w, h); ctx.fillStyle = "#BC002D"; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, h * .3, 0, 7); ctx.fill(); break;
+    case "SE": f("#006AA7", x, y, w, h); f("#FECC00", x + w * .31, y, w * .125, h); f("#FECC00", x, y + h * .4, w, h * .2); break;
+  }
+  ctx.restore();
+}
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+// Beispiel-Szene: Gates, Vorfeld, Ring – für beide Varianten gleich.
+const GATES = [{ d: "SE", len: 2, left: 9 }, { d: "IT", len: 4, left: 23 }, { d: "ES", len: 3, left: 0, full: true }, null];
+// [Nase x, Nase y, Richtung, Länge, Ziel] auf einem 6×8-Raster, ohne Überschneidung.
+const APRON = [
+  [0, 0, "L", 3, "TR"], [5, 0, "R", 2, "GR"], [3, 0, "U", 2, "JP"], [0, 1, "U", 3, "NL"], [2, 1, "R", 2, "MX"],
+  [5, 3, "D", 3, "SE"], [4, 1, "U", 2, "FR"], [1, 3, "D", 2, "IT"], [3, 2, "R", 2, "ES"], [4, 3, "R", 3, "TR"],
+  [0, 4, "L", 4, "GR"], [5, 4, "R", 2, "JP"], [0, 5, "U", 2, "MX"], [3, 5, "R", 3, "NL"], [4, 7, "D", 3, "SE"],
+  [5, 5, "U", 3, "IT"], [1, 6, "L", 2, "FR"], [3, 7, "D", 2, "ES"], [2, 7, "R", 3, "TR"],
+];
+const RINGDEST = Array.from({ length: 60 }, (_, i) => ["SE", "SE", "IT", "IT", "JP", "TR", "GR", "IT", "MX", "SE", "NL", "FR"][(i * 7 + (i >> 2)) % 12]);
+const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
+const DIRV = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
+
+// ---------- Variante A: 2D ----------
+(() => {
+  const cv = document.getElementById("a"), ctx = cv.getContext("2d");
+  let W, H, DPR, asphalt;
+  function size() {
+    const r = cv.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1);
+    W = r.width; H = r.height; cv.width = W * DPR; cv.height = H * DPR;
+    asphalt = document.createElement("canvas"); asphalt.width = 128; asphalt.height = 128;
+    const g = asphalt.getContext("2d"); g.fillStyle = "#555F69"; g.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 1400; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? "255,255,255" : "0,0,0"},${Math.random() * .07})`; g.fillRect(Math.random() * 128, Math.random() * 128, 1.5, 1.5); }
+  }
+  function planeA(x, y, ang, c, len, d, opts = {}) {
+    const col = DEST[d], half = len * c * .46, fw = c * (.27 + len * .02);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    // Schatten
+    ctx.save(); ctx.translate(c * .1 + (opts.lift || 0) * 30, c * .16 + (opts.lift || 0) * 40); ctx.fillStyle = "rgba(10,16,24,.28)";
+    ctx.beginPath(); ctx.ellipse(0, 0, half * 1.02, fw * .7, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(half * .15, 0); ctx.lineTo(-half * .3, -c * .48); ctx.lineTo(-half * .42, -c * .48); ctx.lineTo(-half * .3, 0); ctx.lineTo(-half * .42, c * .48); ctx.lineTo(-half * .3, c * .48); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // Flügel mit Licht an der Vorderkante
+    const wg = ctx.createLinearGradient(half * .2, 0, -half * .4, 0);
+    wg.addColorStop(0, shade(col, .35)); wg.addColorStop(1, shade(col, -.2));
+    ctx.fillStyle = wg; ctx.strokeStyle = shade(col, -.45); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(half * .22, -fw * .4); ctx.quadraticCurveTo(-half * .05, -c * .3, -half * .16, -c * .48); ctx.lineTo(-half * .34, -c * .48); ctx.lineTo(-half * .22, -fw * .4);
+    ctx.lineTo(-half * .22, fw * .4); ctx.lineTo(-half * .34, c * .48); ctx.lineTo(-half * .16, c * .48); ctx.quadraticCurveTo(-half * .05, c * .3, half * .22, fw * .4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Triebwerke
+    (len >= 4 ? [.2, .36] : [.24]).forEach(o => [-1, 1].forEach(s => {
+      ctx.fillStyle = shade(col, -.25); ctx.beginPath(); ctx.ellipse(half * .1, s * c * o, c * .1, c * .055, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#2B323A"; ctx.beginPath(); ctx.ellipse(half * .1 + c * .08, s * c * o, c * .02, c * .04, 0, 0, 7); ctx.fill();
+    }));
+    // Höhenleitwerk
+    ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(-half * .7, -fw * .3); ctx.lineTo(-half * .92, -c * .22); ctx.lineTo(-half * 1.0, -c * .22); ctx.lineTo(-half * .96, 0); ctx.lineTo(-half * 1.0, c * .22); ctx.lineTo(-half * .92, c * .22); ctx.lineTo(-half * .7, fw * .3); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Rumpf rund schattiert
+    const fg = ctx.createLinearGradient(0, -fw / 2, 0, fw / 2);
+    fg.addColorStop(0, shade(col, .55)); fg.addColorStop(.35, col); fg.addColorStop(1, shade(col, -.35));
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.moveTo(-half, -fw * .22); ctx.lineTo(half - fw, -fw / 2); ctx.bezierCurveTo(half - fw * .2, -fw / 2, half, -fw * .2, half, 0);
+    ctx.bezierCurveTo(half, fw * .2, half - fw * .2, fw / 2, half - fw, fw / 2); ctx.lineTo(-half, fw * .22); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Fensterreihe und Cockpit
+    ctx.fillStyle = "rgba(30,50,75,.55)";
+    for (let k = -half * .75; k < half * .6; k += c * .13) { ctx.beginPath(); ctx.arc(k, -fw * .2, c * .022, 0, 7); ctx.fill(); }
+    ctx.fillStyle = "#24364A"; ctx.beginPath(); ctx.moveTo(half - fw * .55, -fw * .3); ctx.quadraticCurveTo(half - fw * .1, 0, half - fw * .55, fw * .3); ctx.lineTo(half - fw * .7, 0); ctx.closePath(); ctx.fill();
+    // Seitenleitwerk in Flaggenfarben
+    ctx.save(); ctx.translate(-half * .86, 0); ctx.rotate(-ang);
+    ctx.restore();
+    ctx.fillStyle = "#fff"; rrect(ctx, -half * .98, -fw * .12, half * .3, fw * .24, 2); ctx.fill();
+    ctx.restore();
+    // Flagge aufrecht
+    const fwid = Math.max(14, c * .5), fh = fwid * .66;
+    ctx.save(); ctx.shadowColor = "rgba(0,0,0,.3)"; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+    ctx.fillStyle = "#fff"; rrect(ctx, x - fwid / 2 - 2, y - fh / 2 - 2, fwid + 4, fh + 4, 3); ctx.fill(); ctx.restore();
+    drawFlag(ctx, d, x - fwid / 2, y - fh / 2, fwid, fh);
+    if (opts.glow) { ctx.save(); ctx.strokeStyle = "rgba(255,230,120,.95)"; ctx.lineWidth = 3; ctx.shadowColor = "#FFC83A"; ctx.shadowBlur = 12; ctx.beginPath(); ctx.ellipse(x, y, half + 6, c * .55, ang, 0, 7); ctx.stroke(); ctx.restore(); }
+  }
+  const SKIN = ["#F2C9A0", "#D9A877", "#B07A4F", "#8A5A3B", "#F6D5B8"];
+  function tourist(x, y, d, s, t, i) {
+    const bob = Math.abs(Math.sin(t * 9 + i)) * s * .18;
+    ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(x, y + s * .55, s * .45, s * .16, 0, 0, 7); ctx.fill();
+    // Koffer
+    ctx.fillStyle = shade(DEST[d], -.35); rrect(ctx, x + s * .3, y + s * .05 - bob * .3, s * .32, s * .42, 2); ctx.fill();
+    // Körper
+    const g = ctx.createLinearGradient(x - s * .4, 0, x + s * .4, 0);
+    g.addColorStop(0, shade(DEST[d], .35)); g.addColorStop(1, shade(DEST[d], -.25));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y + s * .12 - bob, s * .36, s * .42, 0, 0, 7); ctx.fill();
+    if (d === "JP") { ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 1; ctx.stroke(); }
+    // Kopf
+    ctx.fillStyle = SKIN[i % SKIN.length]; ctx.beginPath(); ctx.arc(x, y - s * .42 - bob, s * .26, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.beginPath(); ctx.arc(x - s * .08, y - s * .5 - bob, s * .08, 0, 7); ctx.fill();
+  }
+  function frame(now) {
+    const t = now / 1000;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const termH = H * .34, gy = termH, gh = H * .17, ay = gy + gh;
+    // Terminalboden
+    ctx.fillStyle = "#E9ECEF"; ctx.fillRect(0, 0, W, termH);
+    for (let y = 0; y < termH; y += 22) for (let x = (y / 22) % 2 ? 0 : 11; x < W; x += 22) { ctx.fillStyle = "rgba(60,80,100,.045)"; ctx.fillRect(x, y, 11, 11); }
+    // Abflugtafel
+    const txt = "ABFLUG  L01";
+    const cw = 14, bx = 12, by = 10;
+    ctx.fillStyle = "#15181C"; rrect(ctx, bx - 5, by - 4, txt.length * (cw + 2) + 8, 26, 5); ctx.fill();
+    ctx.font = "800 15px 'Barlow Condensed', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    [...txt].forEach((ch, i) => {
+      const cx = bx + i * (cw + 2);
+      ctx.fillStyle = "#23282E"; rrect(ctx, cx, by, cw, 18, 2); ctx.fill();
+      ctx.fillStyle = ch === " " ? "transparent" : "#FFC83A"; ctx.fillText(ch, cx + cw / 2, by + 10);
+      ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(cx, by + 9, cw, 1);
+    });
+    // Warteschlange mit Absperrbändern
+    const rx = W / 2, ry = termH * .6, rw = W * .26, rh = termH * .22, lane = 30;
+    const stadium = (k, s) => { // Punkt auf Stadionbahn, s in [0,1)
+      const r = rh, st = rw, P = 2 * st + 2 * Math.PI * r; let u = ((s % 1) + 1) % 1 * P;
+      if (u < st / 2) return [rx - u, ry + r + k, Math.PI];
+      u -= st / 2;
+      if (u < Math.PI * r) { const a = Math.PI / 2 + u / r; return [rx - st / 2 + (r + k) * Math.cos(a), ry + (r + k) * Math.sin(a), a + Math.PI / 2]; }
+      u -= Math.PI * r;
+      if (u < st) return [rx - st / 2 + u, ry - r - k, 0];
+      u -= st;
+      if (u < Math.PI * r) { const a = -Math.PI / 2 + u / r; return [rx + st / 2 + (r + k) * Math.cos(a), ry + (r + k) * Math.sin(a), a + Math.PI / 2]; }
+      u -= Math.PI * r; return [rx + st / 2 - u, ry + r + k, Math.PI];
+    };
+    ctx.fillStyle = "#DCE2E7"; ctx.beginPath();
+    for (let i = 0; i <= 80; i++) { const [x, y] = stadium(lane / 2 + 4, i / 80); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#8DB07A"; ctx.beginPath();
+    for (let i = 0; i <= 80; i++) { const [x, y] = stadium(-lane / 2 - 4, i / 80); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#F4F1E6"; ctx.font = "800 11px 'Barlow Condensed', sans-serif"; ctx.fillText("DUTY FREE", rx, ry + 1);
+    for (const k of [lane / 2 + 2, -lane / 2 - 2]) {
+      ctx.strokeStyle = "#2F5DA8"; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let i = 0; i <= 120; i++) { const [x, y] = stadium(k, i / 120); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.closePath(); ctx.stroke();
+      for (let i = 0; i < 26; i++) { const [x, y] = stadium(k, i / 26); ctx.fillStyle = "#9AA4AE"; ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fill(); ctx.fillStyle = "#E8ECEF"; ctx.beginPath(); ctx.arc(x - .8, y - .8, 1.3, 0, 7); ctx.fill(); }
+    }
+    // Zuläufe
+    for (const s of [-1, 1]) {
+      const x = rx + s * (rw / 2 + rh * .55);
+      ctx.fillStyle = "#DCE2E7"; ctx.fillRect(x - lane / 2 - 4, 40, lane + 8, ry - rh - 40);
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) tourist(x + (c - 1) * 9, 52 + r * 13, s < 0 ? (r < 2 ? "TR" : "GR") : "SE", 9, t * .2, r * 3 + c);
+      ctx.fillStyle = "#15181C"; rrect(ctx, x - 20, 36, 40, 13, 3); ctx.fill();
+      ctx.fillStyle = "#FFC83A"; ctx.font = "700 10px 'Barlow Condensed', sans-serif"; ctx.fillText(s < 0 ? "+212" : "+188", x, 43);
+    }
+    const tour = [];
+    for (let i = 0; i < 44; i++) for (let c = 0; c < 3; c++) {
+      if ((i * 3 + c) % 7 === 5) continue;
+      const [x, y] = stadium((c - 1) * 9, i / 44 + t * .012);
+      tour.push([x, y, RINGDEST[(i * 3 + c) % 60], i * 3 + c]);
+    }
+    tour.sort((a, b) => a[1] - b[1]).forEach(([x, y, d, i]) => tourist(x, y, d, 9, t, i));
+    // Glasfront
+    ctx.fillStyle = "#A9C3D4"; ctx.fillRect(0, termH - 6, W, 6);
+    ctx.fillStyle = "#7C97AA"; for (let x = 0; x < W; x += 30) ctx.fillRect(x, termH - 6, 2, 6);
+    // Gate-Bereich
+    ctx.fillStyle = asphalt ? ctx.createPattern(asphalt, "repeat") : "#555F69"; ctx.fillRect(0, gy, W, H - gy);
+    const sw = W / 4.4, gc = gh / 3.7;
+    GATES.forEach((g, i) => {
+      const x = W / 2 + (i - 1.5) * sw;
+      ctx.strokeStyle = "#F2C230"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, gy + 8); ctx.lineTo(x, gy + gh - 8); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.5; ctx.strokeRect(x - sw / 2 + 5, gy + 6, sw - 10, gh - 12);
+      ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.font = "700 11px 'Barlow Condensed', sans-serif"; ctx.textAlign = "left"; ctx.fillText("A" + (i + 1), x - sw / 2 + 9, gy + 15); ctx.textAlign = "center";
+      // Fluggastbrücke
+      const doorY = gy + gh * .42;
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(x + 6, gy - 2, 12, (g ? doorY - gy : 16) + 4);
+      ctx.fillStyle = "#C3CCD4"; ctx.fillRect(x + 3, gy - 4, 12, g ? doorY - gy : 14);
+      ctx.fillStyle = "#9AA6B1"; for (let yy = gy; yy < (g ? doorY : gy + 10); yy += 5) ctx.fillRect(x + 3, yy, 12, 1);
+      if (!g) return;
+      planeA(x - 4, gy + gh * .5, -Math.PI / 2, gc, g.len, g.d, { });
+      ctx.fillStyle = "#AEB8C1"; rrect(ctx, x + 1, doorY - 4, 16, 9, 2); ctx.fill();
+      // Füllstand
+      const seats = { 2: 16, 3: 24, 4: 40 }[g.len], fill = 1 - g.left / seats;
+      ctx.fillStyle = "rgba(0,0,0,.35)"; rrect(ctx, x + sw / 2 - 12, gy + 12, 5, gh - 24, 2); ctx.fill();
+      ctx.fillStyle = DEST[g.d]; rrect(ctx, x + sw / 2 - 12, gy + 12 + (gh - 24) * (1 - fill), 5, (gh - 24) * fill, 2); ctx.fill();
+      const pt = g.full ? "VOLL!" : String(g.left), pw = g.full ? 40 : 28, py = gy + gh - 14;
+      ctx.fillStyle = g.full ? "#FFC83A" : DEST[g.d]; rrect(ctx, x - pw / 2, py - 8, pw, 16, 8); ctx.fill();
+      ctx.fillStyle = g.full ? "#15181C" : "#fff"; ctx.font = "800 13px 'Barlow Condensed', sans-serif"; ctx.textBaseline = "middle"; ctx.fillText(pt, x, py + 1);
+      if (g.full) for (let k = 0; k < 18; k++) {
+        const a = k * 2.4 + t * 2, r = 14 + ((t * 40 + k * 9) % 34);
+        ctx.save(); ctx.translate(x + Math.cos(a) * r, gy + gh * .45 + Math.sin(a) * r * .7); ctx.rotate(a * 3);
+        ctx.fillStyle = ["#C60B1E", "#FFC400", "#FFFFFF"][k % 3]; ctx.fillRect(-2.5, -1.5, 5, 3); ctx.restore();
+      }
+      // Touristen laufen durch die Brücke
+      if (!g.full) for (let k = 0; k < 2; k++) { const p = (t * 1.6 + k * .5) % 1; tourist(x + 9, gy - 4 + p * (doorY - gy), g.d, 7, t, k); }
+    });
+    // Vorfeld
+    const cols = 6, rows = 8, c = Math.min((W - 20) / cols, (H - ay - 10) / rows), ox = (W - c * cols) / 2, oy = ay + 6;
+    ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) ctx.strokeRect(ox + x * c + 2.5, oy + y * c + 2.5, c - 5, c - 5);
+    ctx.strokeStyle = "rgba(242,194,48,.8)"; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+    ctx.beginPath(); ctx.moveTo(4, ay - 2); ctx.lineTo(W - 4, ay - 2); ctx.stroke(); ctx.setLineDash([]);
+    for (let i = 0; i < cols; i++) { ctx.fillStyle = "#FFD45A"; ctx.beginPath(); ctx.arc(ox + i * c + c / 2, ay + 1, 2, 0, 7); ctx.fill(); }
+    APRON.forEach(([x, y, dir, len, d], i) => {
+      const [dx, dy] = DIRV[dir];
+      const cx = ox + (x + .5) * c - dx * (len - 1) * c / 2, cy = oy + (y + .5) * c - dy * (len - 1) * c / 2;
+      const wob = i === 9 ? Math.sin(t * 20) * Math.max(0, Math.sin(t * 1.3)) * 3 : 0;
+      planeA(cx + dx * wob, cy + dy * wob, ANG[dir], c, len, d, { glow: i === 5 });
+    });
+    // Startendes Flugzeug mit Kondensstreifen
+    const p = (t * .25) % 1, sx = W * .78, sy = termH * .9 - p * termH * 1.3;
+    ctx.globalAlpha = Math.max(0, 1 - p * 1.1);
+    const cg = ctx.createLinearGradient(0, sy, 0, sy + 120);
+    cg.addColorStop(0, "rgba(255,255,255,.75)"); cg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = cg; ctx.fillRect(sx - 9, sy + 18, 4, 120); ctx.fillRect(sx + 5, sy + 18, 4, 120);
+    planeA(sx, sy, -Math.PI / 2, 26 * (1 + p * .8), 3, "ES", { lift: p });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size); requestAnimationFrame(frame);
+})();
+
+// ---------- Variante B: 3D ----------
+(() => {
+  const cv = document.getElementById("b");
+  if (!window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const scene = new THREE.Scene(); scene.background = new THREE.Color("#4C5763");
+  const cam = new THREE.PerspectiveCamera(38, 9 / 16, 1, 300);
+  cam.position.set(0, 64, 40); cam.lookAt(0, 0, 0);
+  scene.add(new THREE.HemisphereLight("#ffffff", "#5a6470", .75));
+  const sun = new THREE.DirectionalLight("#fff6e8", .85); sun.position.set(-14, 30, 12); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 30, bottom: -30 });
+  scene.add(sun);
+  const mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: .45, metalness: .05 });
+  const box = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; scene.add(m); return m; };
+  // Boden: Terminal, Gates, Vorfeld
+  box(40, .4, 16, "#E6EAEE", 0, -.2, -16);
+  box(40, .4, 8, "#4A535D", 0, -.2, -4);
+  box(40, .4, 34, "#56606A", 0, -.2, 17);
+  box(40, 1.6, .5, "#9DB7C8", 0, .6, -8.2);
+  // Flaggen als Textur
+  const flagTex = {};
+  KEYS.forEach(k => { const c = document.createElement("canvas"); c.width = 96; c.height = 64; const g = c.getContext("2d"); drawFlag(g, k, 0, 0, 96, 64); flagTex[k] = new THREE.CanvasTexture(c); });
+  // Flugzeug in Rastereinheiten gebaut (1 = ein Feld), dann auf Feldgröße skaliert. Nase zeigt nach +z.
+  function plane3(len, d, scale) {
+    const g = new THREE.Group(), col = DEST[d], L = len * .9, r = .15 + len * .012;
+    const add = (geo, c, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat(c)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; g.add(m); return m; };
+    add(new THREE.CylinderGeometry(r, r * .75, L * .74, 18), col, 0, r, -L * .03, Math.PI / 2);
+    add(new THREE.SphereGeometry(r, 18, 12), col, 0, r, L * .34).scale.set(1, 1, 1.9);
+    add(new THREE.ConeGeometry(r * .75, r * 2.2, 16), col, 0, r, -L * .4 - r * .6, -Math.PI / 2);
+    add(new THREE.BoxGeometry(.92, .04, .26 + len * .03), shade(col, -.08), 0, r * .7, L * .02);
+    add(new THREE.BoxGeometry(.4, .03, .14), shade(col, -.08), 0, r * 1.05, -L * .4);
+    add(new THREE.BoxGeometry(.03, .26, .2), "#ffffff", 0, r * 1.9, -L * .4);
+    [-1, 1].forEach(s => add(new THREE.CylinderGeometry(.055, .055, .2, 12), shade(col, -.3), s * .24, r * .45, L * .1, Math.PI / 2));
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(.34, .23), new THREE.MeshBasicMaterial({ map: flagTex[d] }));
+    decal.rotation.x = -Math.PI / 2; decal.rotation.z = Math.PI; decal.position.set(0, r * 2.03, L * .02); g.add(decal);
+    g.scale.setScalar(scale);
+    scene.add(g); return g;
+  }
+  const ROT = { U: Math.PI, D: 0, L: -Math.PI / 2, R: Math.PI / 2 };
+  const c = 3.2, ox = -c * 3 + c / 2, oz = 2.2;
+  APRON.forEach(([x, y, dir, len, d]) => {
+    const [dx, dy] = DIRV[dir];
+    const p = plane3(len, d, c);
+    p.position.set(ox + x * c - dx * (len - 1) * c / 2, 0, oz + y * c - dy * (len - 1) * c / 2);
+    p.rotation.y = ROT[dir];
+  });
+  GATES.forEach((g, i) => {
+    const x = (i - 1.5) * 4.6;
+    box(.7, .9, 2.4, "#C3CCD4", x + .9, 1.2, -6.8);
+    if (!g) return;
+    const p = plane3(g.len, g.d, 1.7); p.position.set(x, 0, -4); p.rotation.y = Math.PI;
+  });
+  // Wartering mit Figuren
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(5, 1.6, 2, 48), mat("#D3DAE0"));
+  ring.rotation.x = Math.PI / 2; ring.scale.set(1.5, 1, 1); ring.position.set(0, .05, -16); ring.receiveShadow = true; scene.add(ring);
+  box(9, .5, 4.2, "#8DB07A", 0, .25, -16);
+  const people = [];
+  const bodyG = new THREE.CylinderGeometry(.32, .38, .9, 10), headG = new THREE.SphereGeometry(.3, 12, 10);
+  for (let i = 0; i < 70; i++) {
+    const g = new THREE.Group(), d = RINGDEST[i % 60];
+    const b = new THREE.Mesh(bodyG, mat(DEST[d])); b.position.y = .45; b.castShadow = true; g.add(b);
+    const h = new THREE.Mesh(headG, mat(["#F2C9A0", "#D9A877", "#B07A4F", "#8A5A3B"][i % 4])); h.position.y = 1.15; h.castShadow = true; g.add(h);
+    scene.add(g); people.push({ g, a: (i / 70) * Math.PI * 2, k: (i % 3 - 1) * .9 });
+  }
+  function size() { const r = cv.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); }
+  size(); addEventListener("resize", size);
+  (function loop(now) {
+    const t = now / 1000;
+    people.forEach((p, i) => {
+      const a = p.a + t * .12, R = 5 + p.k;
+      p.g.position.set(Math.cos(a) * R * 1.5, Math.abs(Math.sin(t * 8 + i)) * .12, -16 + Math.sin(a) * R);
+      p.g.rotation.y = -a;
+    });
+    renderer.render(scene, cam);
+    requestAnimationFrame(loop);
+  })(0);
+})();
+</script>

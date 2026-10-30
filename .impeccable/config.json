@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "look/vergleich.html"
+        ],
+        "createdAt": "2026-10-30T21:43:29.573Z",
+        "reason": "Claude: #9AA6B2 is the dark-mode muted token, only shown on dark background #14181D; checker paired it with light card color"
+      }
+    ]
+  }
+}
