@@ -103,17 +103,17 @@ window.Abflug = (() => {
   const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
   const DKEYS = ["U", "D", "L", "R"];
   const DEST = [
-    { id: "ES", name: "Spanien", color: "#F6C028", text: "#2A2205" },
-    { id: "IT", name: "Italien", color: "#24A157", text: "#FFFFFF" },
-    { id: "GR", name: "Griechenland", color: "#3DB6E8", text: "#06283A" },
-    { id: "TR", name: "Türkei", color: "#E3403A", text: "#FFFFFF" },
+    { id: "ES", name: "Spanien", color: "#FFC400", text: "#2A2205" },
+    { id: "IT", name: "Italien", color: "#18B04F", text: "#FFFFFF" },
+    { id: "GR", name: "Griechenland", color: "#29C2F2", text: "#06283A" },
+    { id: "TR", name: "Türkei", color: "#F0302A", text: "#FFFFFF" },
     { id: "JP", name: "Japan", color: "#F5F3EC", text: "#B0162A" },
-    { id: "SE", name: "Schweden", color: "#2453B8", text: "#FFFFFF" },
-    { id: "NL", name: "Niederlande", color: "#F28A1E", text: "#2A1604" },
-    { id: "MX", name: "Mexiko", color: "#EC5FA8", text: "#FFFFFF" },
-    { id: "FR", name: "Frankreich", color: "#8E5BD0", text: "#FFFFFF" },
-    { id: "QA", name: "Katar", color: "#14A89C", text: "#FFFFFF" },
-    { id: "EG", name: "Ägypten", color: "#454A55", text: "#FFFFFF" },
+    { id: "SE", name: "Schweden", color: "#1F57F0", text: "#FFFFFF" },
+    { id: "NL", name: "Niederlande", color: "#FF7A00", text: "#2A1604" },
+    { id: "MX", name: "Mexiko", color: "#FF4FA6", text: "#FFFFFF" },
+    { id: "FR", name: "Frankreich", color: "#9A4DF5", text: "#FFFFFF" },
+    { id: "QA", name: "Katar", color: "#00B5A5", text: "#FFFFFF" },
+    { id: "EG", name: "Ägypten", color: "#3A3F4A", text: "#FFFFFF" },
   ];
 
   function rng(seed) {
@@ -126,6 +126,8 @@ window.Abflug = (() => {
   }
   const grid = (c, r, f) => Array.from({ length: r }, (_, y) => Array.from({ length: c }, (_, x) => !!f(x, y)));
   const art = rows => rows.map(s => [...s].map(ch => ch === "#"));
+  // Maske vergrößern: kompakte Flugzeuge erlauben ein dichteres Vorfeld.
+  const up = (m, f) => grid(Math.round(m[0].length * f), Math.round(m.length * f), (x, y) => m[Math.floor(y / f)][Math.floor(x / f)]);
 
   // Wartering im Terminal: RING Reihen à 4 Plätze, Position 0 ist der Ausgang zu den Gates.
   const RING = 20, ENTRY = { L: 7, R: 13 };
@@ -142,10 +144,10 @@ window.Abflug = (() => {
       R: [[1, 16], [0, 16], [3, 16], [0, 16]],
       sol: [0, 2, 1, 4, 5, 3, 7, 6],
     } },
-    { name: "Inselhüpfer", mask: grid(7, 9, () => 1), dests: 5, planes: 18, mode: "seq" },
-    { name: "Kokosbucht", mask: grid(8, 10, (x, y) => !((x === 0 || x === 7) && (y === 0 || y === 9))), dests: 6, planes: 24, mode: "seq" },
-    { name: "Schranken", mask: grid(8, 11, () => 1), dests: 6, planes: 28, mode: "alt" },
-    { name: "Jumbo", mask: art([
+    { name: "Inselhüpfer", mask: grid(8, 10, () => 1), dests: 5, planes: 24, mode: "seq" },
+    { name: "Kokosbucht", mask: grid(9, 12, (x, y) => !((x === 0 || x === 8) && (y === 0 || y === 11))), dests: 6, planes: 32, mode: "seq" },
+    { name: "Schranken", mask: grid(10, 13, () => 1), dests: 6, planes: 40, mode: "alt" },
+    { name: "Jumbo", mask: up(art([
       "....##....",
       "...####...",
       "...####...",
@@ -158,10 +160,10 @@ window.Abflug = (() => {
       "...####...",
       "..######..",
       "..######..",
-    ]), dests: 7, planes: 28, mode: "alt" },
-    { name: "Tropennebel", mask: grid(11, 11, (x, y) => Math.abs(x - 5) + Math.abs(y - 5) <= 6), dests: 7, planes: 30, mode: "alt", mystery: 0.25 },
-    { name: "Hangar", mask: grid(9, 12, () => 1), dests: 8, planes: 38, mode: "alt", hangars: 1, hangarSize: 4 },
-    { name: "Koffer", mask: art([
+    ]), 1.3), dests: 7, planes: 44, mode: "alt" },
+    { name: "Tropennebel", mask: grid(13, 13, (x, y) => Math.abs(x - 6) + Math.abs(y - 6) <= 7), dests: 7, planes: 44, mode: "alt", mystery: 0.25 },
+    { name: "Hangar", mask: grid(11, 14, () => 1), dests: 8, planes: 52, mode: "alt", hangars: 1, hangarSize: 4 },
+    { name: "Koffer", mask: up(art([
       "...####...",
       "...#..#...",
       "##########",
@@ -174,9 +176,9 @@ window.Abflug = (() => {
       "##########",
       "##########",
       "##########",
-    ]), dests: 8, planes: 40, mode: "alt", mystery: 0.25, hangars: 1, hangarSize: 4 },
-    { name: "Weltreise", mask: grid(11, 12, (x, y) => ((x - 5) / 5.6) ** 2 + ((y - 5.5) / 6.1) ** 2 <= 1), dests: 9, planes: 36, mode: "alt", mystery: 0.3 },
-    { name: "Tower", mask: art([
+    ]), 1.3), dests: 8, planes: 56, mode: "alt", mystery: 0.25, hangars: 1, hangarSize: 4 },
+    { name: "Weltreise", mask: grid(13, 15, (x, y) => ((x - 6) / 6.6) ** 2 + ((y - 7) / 7.6) ** 2 <= 1), dests: 9, planes: 52, mode: "alt", mystery: 0.3 },
+    { name: "Tower", mask: up(art([
       "..######..",
       ".########.",
       "##########",
@@ -190,7 +192,7 @@ window.Abflug = (() => {
       "##########",
       "##########",
       "##########",
-    ]), dests: 10, planes: 42, mode: "alt", mystery: 0.3, hangars: 2, hangarSize: 4 },
+    ]), 1.3), dests: 10, planes: 60, mode: "alt", mystery: 0.3, hangars: 2, hangarSize: 4 },
   ];
 
   // Nach den festen Levels geht es endlos weiter: Form, Ziele und Größe kommen aus dem Level-Index.
@@ -207,11 +209,11 @@ window.Abflug = (() => {
     if (li < LEVELS.length) return LEVELS[li];
     if (defs[li]) return defs[li];
     const k = li - LEVELS.length, r = rng(li * 31337 + 7), round = Math.floor(k / ISLES.length);
-    const c = 9 + ((r() * 3) | 0), rows = 11 + ((r() * 3) | 0), h = r() < 0.5 ? 1 + (r() < 0.3 ? 1 : 0) : 0;
+    const c = 12 + ((r() * 3) | 0), rows = 14 + ((r() * 3) | 0), h = r() < 0.5 ? 1 + (r() < 0.3 ? 1 : 0) : 0;
     return (defs[li] = {
       name: ISLES[k % ISLES.length] + (round ? " " + (round + 1) : ""),
       mask: SHAPES[(r() * SHAPES.length) | 0](c, rows),
-      dests: Math.min(DEST.length, 9 + (k >> 2)), planes: 32 + Math.min(8, k >> 1), mode: "alt",
+      dests: Math.min(DEST.length, 9 + (k >> 2)), planes: 50 + Math.min(14, k >> 1), mode: "alt",
       mystery: Math.min(0.4, 0.25 + k * 0.01), hangars: h, hangarSize: 4, accept: 0.8,
     });
   }
@@ -291,6 +293,7 @@ window.Abflug = (() => {
     hidden.forEach(d => { for (let k = 0; k < per && blocked.length; k++) { const id = blocked.pop(); planes[id].dest = d; used.add(id); } });
     const rest = shuffle(planes.filter(p => !used.has(p.id)).map(p => p.id));
     rest.forEach((id, k) => (planes[id].dest = k < open.length ? open[k] : open[(r() * open.length) | 0]));
+    if (new Set(planes.map(p => p.dest)).size < L.dests) return null;
     if (L.mystery) base.forEach((_, i) => (planes[i].mystery = r() < L.mystery));
 
     const built = buildQueue({ cols, rows, mask: L.mask, mode: L.mode, planes, hangars }, r, dig.p, dig.maxB);
@@ -713,62 +716,40 @@ window.Abflug = (() => {
     }
     g.restore();
   }
-  function paintPlane(g, len, c, body, flat) {
-    const half = len * c * 0.46, fw = c * (0.34 + len * 0.015);
-    const dark = shade(body, -0.4), light = shade(body, 0.45);
+  // Kompaktes Flugzeug von oben, fast ein Baustein: breiter Rumpf, Stummelflügel innerhalb der
+  // Feldbreite. Großer Pfeil auf dem Rumpf zeigt die Rollrichtung, Symbol am Heck das Ziel.
+  function paintPlane(g, len, c, body, flat, arrow = "#FFFFFF") {
+    const half = len * c * 0.46, r = c * 0.31, span = c * 0.46;
+    const dark = shade(body, -0.38);
     g.lineJoin = "round"; g.lineCap = "round";
-    g.lineWidth = Math.max(1.2, c * 0.035); g.strokeStyle = dark;
+    g.lineWidth = Math.max(1.2, c * 0.04); g.strokeStyle = dark;
     const fill = st => { g.fillStyle = flat ? (flat === true ? "#000" : flat) : st; g.fill(); if (!flat) g.stroke(); };
-    let wg = "#000";
-    if (!flat) { wg = g.createLinearGradient(half * 0.25, 0, -half * 0.4, 0); wg.addColorStop(0, light); wg.addColorStop(1, shade(body, -0.14)); }
+    const wingC = shade(body, -0.12);
+    const wx = half * 0.22, wl = Math.min(c * 0.6, half * 0.6);
     for (const s of [-1, 1]) {
       g.beginPath();
-      g.moveTo(half * 0.24, s * fw * 0.3);
-      g.quadraticCurveTo(half * 0.02, s * c * 0.34, -half * 0.1, s * c * 0.45);
-      g.quadraticCurveTo(-half * 0.22, s * c * 0.54, -half * 0.33, s * c * 0.44);
-      g.lineTo(-half * 0.26, s * fw * 0.3);
-      g.closePath(); fill(wg);
-    }
-    if (!flat) {
-      const pods = len >= 4 ? [0.22, 0.36] : len === 3 ? [0.26] : [0.25];
-      pods.forEach(o => [-1, 1].forEach(s => {
-        g.beginPath(); g.ellipse(half * 0.02, s * c * o, c * 0.1, c * 0.065, 0, 0, 7); fill(shade(body, -0.18));
-        g.fillStyle = "#33414D"; g.beginPath(); g.ellipse(half * 0.02 + c * 0.085, s * c * o, c * 0.025, c * 0.045, 0, 0, 7); g.fill();
-      }));
-    }
-    for (const s of [-1, 1]) {
+      g.moveTo(wx, s * r * 0.8); g.lineTo(wx - wl * 0.3, s * span); g.lineTo(wx - wl, s * span); g.lineTo(wx - wl, s * r * 0.8); g.closePath();
+      fill(wingC);
       g.beginPath();
-      g.moveTo(-half * 0.66, s * fw * 0.25);
-      g.quadraticCurveTo(-half * 0.8, s * c * 0.27, -half * 0.9, s * c * 0.27);
-      g.quadraticCurveTo(-half * 1.0, s * c * 0.26, -half * 0.94, s * fw * 0.2);
-      g.closePath(); fill(wg);
+      g.moveTo(-half + c * 0.34, s * r * 0.8); g.lineTo(-half + c * 0.16, s * c * 0.38); g.lineTo(-half + c * 0.04, s * c * 0.38); g.lineTo(-half + c * 0.04, s * r * 0.8); g.closePath();
+      fill(wingC);
     }
-    let fg = "#000";
-    if (!flat) { fg = g.createLinearGradient(0, -fw / 2, 0, fw / 2); fg.addColorStop(0, light); fg.addColorStop(0.42, body); fg.addColorStop(1, shade(body, -0.3)); }
     g.beginPath();
-    g.moveTo(-half * 0.93, -fw * 0.34);
-    g.quadraticCurveTo(-half * 1.03, 0, -half * 0.93, fw * 0.34);
-    g.lineTo(half - fw * 0.5, fw / 2);
-    g.arc(half - fw * 0.5, 0, fw / 2, Math.PI / 2, -Math.PI / 2, true);
-    g.closePath(); fill(fg);
+    g.moveTo(-half + r * 0.5, -r); g.lineTo(half - r, -r); g.arc(half - r, 0, r, -Math.PI / 2, Math.PI / 2);
+    g.lineTo(-half + r * 0.5, r); g.quadraticCurveTo(-half, r, -half, 0); g.quadraticCurveTo(-half, -r, -half + r * 0.5, -r); g.closePath();
+    fill(body);
     if (flat) return;
-    // Zierstreifen und Leitwerk
-    g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = fw * 0.11;
-    g.beginPath(); g.moveTo(-half * 0.78, fw * 0.2); g.lineTo(half - fw * 0.95, fw * 0.2); g.stroke();
-    g.fillStyle = "#FFFFFF"; g.strokeStyle = dark; g.lineWidth = Math.max(1, c * 0.03);
-    rr(g, -half * 0.97, -fw * 0.11, half * 0.3, fw * 0.22, fw * 0.1); g.fill(); g.stroke();
-    // Gesicht
-    const ex = half - fw * 0.62, er = fw * 0.17;
-    g.fillStyle = "rgba(255,120,150,.45)";
-    for (const s of [-1, 1]) { g.beginPath(); g.ellipse(ex - er * 1.7, s * fw * 0.3, er * 0.7, er * 0.45, 0, 0, 7); g.fill(); }
-    for (const s of [-1, 1]) {
-      g.fillStyle = "#FFFFFF"; g.strokeStyle = "rgba(20,40,50,.55)"; g.lineWidth = Math.max(0.8, c * 0.02);
-      g.beginPath(); g.arc(ex, s * fw * 0.19, er, 0, 7); g.fill(); g.stroke();
-      g.fillStyle = "#1E2B33"; g.beginPath(); g.arc(ex + er * 0.35, s * fw * 0.19, er * 0.58, 0, 7); g.fill();
-      g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(ex + er * 0.5, s * fw * 0.19 - er * 0.28, er * 0.22, 0, 7); g.fill();
-    }
-    g.strokeStyle = "rgba(30,43,51,.7)"; g.lineWidth = Math.max(1, c * 0.025);
-    g.beginPath(); g.arc(half - fw * 0.42, 0, fw * 0.13, -0.9, 0.9); g.stroke();
+    g.fillStyle = "rgba(255,255,255,.25)"; rr(g, -half + c * 0.12, -r * 0.8, half * 2 - c * 0.45, r * 0.3, r * 0.15); g.fill();
+    // Cockpitscheibe mit zwei Äuglein
+    g.fillStyle = "#1E3A4A"; g.beginPath(); g.ellipse(half - r * 0.78, 0, r * 0.36, r * 0.74, 0, 0, 7); g.fill();
+    g.fillStyle = "#FFFFFF";
+    for (const s of [-1, 1]) { g.beginPath(); g.arc(half - r * 0.7, s * r * 0.3, r * 0.13, 0, 7); g.fill(); }
+    // Richtungspfeil
+    const x0 = -half + c * 0.5, x1 = half - r * 1.3, hl = Math.min(c * 0.42, (x1 - x0) * 0.5), sw = r * 0.34, hw = r * 0.82;
+    g.beginPath();
+    g.moveTo(x0, -sw); g.lineTo(x1 - hl, -sw); g.lineTo(x1 - hl, -hw); g.lineTo(x1, 0); g.lineTo(x1 - hl, hw); g.lineTo(x1 - hl, sw); g.lineTo(x0, sw); g.closePath();
+    g.fillStyle = arrow; g.fill();
+    g.lineWidth = Math.max(1, c * 0.035); g.strokeStyle = dark; g.stroke();
   }
   function planeSprite(len, dest, mystery, c) {
     const key = `p${len}:${dest}:${mystery ? 1 : 0}:${c}`;
@@ -781,12 +762,17 @@ window.Abflug = (() => {
       o.g.save(); o.g.translate(Math.cos((k * Math.PI) / 4) * ow, Math.sin((k * Math.PI) / 4) * ow);
       paintPlane(o.g, len, c, "#FFFFFF", "#FFFFFF"); o.g.restore();
     }
-    paintPlane(o.g, len, c, mystery ? "#A3ACB6" : A.DEST[dest].color, false);
-    if (!mystery) {
-      // Symbol am Heck, passend zu den Touristen.
-      const D = A.DEST[dest], gx = -len * c * 0.46 * 0.62, r = c * 0.13;
-      o.g.fillStyle = "#FFFFFF"; o.g.beginPath(); o.g.arc(gx, 0, r * 1.45, 0, 7); o.g.fill();
-      glyph(o.g, GLYPH[D.id], gx, 0, r, D.id === "JP" ? D.text : D.color);
+    // Auf dem weißen Japan-Flugzeug wäre ein weißer Pfeil unsichtbar.
+    paintPlane(o.g, len, c, mystery ? "#A3ACB6" : A.DEST[dest].color, false, !mystery && A.DEST[dest].id === "JP" ? "#D0103A" : "#FFFFFF");
+    // Symbol am Heck, passend zu den Touristen. Unbekanntes Ziel: Fragezeichen.
+    const gx = -len * c * 0.46 + c * 0.26, gr = c * 0.2;
+    o.g.fillStyle = "#FFFFFF"; o.g.beginPath(); o.g.arc(gx, 0, gr, 0, 7); o.g.fill();
+    if (mystery) {
+      o.g.fillStyle = "#6B7682"; o.g.font = `800 ${Math.round(gr * 1.6)}px ${FONT}`; o.g.textAlign = "center"; o.g.textBaseline = "middle";
+      o.g.fillText("?", gx, gr * 0.12);
+    } else {
+      const D = A.DEST[dest];
+      glyph(o.g, GLYPH[D.id], gx, 0, gr * 0.68, D.id === "JP" ? D.text : D.color);
     }
     return (sprites[key] = o);
   }
@@ -813,6 +799,8 @@ window.Abflug = (() => {
     ctx.translate(x, y); ctx.rotate(ang); ctx.scale(k, k);
     ctx.drawImage(spr.c, -spr.w / 2, -spr.h / 2, spr.w, spr.h);
     ctx.restore();
+    // Flagge nur am Gate und unterwegs, auf dem Vorfeld reichen Farbe, Pfeil und Symbol.
+    if (p.where === "apron") return;
     const bw = Math.max(13, c * 0.44) * scale, b = badgeSprite(p.revealed ? p.dest : -1, Math.round(bw));
     ctx.save(); ctx.globalAlpha = alpha;
     ctx.drawImage(b.c, x - b.w / 2, y - b.h / 2 + c * 0.04, b.w, b.h);
@@ -1754,7 +1742,6 @@ window.Abflug = (() => {
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(h.queue.length, hx + c * 0.3, hy + c * 0.3 + 1);
       }
     }
-    const arrows = [];
     for (const p of S.planes) {
       if (p.where !== "apron") continue;
       const v = vis.get(p.id), [dx, dy] = A.DIRS[p.dir];
@@ -1765,17 +1752,6 @@ window.Abflug = (() => {
       }
       if (v && v.kind === "spawn") { const s = Math.min(1, (t - v.t0) / 0.4), o = (1 - s) * c * 1.4; x -= dx * o; y -= dy * o; alpha = s; }
       drawPlane(x, y, ang, c, p, alpha);
-      arrows.push([x + dx * (p.len * c * 0.46 + c * 0.2), y + dy * (p.len * c * 0.46 + c * 0.2), ang, alpha]);
-    }
-    // Pfeil vor jeder Nase: zeigt die Rollrichtung, auch bei dunklen Flugzeugen.
-    const sz = c * 0.2, nudge = Math.sin(t * 4) * c * 0.04;
-    for (const [x, y, ang, alpha] of arrows) {
-      ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(ang); ctx.translate(nudge, 0);
-      ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.beginPath(); ctx.moveTo(-sz * 0.5, -sz * 0.75); ctx.lineTo(sz * 0.4, 0); ctx.lineTo(-sz * 0.5, sz * 0.75);
-      ctx.strokeStyle = C.ink; ctx.lineWidth = sz * 0.75; ctx.stroke();
-      ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = sz * 0.4; ctx.stroke();
-      ctx.restore();
     }
   }
 
