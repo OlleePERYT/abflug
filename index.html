@@ -52,15 +52,39 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .levels button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 14px; background: var(--teal); color: var(--sun); font-family: var(--font-display); font-weight: 800; font-size: 22px; box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; }
 .levels button:disabled { background: #E1E9E8; color: #9FB2B5; box-shadow: none; cursor: default; }
 .levels button.cur { outline: 3px solid var(--coral); outline-offset: 2px; }
+.levels { max-height: 44vh; overflow-y: auto; padding: 5px; }
+.chip svg { width: 22px; height: 16px; margin-right: 4px; }
+.chip.tow { display: flex; align-items: center; }
+.chip.armed { background: var(--coral); color: #FFFFFF; box-shadow: 0 3px 0 var(--coral-dark); }
+.streak { display: flex; justify-content: center; gap: 6px; margin: 0 0 6px; }
+.streak i { width: 34px; height: 10px; border-radius: 5px; background: #E1E9E8; }
+.streak i.on { background: var(--coral); }
+.card p.small { font-size: 14px; margin-bottom: 14px; }
+.meter { height: 12px; border-radius: 6px; background: #E1E9E8; margin: -6px 0 16px; overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--coral); border-radius: 6px; }
+.newstamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 14px; }
+.newstamps span { display: flex; align-items: center; gap: 6px; background: #FFF1C2; border-radius: 10px; padding: 3px 9px 3px 4px; font-size: 13px; font-weight: 800; }
+.newstamps img, .stamp img, .stamp .q { width: 30px; height: 20px; border-radius: 3px; flex: none; }
+.pass { display: grid; gap: 7px; max-height: 50vh; overflow-y: auto; margin-bottom: 16px; text-align: left; }
+.stamp { display: flex; gap: 10px; align-items: center; background: #F3EFE3; border-radius: 12px; padding: 7px 10px; }
+.stamp > div { flex: 1; min-width: 0; }
+.stamp b { display: flex; justify-content: space-between; font-family: var(--font-display); font-size: 15px; }
+.stamp .stars { color: var(--coral); letter-spacing: 1px; }
+.stamp small { display: block; font-size: 12px; color: var(--muted); }
+.stamp .bar { height: 5px; background: #E1E9E8; border-radius: 3px; margin-top: 3px; overflow: hidden; }
+.stamp .bar span { display: block; height: 100%; background: var(--coral); }
+.stamp.locked { opacity: .55; }
+.stamp .q { display: grid; place-items: center; background: #C9D6D8; color: #FFFFFF; font-weight: 800; }
 </style>
 
 <div id="app">
   <canvas id="cv" aria-label="Spielfeld: Terminal, Gates und Vorfeld"></canvas>
   <div id="safe"></div>
   <header class="hud">
-    <button id="lvlBtn" class="board" aria-label="Level wählen"><span class="board-k">Abflug</span><span id="lvlTxt" class="board-v">Level 01</span></button>
+    <button id="lvlBtn" class="board" aria-label="Level wählen"><span id="lvlNum" class="board-k">1</span><span id="lvlTxt" class="board-v">Erster Flug</span></button>
     <div class="hud-right">
-      <button id="gateBtn" class="chip" aria-label="Extra-Gate öffnen">+ Gate</button>
+      <button id="towBtn" class="chip tow" aria-label="Schlepper benutzen" hidden><svg viewBox="0 0 22 16" fill="currentColor"><rect x="1" y="5" width="13" height="6" rx="2"/><rect x="8" y="1" width="6" height="5" rx="1.5"/><path d="M14 8h6v2h-6z"/><circle cx="4.5" cy="12.5" r="2.5"/><circle cx="11.5" cy="12.5" r="2.5"/></svg><span id="towN">1</span></button>
+      <button id="passBtn" class="icon" aria-label="Reisepass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10.5" r="3"/><path d="M9 17h6"/></svg></button>
       <button id="restartBtn" class="icon" aria-label="Level neu starten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button>
       <button id="muteBtn" class="icon" aria-label="Ton aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path id="muteWave" d="M16.5 8.5a5 5 0 0 1 0 7"/></svg></button>
     </div>
@@ -166,6 +190,29 @@ window.Abflug = (() => {
       "##########",
     ]), dests: 10, planes: 42, mode: "alt", mystery: 0.3, hangars: 2, hangarSize: 4 },
   ];
+
+  // Nach den festen Levels geht es endlos weiter: Form, Ziele und Größe kommen aus dem Level-Index.
+  const SHAPES = [
+    (c, r) => grid(c, r, () => 1),
+    (c, r) => grid(c, r, (x, y) => Math.abs(x - (c - 1) / 2) / (c / 2) + Math.abs(y - (r - 1) / 2) / (r / 2) <= 1.2),
+    (c, r) => grid(c, r, (x, y) => ((x - (c - 1) / 2) / (c / 2 + 0.3)) ** 2 + ((y - (r - 1) / 2) / (r / 2 + 0.3)) ** 2 <= 1),
+    (c, r) => grid(c, r, (x, y) => !((x < c * 0.25 || x >= c * 0.75) && (y < r * 0.2 || y >= r * 0.8))),
+    (c, r) => grid(c, r, (x, y) => x < c * 0.4 || x >= c * 0.6 || (y >= r * 0.3 && y < r * 0.7)),
+  ];
+  const ISLES = ["Muschelriff", "Mangohain", "Flamingo", "Passatwind", "Lagune", "Riffkante", "Sonnendeck", "Hängematte", "Ananas", "Seestern", "Korallen", "Leuchtturm", "Papagei", "Schildkröte", "Brandung"];
+  const defs = {};
+  function levelDef(li) {
+    if (li < LEVELS.length) return LEVELS[li];
+    if (defs[li]) return defs[li];
+    const k = li - LEVELS.length, r = rng(li * 31337 + 7), round = Math.floor(k / ISLES.length);
+    const c = 9 + ((r() * 3) | 0), rows = 11 + ((r() * 3) | 0), h = r() < 0.5 ? 1 + (r() < 0.3 ? 1 : 0) : 0;
+    return (defs[li] = {
+      name: ISLES[k % ISLES.length] + (round ? " " + (round + 1) : ""),
+      mask: SHAPES[(r() * SHAPES.length) | 0](c, rows),
+      dests: Math.min(DEST.length, 9 + (k >> 2)), planes: 32 + Math.min(8, k >> 1), mode: "alt",
+      mystery: Math.min(0.4, 0.25 + k * 0.01), hangars: h, hangarSize: 4, accept: 0.8,
+    });
+  }
 
   // Flugzeug: (x, y) ist die Nase, der Rumpf liegt entgegen der Richtung.
   function cellsOf(p) {
@@ -362,11 +409,12 @@ window.Abflug = (() => {
     const m = occMap(st);
     st.planes.forEach(p => { if (p.where === "apron" && !p.revealed && freeRun(st, p, m) < 0) p.revealed = true; });
   }
-  function tap(st, id) {
+  // tow: Der Schlepper zieht das Flugzeug heraus, auch wenn der Weg zugeparkt ist.
+  function tap(st, id, tow = false) {
     const p = st.planes[id];
     if (!p || p.where !== "apron") return { ok: false, reason: "none" };
     const k = freeRun(st, p);
-    if (k >= 0) return { ok: false, reason: "blocked", free: k };
+    if (k >= 0 && !tow) return { ok: false, reason: "blocked", free: k };
     let g = -1;
     for (let i = 0; i < st.gateCount; i++) if (st.gates[i] === null) { g = i; break; }
     if (g < 0) return { ok: false, reason: "gates" };
@@ -476,20 +524,23 @@ window.Abflug = (() => {
   }
 
   function generate(li) {
-    const L = LEVELS[li];
+    const L = levelDef(li);
     if (L.fixed) return fixedLevel(L);
     let best = null;
+    const t0 = Date.now();
     for (let a = 0; a < 120; a++) {
+      // Zeitbudget, damit der Levelstart nicht hängt.
+      if (best && Date.now() - t0 > 250) break;
       // Freispielen wird mit dem Level häufiger und tiefer.
       const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919), { p: Math.min(0.75, 0.12 + 0.07 * li), maxB: Math.min(3, 1 + (li >> 1)) });
       if (!lv || !solve(lv)) continue;
       if (!best || lv.planes.length > best.planes.length) best = lv;
-      if (lv.planes.length >= L.planes * 0.9) break;
+      if (lv.planes.length >= L.planes * (L.accept || 0.9)) break;
     }
     return best;
   }
 
-  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
+  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, levelDef, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
 })();
 </script>
 
@@ -528,6 +579,10 @@ window.Abflug = (() => {
 
   let W = 0, H = 0, DPR = 1, lay = null;
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
+  // Siegesserie: Jeder Sieg in Folge bringt fürs nächste Level einen Schlepper mehr (höchstens 3).
+  // Reisepass: zählt Touristen pro Land, Stempel an festen Schwellen.
+  let streak = store.get("abflug.streak", 0), pass = store.get("abflug.pass", {}), tows = 0, towArmed = false, newStamps = [];
+  const STAMPS = [{ n: 30, name: "Besucher" }, { n: 150, name: "Stammgast" }, { n: 500, name: "Ehrenbürger" }];
   let lv = null, S = null, vis = new Map(), flyers = [], departing = [], confetti = [], sparks = [];
   let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, shakeT = -9, last = 0, lastPlop = 0, pulse = [], tut = null;
   const cache = {};
@@ -861,19 +916,23 @@ window.Abflug = (() => {
 
   // ---------- Level ----------
   function startLevel(i) {
-    levelIdx = Math.max(0, Math.min(A.LEVELS.length - 1, i));
+    levelIdx = Math.max(0, i);
     store.set("abflug.level", levelIdx);
     lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
     S = A.createState(lv);
     vis = new Map(); flyers = []; departing = []; confetti = []; sparks = [];
     ringT = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9; shakeT = -9; pulse = [];
     $("#overlay").hidden = true;
-    $("#lvlTxt").textContent = `Level ${levelIdx + 1} · ${lv.name}`;
-    $("#gateBtn").disabled = false;
+    $("#lvlNum").textContent = levelIdx + 1;
+    $("#lvlTxt").textContent = lv.name;
+    $("#lvlBtn").setAttribute("aria-label", `Level ${levelIdx + 1}: ${lv.name}. Level wählen`);
     layout();
-    tut = null;
-    if (A.LEVELS[levelIdx].tutorial) { tut = { step: -1 }; tutNext(); }
+    tut = null; newStamps = []; towArmed = false;
+    tows = A.levelDef(levelIdx).tutorial ? 0 : Math.min(3, streak);
+    syncTow();
+    if (A.levelDef(levelIdx).tutorial) { tut = { step: -1 }; tutNext(); }
     else if (INTRO[levelIdx]) showHint(INTRO[levelIdx], 6.5); else hideHint();
+    if (tows) setTimeout(() => toast(`Serie ${streak}: ${tows} Schlepper bereit`, 2200), 400);
   }
   function tutNext() {
     tut.step++;
@@ -932,11 +991,12 @@ window.Abflug = (() => {
     if (step && (step.lock || (step.target !== undefined && hit.id !== step.target))) return;
     const v = vis.get(hit.id);
     if (v && v.kind === "spawn" && now() - v.t0 < 0.35) return;
-    const res = A.tap(S, hit.id), t = now();
+    const tow = towArmed && A.freeRun(S, hit) >= 0;
+    const res = A.tap(S, hit.id, tow), t = now();
     if (res.ok) {
-      vis.set(hit.id, { kind: "taxi", t0: t, ...taxiPath(hit) });
+      vis.set(hit.id, { kind: "taxi", t0: t, tow, ...taxiPath(hit) });
       if (res.spawned !== null) vis.set(res.spawned, { kind: "spawn", t0: t });
-      sfx.go();
+      if (tow) { tows--; towArmed = false; syncTow(); hideHint(); sfx.tow(); toast("Abgeschleppt!"); } else sfx.go();
       if (step && step.on === "go") tutNext();
     } else if (res.reason === "blocked") {
       vis.set(hit.id, { kind: "bump", t0: t, dist: (res.free + 0.22) * c });
@@ -968,6 +1028,7 @@ window.Abflug = (() => {
       const r = A.tick(S);
       for (const b of r.boards) {
         const p = S.planes[b.plane];
+        addPass(b.dest);
         flyers.push({ pl: walkPath(p.gate, b.lane), t0: t + b.lane * 0.05, dest: b.dest, v: (b.plane * 7 + b.lane + p.seatsLeft) % 20, gate: p.gate, fill: 1 - p.seatsLeft / A.SEATS[p.len], full: b.full });
         if (b.full) vis.set(b.plane, { kind: "full", t0: t });
       }
@@ -1010,40 +1071,96 @@ window.Abflug = (() => {
     ended = true;
     if (tut) { tut = null; hideHint(); }
     setTimeout(() => {
+      store.set("abflug.pass", pass);
       if (won) {
         maxLevel = Math.max(maxLevel, levelIdx + 1);
         store.set("abflug.max", maxLevel);
+        setStreak(streak + 1);
         sfx.win();
-        const lastLvl = levelIdx >= A.LEVELS.length - 1;
+        const next = levelIdx + 1;
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1} geschafft</div>
           <h2>Alle im Urlaub!</h2>
           <p>${lv.tourists} Touristen sind in ${lv.planes.length} Flugzeugen abgeflogen.</p>
+          ${streakMeter()}
+          <p class="small"><b>Siegesserie ${streak}.</b> Im nächsten Level wartet${Math.min(3, streak) > 1 ? "en" : ""} ${Math.min(3, streak)} Schlepper auf dich.</p>
+          ${newStamps.length ? `<div class="newstamps">${newStamps.map(s => `<span><img src="${flagURL(s.d)}" alt="">${A.DEST[s.d].name}: ${STAMPS[s.tier].name}</span>`).join("")}</div>` : ""}
           <div class="actions">
-            ${lastLvl ? `<p><b>Alle ${A.LEVELS.length} Level geschafft.</b></p>` : `<button class="btn" id="nextBtn">Weiter zu Level ${levelIdx + 2}</button>`}
+            <button class="btn" id="nextBtn">Weiter zu Level ${next + 1}</button>
             <button class="btn alt" id="againBtn">Nochmal spielen</button>
           </div>`);
-        $("#nextBtn")?.addEventListener("click", () => startLevel(levelIdx + 1));
+        $("#nextBtn").addEventListener("click", () => startLevel(next));
         $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
+        // Nächstes Level schon vorbereiten, solange die Karte zu sehen ist.
+        setTimeout(() => { if (!cache[next]) cache[next] = A.generate(next); }, 300);
       } else {
         sfx.lose();
-        const canGate = S.gateCount < 5;
+        // Zweite Chance: einmal pro Level ein Extra-Gate. Ist sie verbraucht, ist die Serie weg.
+        const canGate = S.gateCount < 5, left = lv.tourists - S.boarded, had = streak;
+        if (!canGate) setStreak(0);
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1}</div>
-          <h2>Abflug verzögert</h2>
-          <p>Alle Gates sind belegt, und im Wartebereich will niemand zu einem der wartenden Ziele.</p>
+          <h2>${left <= lv.tourists * 0.25 ? "So knapp!" : "Abflug verzögert"}</h2>
+          <p>Alle Gates sind belegt, und niemand im Wartebereich passt. Nur noch <b>${left}</b> von ${lv.tourists} Touristen warten.</p>
+          <div class="meter"><span style="width:${Math.round((S.boarded / lv.tourists) * 100)}%"></span></div>
+          ${had ? `<p class="small"><b>${canGate ? `Deine Siegesserie von ${had} steht auf dem Spiel.` : `Deine Siegesserie von ${had} ist vorbei.`}</b></p>` : ""}
           <div class="actions">
-            ${canGate ? `<button class="btn" id="extraBtn">Extra-Gate öffnen</button>` : ""}
-            <button class="btn ${canGate ? "alt" : ""}" id="againBtn">Level neu starten</button>
+            ${canGate ? `<button class="btn" id="extraBtn">Zweite Chance: Extra-Gate</button><button class="btn alt" id="againBtn">Aufgeben</button>` : `<button class="btn" id="againBtn">Nochmal versuchen</button>`}
           </div>`);
         $("#extraBtn")?.addEventListener("click", () => { openExtraGate(); $("#overlay").hidden = true; ended = false; });
-        $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
+        $("#againBtn").addEventListener("click", () => { setStreak(0); startLevel(levelIdx); });
       }
     }, won ? 900 : 350);
   }
   function openExtraGate() {
     if (!S || S.gateCount >= 5) return;
-    S.gateCount = 5; $("#gateBtn").disabled = true; sfx.go();
+    S.gateCount = 5; sfx.go();
+  }
+  function setStreak(n) { streak = n; store.set("abflug.streak", n); }
+  function streakMeter() {
+    return `<div class="streak" aria-label="Siegesserie ${streak}">${[1, 2, 3].map(k => `<i class="${streak >= k ? "on" : ""}"></i>`).join("")}</div>`;
+  }
+  // Läuft das Level schon? Dann kostet Abbrechen die Serie.
+  function inProgress() { return S && !ended && (S.boarded > 0 || S.planes.some(p => p.where !== "apron" && p.where !== "hangar")); }
+  function syncTow() {
+    $("#towBtn").hidden = tows <= 0;
+    $("#towN").textContent = tows;
+    $("#towBtn").classList.toggle("armed", towArmed);
+    $("#towBtn").setAttribute("aria-pressed", towArmed);
+  }
+  function addPass(d) {
+    const id = A.DEST[d].id;
+    pass[id] = (pass[id] || 0) + 1;
+    const tier = STAMPS.findIndex(s => s.n === pass[id]);
+    if (tier < 0) return;
+    newStamps.push({ d, tier });
+    store.set("abflug.pass", pass);
+    toast(`Stempel: ${A.DEST[d].name} · ${STAMPS[tier].name}`, 1800);
+    sfx.stamp();
+  }
+  const flags = {};
+  function flagURL(d) {
+    if (flags[d]) return flags[d];
+    const c = document.createElement("canvas");
+    c.width = 60; c.height = 40;
+    drawFlag(c.getContext("2d"), A.DEST[d].id, 0, 0, 60, 40);
+    return (flags[d] = c.toDataURL());
+  }
+  function showPass() {
+    let got = 0;
+    const rows = A.DEST.map((D, d) => {
+      const n = pass[D.id] || 0, tier = STAMPS.filter(s => n >= s.n).length, next = STAMPS[tier];
+      got += tier;
+      if (!n) return `<div class="stamp locked"><span class="q">?</span><div><b>Noch unbekannt</b><small>Spiel weiter, um dieses Land zu entdecken.</small></div></div>`;
+      const prev = tier ? STAMPS[tier - 1].n : 0, w = next ? Math.round(((n - prev) / (next.n - prev)) * 100) : 100;
+      return `<div class="stamp"><img src="${flagURL(d)}" alt=""><div><b>${D.name}<span class="stars" aria-label="${tier} von 3 Stempeln">${"★".repeat(tier)}${"☆".repeat(3 - tier)}</span></b><small>${n} Touristen${next ? ` · noch ${next.n - n} bis ${next.name}` : ` · ${STAMPS[2].name}`}</small><div class="bar"><span style="width:${w}%"></span></div></div></div>`;
+    }).join("");
+    showCard(`
+      <div class="eyebrow">${got} von ${A.DEST.length * STAMPS.length} Stempeln</div>
+      <h2>Reisepass</h2>
+      <div class="pass">${rows}</div>
+      <div class="actions"><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
+    $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
   }
 
   // ---------- Zeichnen ----------
@@ -1064,7 +1181,7 @@ window.Abflug = (() => {
       const dist = e * v.pl.total, pt = at(v.pl, dist), ahead = at(v.pl, dist + 6);
       const ang = dist >= v.pl.total - 1 ? -Math.PI / 2 : Math.atan2(ahead.y - pt.y, ahead.x - pt.x) || pt.a;
       const k = Math.max(0, Math.min(1, (dist - v.firstLen) / Math.max(1, v.pl.total - v.firstLen)));
-      drawPlane(pt.x, pt.y, ang, lay.cell + (gateC(p) - lay.cell) * k, p);
+      drawPlane(pt.x, pt.y, ang, lay.cell + (gateC(p) - lay.cell) * k, p, 1, v.tow ? Math.sin(s * Math.PI) * 0.3 : 0, v.tow ? 1 + Math.sin(s * Math.PI) * 0.15 : 1);
     }
     for (const f of flyers) {
       if (t < f.t0) continue;
@@ -1374,9 +1491,9 @@ window.Abflug = (() => {
 
   // ---------- Hinweise und Karten ----------
   let toastTimer = 0, hintTimer = 0;
-  function toast(msg) {
+  function toast(msg, ms = 1100) {
     const el = $("#toast"); el.textContent = msg; el.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 1100);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), ms);
   }
   function showHint(html, seconds) {
     const el = $("#hint"); el.innerHTML = html; el.hidden = false;
@@ -1387,17 +1504,37 @@ window.Abflug = (() => {
   function showCard(html) { $("#card").innerHTML = html; $("#overlay").hidden = false; }
 
   $("#lvlBtn").addEventListener("click", () => {
-    const btns = A.LEVELS.map((L, i) => `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx ? "cur" : ""}" aria-label="Level ${i + 1}: ${L.name}">${i + 1}</button>`).join("");
+    if (!$("#overlay").hidden) return;
+    const n = Math.max(10, Math.ceil((maxLevel + 1) / 5) * 5), risk = streak > 0 && inProgress();
+    const btns = Array.from({ length: n }, (_, i) => `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx ? "cur" : ""}" aria-label="Level ${i + 1}: ${A.levelDef(i).name}">${i + 1}</button>`).join("");
     showCard(`
       <div class="eyebrow">Abflugtafel</div>
       <h2>Level wählen</h2>
+      ${risk ? `<p class="small">Ein Levelwechsel beendet deine Siegesserie von ${streak}.</p>` : ""}
       <div class="levels">${btns}</div>
       <div class="actions"><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
-    $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => startLevel(+b.dataset.l)));
+    $(".levels .cur")?.scrollIntoView({ block: "nearest" });
+    $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => { if (risk) setStreak(0); startLevel(+b.dataset.l); }));
     $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
   });
-  $("#restartBtn").addEventListener("click", () => startLevel(levelIdx));
-  $("#gateBtn").addEventListener("click", () => { audioInit(); openExtraGate(); });
+  $("#restartBtn").addEventListener("click", () => {
+    if (!$("#overlay").hidden) return;
+    if (!(streak > 0 && inProgress())) return startLevel(levelIdx);
+    showCard(`
+      <div class="eyebrow">Level ${levelIdx + 1}</div>
+      <h2>Neu starten?</h2>
+      <p>Deine Siegesserie von ${streak} geht dabei verloren.</p>
+      <div class="actions"><button class="btn" id="stayBtn">Weiterspielen</button><button class="btn alt" id="againBtn">Neu starten</button></div>`);
+    $("#stayBtn").addEventListener("click", () => ($("#overlay").hidden = true));
+    $("#againBtn").addEventListener("click", () => { setStreak(0); startLevel(levelIdx); });
+  });
+  $("#towBtn").addEventListener("click", () => {
+    audioInit();
+    if (tows <= 0 || ended || tut) return;
+    towArmed = !towArmed; syncTow();
+    if (towArmed) showHint("<b>Schlepper bereit.</b> Tippe ein zugeparktes Flugzeug an. Er zieht es direkt ans Gate.", 0); else hideHint();
+  });
+  $("#passBtn").addEventListener("click", () => { if ($("#overlay").hidden) showPass(); });
   function syncMute() { $("#muteWave").style.opacity = muted ? 0 : 1; $("#muteBtn").setAttribute("aria-label", muted ? "Ton an" : "Ton aus"); }
   $("#muteBtn").addEventListener("click", () => { muted = !muted; store.set("abflug.muted", muted); syncMute(); audioInit(); });
 
@@ -1447,13 +1584,16 @@ window.Abflug = (() => {
     },
     win: () => [523, 659, 784, 659, 784, 1046].forEach((f, i) => steel(f, 0.45, 0.08, i * 0.13)),
     lose: () => [392, 330, 262].forEach((f, i) => steel(f, 0.5, 0.07, i * 0.16)),
+    tow: () => { tone(110, 0.4, "triangle", 0.12, 1.6); steel(392, 0.3, 0.05, 0.12); steel(587, 0.35, 0.05, 0.2); },
+    stamp: () => { tone(150, 0.12, "triangle", 0.22, 0.5); steel(1046, 0.5, 0.08, 0.1); steel(1318, 0.6, 0.07, 0.2); },
   };
 
   // ---------- Start ----------
   function frame() {
     const t = now(), dt = Math.min(0.05, t - last || 0);
     last = t;
-    update(t, dt);
+    // Karte offen mitten im Level: Spiel hält an.
+    if ($("#overlay").hidden || ended) update(t, dt);
     draw(t);
     requestAnimationFrame(frame);
   }

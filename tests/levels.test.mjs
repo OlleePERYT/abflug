@@ -10,7 +10,10 @@ new Function(src)();
 const A = window.Abflug;
 
 let failed = 0;
-A.LEVELS.forEach((L, i) => {
+// Feste Level plus eine Stichprobe der endlosen Level.
+const idx = [...A.LEVELS.keys(), 10, 11, 12, 13, 14, 24, 39];
+idx.forEach(i => {
+  const L = A.levelDef(i);
   try {
     const t0 = performance.now();
     const lv = A.generate(i);
@@ -62,4 +65,12 @@ A.LEVELS.forEach((L, i) => {
     console.log(`FAIL ${i + 1} ${L.name}: ${e.message}`);
   }
 });
+// Schlepper: zieht ein zugeparktes Flugzeug trotzdem ans Gate.
+try {
+  const st = A.createState(A.generate(0));
+  assert.equal(A.tap(st, 1).reason, "blocked", "ohne Schlepper blockiert");
+  assert.ok(A.tap(st, 1, true).ok, "mit Schlepper frei");
+  assert.equal(st.planes[1].where, "taxi");
+  console.log("ok  Schlepper");
+} catch (e) { failed++; console.log(`FAIL Schlepper: ${e.message}`); }
 process.exit(failed ? 1 : 0);
