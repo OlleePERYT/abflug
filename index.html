@@ -38,16 +38,31 @@ body { background: var(--sea); color: var(--ink); font-family: var(--font-body);
 .icon svg { width: 18px; height: 18px; }
 button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--coral); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 21px; padding: 6px 20px; border-radius: 999px; box-shadow: 0 4px 0 var(--coral-dark); pointer-events: none; white-space: nowrap; }
-.hint { position: absolute; left: 50%; top: calc(60px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(92vw, 400px); background: rgba(255,253,247,.97); color: var(--ink); border: 3px solid #FFFFFF; border-radius: 18px; padding: 10px 16px; font-size: 15px; font-weight: 700; line-height: 1.4; text-align: center; pointer-events: none; box-shadow: 0 8px 24px rgba(8,65,77,.28); }
+.hint { box-sizing: border-box; position: absolute; left: 50%; top: calc(60px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(92vw, 400px); background: linear-gradient(180deg, #FFF9EA, #FFEFC9); color: var(--ink); border: 3px solid #FFFFFF; border-radius: 18px; padding: 10px 16px 10px 46px; font-size: 15px; font-weight: 700; line-height: 1.4; text-align: left; pointer-events: none; box-shadow: 0 6px 0 rgba(8,65,77,.18), 0 10px 24px rgba(8,65,77,.25); }
+/* Kleine Sonne links im Hinweis */
+.hint::before { content: ""; position: absolute; left: 12px; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; background: radial-gradient(circle, #FFE066 0 55%, transparent 57%), repeating-conic-gradient(#FFC400 0 12deg, transparent 12deg 30deg); }
 .hint b { color: var(--coral); }
-.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,65,77,.45); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.card { width: 100%; max-width: 340px; background: var(--card); color: var(--ink); border: 4px solid #FFFFFF; border-radius: 26px; padding: 22px 20px 20px; text-align: center; box-shadow: 0 14px 40px rgba(8,65,77,.35); }
-.card .eyebrow { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--muted); }
-.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1.05; color: var(--teal); margin: 4px 0 10px; text-wrap: balance; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(31,169,198,.35), rgba(8,65,77,.6)); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+/* Karten wie ein Strandkiosk: Markise oben, Sand in der Mitte, Wellen unten. */
+.card { position: relative; overflow: hidden; width: 100%; max-width: 340px; max-height: calc(100vh - 32px); overflow-y: auto; color: var(--ink); border: 4px solid #FFFFFF; border-radius: 28px; padding: 40px 20px 30px; text-align: center; box-shadow: 0 8px 0 rgba(8,65,77,.25), 0 18px 40px rgba(8,65,77,.35);
+  background: radial-gradient(circle at 12px 0, transparent 11px, #7FD9B8 12px) left bottom / 24px 12px repeat-x, linear-gradient(180deg, #FFF9EA 0%, #FFEDC2 100%); }
+.card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 26px;
+  background: repeating-linear-gradient(90deg, #FF8F7E 0 22px, #FFFFFF 22px 44px, #7FD9B8 44px 66px, #FFFFFF 66px 88px, #FFD56B 88px 110px, #FFFFFF 110px 132px);
+  -webkit-mask: radial-gradient(circle 11px at 11px 14px, #000 98%, transparent) 0 0 / 22px 26px repeat-x, linear-gradient(#000 0 0) 0 0 / 100% 14px no-repeat;
+  mask: radial-gradient(circle 11px at 11px 14px, #000 98%, transparent) 0 0 / 22px 26px repeat-x, linear-gradient(#000 0 0) 0 0 / 100% 14px no-repeat; }
+.card .eyebrow { display: inline-block; font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--sun); background: var(--teal); border-radius: 999px; padding: 2px 12px; box-shadow: 0 2px 0 var(--teal-dark); }
+.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1.05; color: var(--teal); margin: 8px 0 10px; text-wrap: balance; text-shadow: 0 2px 0 #FFFFFF; }
 .card p { margin: 0 0 16px; font-size: 15px; line-height: 1.45; color: #34525A; }
 .actions { display: grid; gap: 10px; }
 .btn { height: 48px; border: 0; border-radius: 16px; font-family: var(--font-display); font-weight: 800; font-size: 20px; cursor: pointer; background: var(--coral); color: #FFFFFF; box-shadow: 0 4px 0 var(--coral-dark); }
-.btn.alt { background: #E6F5F2; color: var(--teal); box-shadow: 0 4px 0 #C4DED9; }
+.btn.alt { background: #FFFFFF; color: var(--teal); box-shadow: 0 4px 0 #E3C98F; }
+.btn { border-radius: 999px; }
+.tabs { display: flex; gap: 6px; justify-content: center; margin: -2px 0 12px; }
+.tabs button { border: 0; border-radius: 999px; padding: 6px 14px; font-family: var(--font-display); font-weight: 800; font-size: 15px; background: #FFFFFF; color: var(--teal); box-shadow: 0 2px 0 #E3C98F; cursor: pointer; }
+.tabs button.on { background: var(--teal); color: var(--sun); box-shadow: 0 2px 0 var(--teal-dark); }
+.levels button.done { background: #FFC400; color: var(--teal-dark); box-shadow: 0 3px 0 #D99A00; }
+.levels button.done small { color: var(--teal-dark); }
+.medal { width: 76px; height: 76px; margin: 10px auto 2px; border-radius: 50%; display: grid; place-items: center; color: #FFFFFF; font-size: 42px; background: radial-gradient(circle at 35% 30%, #FFF3A0, #FFC400 60%, #D99A00); border: 4px solid #FFFFFF; box-shadow: 0 4px 0 #B07A00; animation: starpop .5s cubic-bezier(.3,1.6,.5,1) both; }
 .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
 .levels button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 14px; background: var(--teal); color: var(--sun); font-family: var(--font-display); font-weight: 800; font-size: 22px; line-height: 1; box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; display: grid; place-content: center; gap: 2px; }
 .levels button small { font-size: 10px; letter-spacing: 0; color: #FFB4A8; }
@@ -78,7 +93,7 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .newstamps span { display: flex; align-items: center; gap: 6px; background: #FFF1C2; border-radius: 10px; padding: 3px 9px 3px 4px; font-size: 13px; font-weight: 800; }
 .newstamps img, .stamp img, .stamp .q { width: 30px; height: 20px; border-radius: 3px; flex: none; }
 .pass { display: grid; gap: 7px; max-height: 50vh; overflow-y: auto; margin-bottom: 16px; text-align: left; }
-.stamp { display: flex; gap: 10px; align-items: center; background: #F3EFE3; border-radius: 12px; padding: 7px 10px; }
+.stamp { display: flex; gap: 10px; align-items: center; background: #FFFFFF; border-radius: 14px; padding: 7px 10px; box-shadow: 0 2px 0 #EBD49E; }
 .stamp > div { flex: 1; min-width: 0; }
 .stamp b { display: flex; justify-content: space-between; font-family: var(--font-display); font-size: 15px; }
 .stamp .stars { color: var(--coral); letter-spacing: 1px; }
@@ -89,11 +104,12 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .btn:disabled { opacity: .5; cursor: default; }
 .shop { display: grid; gap: 6px; max-height: 52vh; overflow-y: auto; margin-bottom: 14px; text-align: left; }
 .shop h3 { font-family: var(--font-display); font-size: 15px; color: var(--muted); margin: 6px 0 0; }
-.shop-row { display: flex; align-items: center; gap: 10px; background: #F3EFE3; border-radius: 12px; padding: 6px 6px 6px 12px; }
+.shop-row { display: flex; align-items: center; gap: 10px; background: #FFFFFF; border-radius: 14px; padding: 6px 6px 6px 12px; box-shadow: 0 2px 0 #EBD49E; }
 .shop-row span { flex: 1; font-weight: 800; font-size: 15px; }
 .shop-row small { display: block; font-weight: 700; font-size: 12px; color: var(--muted); }
 .shop-row button { height: 36px; min-width: 96px; border: 0; border-radius: 10px; background: var(--coral); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 14px; box-shadow: 0 3px 0 var(--coral-dark); cursor: pointer; }
 .shop-row button.alt { background: #E6F5F2; color: var(--teal); box-shadow: 0 3px 0 #C4DED9; }
+.shop-row button { border-radius: 999px; }
 .shop-row button:disabled { opacity: .45; cursor: default; }
 .stamp .q { display: grid; place-items: center; background: #C9D6D8; color: #FFFFFF; font-weight: 800; }
 </style>
@@ -405,7 +421,8 @@ window.Abflug = (() => {
   // opts.lookahead (Leuchtturm): Unbekannte Ziele zeigen sich schon, wenn höchstens so viele Flugzeuge
   // im Weg stehen. true zählt als 1, ab 99 ist alles sichtbar.
   function createState(lv, opts = {}) {
-    const planes = lv.planes.map(p => ({ ...p, where: p.hangar >= 0 ? "hangar" : "apron", seatsLeft: SEATS[p.len], gate: -1, revealed: !p.mystery }));
+    // opts.fog (Herausforderung Nebel): Alle Ziele bleiben verborgen, bis der Weg frei ist.
+    const planes = lv.planes.map(p => ({ ...p, where: p.hangar >= 0 ? "hangar" : "apron", seatsLeft: SEATS[p.len], gate: -1, revealed: !p.mystery && !opts.fog }));
     const hangars = lv.hangars.map(h => ({ x: h.x, y: h.y, dir: h.dir, queue: [...h.queue] }));
     hangars.forEach(h => { planes[h.queue.shift()].where = "apron"; });
     const st = {
@@ -621,6 +638,15 @@ window.Abflug = (() => {
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
   // Siegesserie: Jeder Sieg in Folge bringt fürs nächste Level einen Schlepper mehr (höchstens 3).
   // Reisepass: zählt Touristen pro Land, Stempel an festen Schwellen.
+  // Herausforderungen für geschaffte Level: härtere Regel, keine Schlepper, keine zweite Chance.
+  // Die Art wechselt reihum mit dem Level. Erstes Meistern bringt Muscheln und eine Medaille.
+  const CHALLENGES = [
+    { id: "nebel", name: "Nebel", short: "Nebel", text: "Alle Ziele sind unbekannt, bis der Weg frei ist." },
+    { id: "eile", name: "Eiltempo", short: "Eile", text: "Der Ring läuft schneller, und der Fluglotse hat frei." },
+    { id: "sicht", name: "Kurze Sicht", short: "Sicht", text: "Von den Zuläufen ist nur die vorderste Reihe zu sehen." },
+  ];
+  const chalFor = i => CHALLENGES[i % CHALLENGES.length], chalReward = i => 40 + 5 * i;
+  let chal = null, chalDone = store.get("abflug.chal", {});
   let tiers = store.get("abflug.tiers", {}), starsBy = store.get("abflug.stars", {}), towsUsed = 0;
   let shells = store.get("abflug.shells", 0), owned = store.get("abflug.owned", []), decor = store.get("abflug.decor", { awning: "pastell", floor: "fliesen", center: "palme" }), placedAt = {};
   // Alte eigene Insel (bis Version 9): gebaute Teile als Muscheln zurückgeben.
@@ -988,31 +1014,33 @@ window.Abflug = (() => {
     lay = {
       ox, gw, top, termH, gatesH, gy0, slotW, slotH, gc, gates, cell, ax, ay, d, laneW, cx, arms,
       ring, rad, cyR, x0, x1, exit: { x: cx, y: cyR + rad },
-      capRows: { L: Math.min(5, Math.floor((arms.L.total - d) / d)), R: Math.min(5, Math.floor((arms.R.total - d) / d)) },
+      capRows: chal?.id === "sicht" ? { L: 1, R: 1 } : { L: Math.min(5, Math.floor((arms.L.total - d) / d)), R: Math.min(5, Math.floor((arms.R.total - d) / d)) },
       laneY: gy0 + gatesH + 6, sab,
       island: { x: ox + 4, y: -40, w: gw - 8, h: islandBottom + 40 },
     };
   }
 
   // ---------- Level ----------
-  function startLevel(i) {
+  function startLevel(i, ch = null) {
     levelIdx = Math.max(0, i);
+    chal = levelIdx > 0 ? ch : null;
     store.set("abflug.level", levelIdx);
     lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
-    S = A.createState(lv, { lookahead: fx("leucht", "look", 0) });
+    S = A.createState(lv, { lookahead: fx("leucht", "look", 0), fog: chal?.id === "nebel" });
     vis = new Map(); flyers = []; departing = []; confetti = []; sparks = []; floats = []; tips = 0;
     ringT = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9; shakeT = -9; pulse = [];
     $("#overlay").hidden = true;
     $("#lvlNum").textContent = levelIdx + 1;
-    $("#lvlTxt").textContent = lv.name;
+    $("#lvlTxt").textContent = chal ? `${lv.name} · ${chal.name}` : lv.name;
     $("#lvlBtn").setAttribute("aria-label", `Level ${levelIdx + 1}: ${lv.name}. Level wählen`);
     layout();
     tut = null; newStamps = []; towArmed = false;
     // Siegesserie bringt bis zu 3 Schlepper, der Kontrollturm einen weiteren.
-    tows = A.levelDef(levelIdx).tutorial ? 0 : Math.min(3, streak) + fx("turm", "tows", 0);
+    tows = A.levelDef(levelIdx).tutorial || chal ? 0 : Math.min(3, streak) + fx("turm", "tows", 0);
     towsUsed = 0;
     syncTow();
     if (A.levelDef(levelIdx).tutorial) { tut = { step: -1 }; tutNext(); }
+    else if (chal) showHint(`<b>Herausforderung ${chal.name}:</b> ${chal.text} Ohne Schlepper und ohne zweite Chance.`, 7);
     else if (INTRO[levelIdx]) showHint(INTRO[levelIdx], 6.5); else hideHint();
     if (tows) setTimeout(() => toast(streak ? `Serie ${streak}: ${tows} Schlepper bereit` : `Kontrollturm: ${tows} Schlepper bereit`, 2200), 400);
   }
@@ -1065,6 +1093,7 @@ window.Abflug = (() => {
     // Seitenstreifen neben dem Vorfeld: links Fluglotse, rechts Pilot.
     if (y > lay.ay - 10) {
       const mode = x < lay.ax - 2 ? "slow" : x > lay.ax + S.cols * lay.cell + 2 ? "fast" : "";
+      if (mode === "slow" && chal?.id === "eile") { toast("Der Fluglotse hat heute frei"); return; }
       if (mode) {
         const t = now();
         if (speedOn(t) !== mode) { speed.shout = SHOUTS[mode][(Math.random() * SHOUTS[mode].length) | 0]; sfx[mode === "fast" ? "engine" : "whistle"](); }
@@ -1120,7 +1149,7 @@ window.Abflug = (() => {
     }
     ringT += dt;
     const sp = speedOn(t);
-    tickNow = sp === "fast" ? fx("band", "fast", TICK_FAST) : sp === "slow" ? fx("eis", "slow", TICK_SLOW) : TICK;
+    tickNow = sp === "fast" ? fx("band", "fast", TICK_FAST) : sp === "slow" ? fx("eis", "slow", TICK_SLOW) : chal?.id === "eile" ? 0.2 : TICK;
     if (ringT > tickNow) ringT = Math.min(ringT, tickNow * 2);
     while (ringT >= tickNow) {
       ringT -= tickNow;
@@ -1174,6 +1203,7 @@ window.Abflug = (() => {
     if (tut) { tut = null; hideHint(); }
     setTimeout(() => {
       store.set("abflug.pass", pass);
+      if (chal) return finishChallenge(won);
       if (won) {
         maxLevel = Math.max(maxLevel, levelIdx + 1);
         store.set("abflug.max", maxLevel);
@@ -1207,9 +1237,11 @@ window.Abflug = (() => {
           <div class="actions">
             ${canBuild ? `<button class="btn" id="isleBtn">Flughafen ausbauen</button>` : ""}
             <button class="btn ${canBuild ? "alt" : ""}" id="nextBtn">Weiter zu Level ${next + 1}</button>
+            ${levelIdx > 0 && !chalDone[levelIdx] ? `<button class="btn alt" id="chalBtn">Herausforderung: ${chalFor(levelIdx).name} (+${chalReward(levelIdx)})</button>` : ""}
             <button class="btn alt" id="againBtn">Nochmal spielen</button>
           </div>`);
         $("#isleBtn")?.addEventListener("click", () => showShop(next));
+        $("#chalBtn")?.addEventListener("click", () => startLevel(levelIdx, chalFor(levelIdx)));
         $("#nextBtn").addEventListener("click", () => startLevel(next));
         $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
         // Nächstes Level schon vorbereiten, solange die Karte zu sehen ist.
@@ -1236,6 +1268,38 @@ window.Abflug = (() => {
         $("#againBtn").addEventListener("click", () => { setStreak(0); startLevel(levelIdx); });
       }
     }, won ? 900 : 350);
+  }
+  function finishChallenge(won) {
+    const i = levelIdx, c = chal, meter = `<div class="meter"><span style="width:${Math.round((S.boarded / lv.tourists) * 100)}%"></span></div>`;
+    if (won) {
+      sfx.win();
+      const first = !chalDone[i], reward = first ? chalReward(i) : 0;
+      if (first) { chalDone[i] = true; store.set("abflug.chal", chalDone); shells += reward; store.set("abflug.shells", shells); }
+      showCard(`
+        <div class="eyebrow">Herausforderung · Level ${i + 1}</div>
+        <div class="medal" aria-hidden="true">★</div>
+        <h2>${c.name} gemeistert!</h2>
+        <p>${first ? `Neue Medaille und <b>+${reward} Muscheln</b>.` : "Die Medaille hast du schon. Respekt gibt es trotzdem."}</p>
+        <div class="actions">
+          <button class="btn" id="nextBtn">Weiter zu Level ${maxLevel + 1}</button>
+          <button class="btn alt" id="menuBtn">Weitere Herausforderungen</button>
+        </div>`);
+      $("#nextBtn").addEventListener("click", () => startLevel(maxLevel));
+      $("#menuBtn").addEventListener("click", () => showMenu("chal"));
+    } else {
+      sfx.lose();
+      showCard(`
+        <div class="eyebrow">Herausforderung · Level ${i + 1}</div>
+        <h2>${c.name}: knapp daneben</h2>
+        <p>Nur noch <b>${lv.tourists - S.boarded}</b> von ${lv.tourists} Touristen warten.</p>
+        ${meter}
+        <div class="actions">
+          <button class="btn" id="againBtn">Nochmal versuchen</button>
+          <button class="btn alt" id="normBtn">Normales Level spielen</button>
+        </div>`);
+      $("#againBtn").addEventListener("click", () => startLevel(i, c));
+      $("#normBtn").addEventListener("click", () => startLevel(i));
+    }
   }
   function openExtraGate() {
     if (!S || S.gateCount >= 5) return;
@@ -2088,27 +2152,43 @@ window.Abflug = (() => {
   function hideHint() { $("#hint").hidden = true; }
   function showCard(html) { $("#card").innerHTML = html; $("#overlay").hidden = false; }
 
-  $("#lvlBtn").addEventListener("click", () => {
-    if (!$("#overlay").hidden) return;
-    const n = Math.max(10, Math.ceil((maxLevel + 1) / 5) * 5), risk = streak > 0 && inProgress();
+  $("#lvlBtn").addEventListener("click", () => { if ($("#overlay").hidden) showMenu(chal ? "chal" : "lvl"); });
+  // Levelwahl mit zwei Reitern: normale Level und Herausforderungen geschaffter Level.
+  function showMenu(tab) {
+    const n = Math.max(10, Math.ceil((maxLevel + 1) / 5) * 5), risk = streak > 0 && inProgress() && !chal;
     const btns = Array.from({ length: n }, (_, i) => {
-      const st = starsBy[i] || 0;
-      return `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx ? "cur" : ""}" aria-label="Level ${i + 1}: ${A.levelDef(i).name}, ${st} von 3 Sternen">${i + 1}<small>${i <= maxLevel ? "★".repeat(st) + "☆".repeat(3 - st) : ""}</small></button>`;
+      const L = A.levelDef(i), st = starsBy[i] || 0;
+      if (tab === "chal") {
+        const c = chalFor(i), open = i > 0 && i < maxLevel, done = chalDone[i];
+        return `<button data-l="${i}" ${open ? "" : "disabled"} class="${done ? "done" : ""}" aria-label="Level ${i + 1}: ${L.name}, Herausforderung ${c.name}${done ? ", gemeistert" : ""}">${i + 1}<small>${i === 0 ? "" : done ? "Medaille" : c.short}</small></button>`;
+      }
+      return `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx && !chal ? "cur" : ""}" aria-label="Level ${i + 1}: ${L.name}, ${st} von 3 Sternen">${i + 1}<small>${i <= maxLevel ? "★".repeat(st) + "☆".repeat(3 - st) : ""}</small></button>`;
     }).join("");
-    const total = Object.values(starsBy).reduce((a, b) => a + b, 0);
+    const total = Object.values(starsBy).reduce((a, b) => a + b, 0), medals = Object.keys(chalDone).length;
     showCard(`
-      <div class="eyebrow">Abflugtafel · ${total} Sterne</div>
-      <h2>Level wählen</h2>
+      <div class="eyebrow">${total} Sterne · ${medals} Medaillen</div>
+      <h2>${tab === "chal" ? "Herausforderungen" : "Level wählen"}</h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="${tab === "lvl"}" class="${tab === "lvl" ? "on" : ""}" data-tab="lvl">Level</button>
+        <button role="tab" aria-selected="${tab === "chal"}" class="${tab === "chal" ? "on" : ""}" data-tab="chal">Herausforderungen</button>
+      </div>
+      ${tab === "chal" ? `<p class="small">Geschaffte Level mit härterer Regel: Nebel, Eiltempo oder Kurze Sicht. Ohne Schlepper und ohne zweite Chance.</p>` : ""}
       ${risk ? `<p class="small">Ein Levelwechsel beendet deine Siegesserie von ${streak}.</p>` : ""}
       <div class="levels">${btns}</div>
       <div class="actions"><button class="btn" id="isleBtn">Flughafen ausbauen</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
     $("#isleBtn").addEventListener("click", () => showShop());
     $(".levels .cur")?.scrollIntoView({ block: "nearest" });
-    $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => { if (risk) setStreak(0); startLevel(+b.dataset.l); }));
+    $("#card").querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => showMenu(b.dataset.tab)));
+    $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => {
+      if (risk) setStreak(0);
+      const i = +b.dataset.l;
+      tab === "chal" ? startLevel(i, chalFor(i)) : startLevel(i);
+    }));
     $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
-  });
+  }
   $("#restartBtn").addEventListener("click", () => {
     if (!$("#overlay").hidden) return;
+    if (chal) return startLevel(levelIdx, chal);
     if (!(streak > 0 && inProgress())) return startLevel(levelIdx);
     showCard(`
       <div class="eyebrow">Level ${levelIdx + 1}</div>

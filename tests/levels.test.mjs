@@ -88,4 +88,10 @@ try {
   assert.ok(two.planes.filter(p => p.revealed).length >= one.planes.filter(p => p.revealed).length, "Stufe 2 mindestens wie Stufe 1");
   console.log(`ok  Leuchtturm (${without} -> ${withL} sichtbar)`);
 } catch (e) { failed++; console.log(`FAIL Leuchtturm: ${e.message}`); }
+// Herausforderung Nebel: Nur Flugzeuge mit freiem Weg zeigen ihr Ziel, und das Level bleibt lösbar.
+try {
+  const lv = A.generate(4), st = A.createState(lv, { fog: true });
+  st.planes.forEach(p => assert.equal(p.revealed, p.where === "apron" && A.freeRun(st, p) < 0));
+  console.log("ok  Nebel");
+} catch (e) { failed++; console.log(`FAIL Nebel: ${e.message}`); }
 process.exit(failed ? 1 : 0);
