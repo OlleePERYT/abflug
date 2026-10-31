@@ -2,6 +2,14 @@
 <html lang="de">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1FA9C6">
+<meta name="description" content="Puzzle auf einer Karibikinsel: Schick die Flugzeuge ans Gate, damit alle Touristen in den Urlaub kommen.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Abflug!">
 <title>Abflug!</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2204,6 +2212,28 @@ window.Abflug = (() => {
   function showCard(html) { $("#card").innerHTML = html; $("#overlay").hidden = false; }
 
   $("#lvlBtn").addEventListener("click", () => { if ($("#overlay").hidden) showMenu(chal ? "chal" : "lvl"); });
+  // Als App installieren: Chrome und Android liefern beforeinstallprompt, auf iPhone und iPad
+  // geht es nur über Teilen → Zum Home-Bildschirm. Nur auf der öffentlichen Seite, nicht im Artifact.
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; });
+  window.addEventListener("appinstalled", () => { installEvt = null; toast("Abflug! ist installiert"); });
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const canInstall = () => !standalone() && (!!installEvt || (isIOS && "serviceWorker" in navigator && location.hostname.endsWith("github.io")));
+  function install(tab) {
+    if (installEvt) {
+      installEvt.prompt();
+      installEvt.userChoice.finally(() => { installEvt = null; showMenu(tab); });
+      return;
+    }
+    showCard(`
+      <div class="eyebrow">Auf den Home-Bildschirm</div>
+      <h2>Als App installieren</h2>
+      <p>1. Tippe unten in Safari auf <b>Teilen</b> (das Quadrat mit dem Pfeil nach oben).<br>2. Wähle <b>Zum Home-Bildschirm</b>.<br>3. Tippe auf <b>Hinzufügen</b>.</p>
+      <p class="small">Danach startet Abflug! wie eine App, im Vollbild und auch ohne Netz.</p>
+      <div class="actions"><button class="btn" id="backBtn">Alles klar</button></div>`);
+    $("#backBtn").addEventListener("click", () => showMenu(tab));
+  }
   // Levelwahl mit zwei Reitern: normale Level und Herausforderungen geschaffter Level.
   function showMenu(tab) {
     const n = Math.max(10, Math.ceil((maxLevel + 1) / 5) * 5), risk = streak > 0 && inProgress() && !chal;
@@ -2226,7 +2256,8 @@ window.Abflug = (() => {
       ${tab === "chal" ? `<p class="small">Geschaffte Level mit härterer Regel: Nebel, Eiltempo oder Kurze Sicht. Ohne Schlepper und ohne zweite Chance.</p>` : ""}
       ${risk ? `<p class="small">Ein Levelwechsel beendet deine Siegesserie von ${streak}.</p>` : ""}
       <div class="levels">${btns}</div>
-      <div class="actions"><button class="btn" id="isleBtn">Flughafen ausbauen</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
+      <div class="actions"><button class="btn" id="isleBtn">Flughafen ausbauen</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button>${canInstall() ? `<button class="mini" id="installBtn">Als App installieren<small>aufs Handy, läuft auch offline</small></button>` : ""}</div>`);
+    $("#installBtn")?.addEventListener("click", () => install(tab));
     $("#isleBtn").addEventListener("click", () => showShop());
     $(".levels .cur")?.scrollIntoView({ block: "nearest" });
     $("#card").querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => showMenu(b.dataset.tab)));
@@ -2340,3 +2371,5 @@ window.Abflug = (() => {
   window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 })();
 </script>
+
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>

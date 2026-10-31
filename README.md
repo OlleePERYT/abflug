@@ -7,4 +7,4 @@ Ein Puzzle-Spiel auf einer Karibikinsel: Schick die Flugzeuge in der richtigen R
 Alles steckt in einer einzigen Datei, `index.html`, ohne Bibliotheken.
 
 - Tests: `node tests/levels.test.mjs`
-- Seite für GitHub Pages bauen: `scripts/pages.sh` (schreibt `docs/index.html`)
+- Seite für GitHub Pages bauen: `scripts/pages.sh` (schreibt `docs/`: Seite, Manifest, Service Worker, Icons). Danach lässt sich das Spiel als App installieren und läuft offline.
