@@ -1,0 +1,633 @@
+<title>Hallen-Proben</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap">
+<style>
+/* Vier spielbare Mini-Proben für ein Basketball-Spiel. Arena-Look in Nachtblau mit Ball-Orange,
+   links Reiter und Erklärung, rechts das Spiel im Handyformat. Bewusst nur ein dunkles Thema. */
+:root {
+  --night: #101B30;
+  --navy: #1A2A48;
+  --line: #2C3F63;
+  --orange: #FF7A1A;
+  --cream: #F6EBD9;
+  --muted: #A9B8D2;
+  --display: "Anton", "Barlow Condensed", Impact, sans-serif;
+  --cond: "Barlow Condensed", "Barlow", Arial Narrow, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html { background: var(--night); }
+body { background: var(--night); color: var(--cream); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.kicker { font-family: var(--cond); font-weight: 800; font-size: 15px; letter-spacing: .12em; color: var(--orange); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(36px, 6vw, 60px); line-height: .95; margin: 4px 0 18px; text-wrap: balance; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.tabs button { font-family: var(--cond); font-weight: 800; font-size: 17px; letter-spacing: .03em; border: 2px solid var(--line); background: transparent; color: var(--cream); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--orange); border-color: var(--orange); color: var(--night); }
+button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 28px; align-items: start; }
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } .info { order: 2; } }
+.info { min-width: 0; }
+.info h2 { font-family: var(--cond); font-weight: 800; font-size: 28px; margin: 0 0 2px; }
+.info .like { font-family: var(--cond); font-weight: 700; font-size: 15px; color: var(--orange); margin: 0 0 10px; }
+.info p { margin: 0 0 12px; color: var(--muted); max-width: 60ch; }
+.info ul { margin: 0 0 14px; padding-left: 20px; color: var(--muted); }
+.info li { margin-bottom: 4px; }
+.info b { color: var(--cream); }
+.phone { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 36px; padding: 8px; background: #0A1222; box-shadow: 0 0 0 2px var(--line), 0 24px 50px rgba(0,0,0,.45); }
+.phone canvas { display: block; width: 100%; height: auto; border-radius: 28px; touch-action: none; }
+.row { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+.row button { font-family: var(--cond); font-weight: 800; font-size: 16px; border: 2px solid var(--line); background: var(--navy); color: var(--cream); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <div class="kicker">SPIELBARE MINI-PROBEN · JE EIN LEVEL</div>
+  <h1>Vier Ideen für ein Hallen-Spiel</h1>
+  <div class="tabs" role="tablist" aria-label="Probe wählen">
+    <button role="tab" id="t-choreo" aria-selected="true" data-g="choreo">1 · Fan-Choreo</button>
+    <button role="tab" id="t-dribble" aria-selected="false" data-g="dribble">2 · Dribble Jam</button>
+    <button role="tab" id="t-sort" aria-selected="false" data-g="sort">3 · Ballständer</button>
+    <button role="tab" id="t-kabine" aria-selected="false" data-g="kabine">4 · Kabinen-Jam</button>
+  </div>
+  <div class="stage">
+    <div class="info" id="info"></div>
+    <div>
+      <div class="phone"><canvas id="cv" width="390" height="720" role="img" aria-label="Spielfeld der gewählten Probe"></canvas></div>
+      <div class="row"><button id="resetBtn">Level neu starten</button><button id="muteBtn" aria-pressed="false">Ton aus</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- Gemeinsames: Teams, Figuren, Ton ----------
+  const TEAMS = [
+    { name: "Spree Sharks", c: "#FF7A1A", g: "star" },
+    { name: "Kiez Kings", c: "#2EC4B6", g: "dot" },
+    { name: "Havel Hawks", c: "#9A4DF5", g: "diamond" },
+    { name: "Tempelhof Titans", c: "#F0302A", g: "tri" },
+  ];
+  const SKIN = ["#F6D2B0", "#E7B58B", "#C68A5E", "#9A6542", "#FADFC7"];
+  const HAIR = ["#3A2618", "#7A4E24", "#1E1A18", "#C98A4B", "#E9C27A"];
+  const W = 390, H = 720;
+  const cv = document.getElementById("cv"), dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const FONT = '"Barlow Condensed", "Barlow", sans-serif';
+  const shade = (hex, a) => { const n = parseInt(hex.slice(1), 16); const f = v => Math.round(a < 0 ? v * (1 + a) : v + (255 - v) * a); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const oval = (x, y, a, b) => { g.beginPath(); g.ellipse(x, y, a, b, 0, 0, 7); g.fill(); };
+  const text = (s, x, y, size, color, align = "center") => { g.font = `800 ${size}px ${FONT}`; g.fillStyle = color; g.textAlign = align; g.textBaseline = "middle"; g.fillText(s, x, y); };
+  const onTeam = c => (c === "#FFC400" ? "#16233B" : "#FFFFFF");
+  function glyph(kind, x, y, r, fill) {
+    g.save(); g.translate(x, y); g.fillStyle = fill; g.strokeStyle = fill; g.lineCap = "round"; g.beginPath();
+    if (kind === "dot") { g.arc(0, 0, r * 0.8, 0, 7); g.fill(); }
+    else if (kind === "diamond") { g.moveTo(0, -r); g.lineTo(r * 0.8, 0); g.lineTo(0, r); g.lineTo(-r * 0.8, 0); g.closePath(); g.fill(); }
+    else if (kind === "tri") { g.moveTo(0, -r); g.lineTo(r * 0.95, r * 0.75); g.lineTo(-r * 0.95, r * 0.75); g.closePath(); g.fill(); }
+    else if (kind === "star") { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, q = i % 2 ? r * 0.45 : r * 1.05; g.lineTo(Math.cos(a) * q, Math.sin(a) * q); } g.closePath(); g.fill(); }
+    g.restore();
+  }
+  function ball(x, y, r, rot = 0, tint = "#FF7A1A") {
+    g.save(); g.translate(x, y); g.rotate(rot);
+    g.fillStyle = tint; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
+    g.fillStyle = "rgba(255,255,255,.25)"; g.beginPath(); g.arc(-r * 0.35, -r * 0.35, r * 0.35, 0, 7); g.fill();
+    g.strokeStyle = "rgba(40,20,10,.65)"; g.lineWidth = Math.max(1, r * 0.11);
+    g.beginPath(); g.arc(0, 0, r, 0, 7); g.moveTo(-r, 0); g.lineTo(r, 0); g.moveTo(0, -r); g.lineTo(0, r); g.stroke();
+    g.beginPath(); g.arc(-r * 1.25, 0, r * 0.9, -0.85, 0.85); g.stroke(); g.beginPath(); g.arc(r * 1.25, 0, r * 0.9, Math.PI - 0.85, Math.PI + 0.85); g.stroke();
+    g.restore();
+  }
+  // Spielerin von vorn: Trikot mit Symbol, Stirnband, Haare. d = Größe.
+  function player(x, y, d, team, v, t, opts = {}) {
+    const bob = opts.still ? 0 : Math.abs(Math.sin(t * 7 + v * 1.7)) * d * 0.12;
+    g.fillStyle = "rgba(0,0,0,.2)"; oval(x, y, d * 0.42, d * 0.13);
+    if (opts.dribble) {
+      const ph = Math.abs(Math.sin(t * 9 + v)), by = y - ph * d * 0.6 - d * 0.12;
+      ball(x + d * 0.5, by, d * 0.19, v);
+    }
+    g.save(); g.translate(x, y - bob);
+    g.fillStyle = shade(team.c, -0.35); rr(-d * 0.3, -d * 0.3, d * 0.6, d * 0.32, d * 0.1); g.fill();
+    g.fillStyle = team.c; rr(-d * 0.4, -d * 0.86, d * 0.8, d * 0.62, d * 0.24); g.fill();
+    g.fillStyle = "#FFFFFF"; g.fillRect(-d * 0.4, -d * 0.86, d * 0.08, d * 0.5); g.fillRect(d * 0.32, -d * 0.86, d * 0.08, d * 0.5);
+    glyph(team.g, 0, -d * 0.55, d * 0.17, onTeam(team.c));
+    const hy = -d * 1.12, hr = d * 0.33;
+    if (v % 3 === 0) { g.fillStyle = HAIR[v % 5]; g.save(); g.translate(d * 0.28, hy - d * 0.05); g.rotate(0.6); rr(-d * 0.06, 0, d * 0.13, d * 0.36, d * 0.06); g.fill(); g.restore(); }
+    g.fillStyle = SKIN[v % 5]; g.beginPath(); g.arc(0, hy, hr, 0, 7); g.fill();
+    g.fillStyle = HAIR[v % 5]; g.beginPath(); g.arc(0, hy - hr * 0.15, hr * 1.02, Math.PI * 1.05, Math.PI * 1.95); g.fill();
+    g.fillStyle = team.c; g.fillRect(-hr, hy - hr * 0.42, hr * 2, hr * 0.28);
+    g.fillStyle = "#2A2A2A"; oval(-d * 0.11, hy + d * 0.06, d * 0.04, d * 0.045); oval(d * 0.11, hy + d * 0.06, d * 0.04, d * 0.045);
+    g.restore();
+  }
+  function hoopIcon(x, y, s) {
+    g.fillStyle = "#FFFFFF"; rr(x - 11 * s, y - 14 * s, 22 * s, 14 * s, 2 * s); g.fill();
+    g.strokeStyle = "#FF6A13"; g.lineWidth = 2.5 * s; g.beginPath(); g.ellipse(x, y + 1 * s, 7 * s, 2.5 * s, 0, 0, 7); g.stroke();
+    g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1 * s;
+    for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(x + k * 3 * s, y + 2 * s); g.lineTo(x + k * 1.8 * s, y + 9 * s); g.stroke(); }
+  }
+  function parquet(x, y, w, h) {
+    g.save(); rr(x, y, w, h, 14); g.clip();
+    const cols = ["#E8B77A", "#E2AE6F", "#EDC189", "#DDA765"];
+    for (let r = 0; r * 12 < h; r++) for (let k = -1; k * 24 < w + 24; k++) { g.fillStyle = cols[(r + k + 8) % 4]; g.fillRect(x + k * 24 + (r % 2) * 12, y + r * 12, 24, 12); }
+    g.restore();
+  }
+  function banner(title, sub) {
+    g.fillStyle = "#16233B"; g.fillRect(0, 0, W, 52);
+    text(title, 18, 22, 20, "#FF7A1A", "left");
+    text(sub, 18, 40, 13, "#A9B8D2", "left");
+  }
+  function overlay(title, sub) {
+    g.fillStyle = "rgba(16,27,48,.72)"; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#F6EBD9"; rr(40, H / 2 - 80, W - 80, 150, 22); g.fill();
+    text(title, W / 2, H / 2 - 36, 30, "#16233B");
+    text(sub, W / 2, H / 2 + 2, 16, "#4E5A6B");
+    g.fillStyle = "#FF7A1A"; rr(W / 2 - 80, H / 2 + 24, 160, 34, 17); g.fill();
+    text("Nochmal", W / 2, H / 2 + 41, 17, "#16233B");
+  }
+  let toastMsg = "", toastT = 0;
+  const toast = m => { toastMsg = m; toastT = 1.4; };
+  function drawToast(dt) {
+    if (toastT <= 0) return; toastT -= dt;
+    g.font = `800 17px ${FONT}`; const w = g.measureText(toastMsg).width + 30;
+    g.fillStyle = "#F0302A"; rr(W / 2 - w / 2, H / 2 - 20, w, 38, 19); g.fill();
+    text(toastMsg, W / 2, H / 2 - 1, 17, "#FFFFFF");
+  }
+
+  // Ton: kurze, erzeugte Klänge
+  let ac = null, muted = false;
+  const audio = () => { if (!ac) { try { ac = new AudioContext(); } catch (e) { return null; } } if (ac.state !== "running") ac.resume(); return ac; };
+  function beep(f, d, type = "sine", v = 0.12, f2) {
+    if (muted || !audio()) return;
+    const t = ac.currentTime, o = ac.createOscillator(), gn = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+    gn.gain.setValueAtTime(v, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(gn).connect(ac.destination); o.start(t); o.stop(t + d + 0.02);
+  }
+  function swish() {
+    if (muted || !audio()) return;
+    const t = ac.currentTime, len = 0.25, b = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), gn = ac.createGain();
+    src.buffer = b; f.type = "bandpass"; f.frequency.setValueAtTime(3000, t); f.frequency.exponentialRampToValueAtTime(900, t + len);
+    gn.gain.setValueAtTime(0.12, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    src.connect(f).connect(gn).connect(ac.destination); src.start(t);
+  }
+  const sfx = {
+    tap: () => beep(520, 0.08, "triangle", 0.08),
+    bounce: () => beep(140, 0.12, "sine", 0.18, 70),
+    swish,
+    clank: () => { beep(320, 0.15, "square", 0.04, 280); beep(180, 0.2, "sine", 0.1, 120); },
+    buzzer: () => beep(220, 0.45, "square", 0.05),
+    win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.3, "triangle", 0.1), i * 120)),
+  };
+
+  // ---------- 1 · Fan-Choreo (Förderband-Prinzip) ----------
+  // Spielerinnen laufen eine Runde ums Tribünenbild und werfen auf das äußerste freie Feld
+  // ihrer Reihe oder Spalte. Passt die Farbe, hält dort ein Fan eine Karte hoch.
+  const choreo = (() => {
+    const GX = 55, GY = 96, CS = 20, COLS = 14, ROWS = 12;
+    const L = { x0: 31, y0: 72, x1: 359, y1: 362 };
+    const SEGS = [L.x1 - L.x0, L.y1 - L.y0, L.x1 - L.x0, L.y1 - L.y0];
+    const PER = SEGS.reduce((a, b) => a + b, 0), START = (L.x1 - L.x0) / 2, SPEED = 170, MAXBELT = 5, BANK = 5;
+    let seats, queue, bank, belt, shots, state, pops;
+    // Bild: Ball in Orange mit lila Nähten auf Türkis, rote Bande
+    function picture() {
+      const p = [];
+      for (let y = 0; y < ROWS; y++) { p[y] = []; for (let x = 0; x < COLS; x++) {
+        const dx = x - 6.5, dy = y - 5.5, r = Math.hypot(dx, dy);
+        let c = 1;
+        if (r < 4.8) c = Math.abs(dx) < 0.6 || Math.abs(dy) < 0.6 || (Math.abs(r - 3.1) < 0.5 && Math.abs(dx) > 1.6 && Math.abs(dy) > 1.6) ? 2 : 0;
+        if (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1) c = 3;
+        p[y][x] = { c, done: false, at: -9 };
+      } }
+      return p;
+    }
+    // Position auf der Runde: Start unten Mitte, gegen den Uhrzeigersinn nach links.
+    function point(s) {
+      s = ((s + START) % PER + PER) % PER;
+      if (s < SEGS[0]) return { x: L.x1 - s, y: L.y1, edge: "bottom" };
+      s -= SEGS[0]; if (s < SEGS[1]) return { x: L.x0, y: L.y1 - s, edge: "left" };
+      s -= SEGS[1]; if (s < SEGS[2]) return { x: L.x0 + s, y: L.y0, edge: "top" };
+      s -= SEGS[2]; return { x: L.x1, y: L.y0 + s, edge: "right" };
+    }
+    // Äußerstes freies Feld in Blickrichtung
+    function target(p) {
+      if (p.edge === "bottom" || p.edge === "top") {
+        const col = Math.floor((p.x - GX) / CS); if (col < 0 || col >= COLS) return null;
+        for (let k = 0; k < ROWS; k++) { const row = p.edge === "bottom" ? ROWS - 1 - k : k; if (!seats[row][col].done) return { row, col, key: p.edge + col }; }
+      } else {
+        const row = Math.floor((p.y - GY) / CS); if (row < 0 || row >= ROWS) return null;
+        for (let k = 0; k < COLS; k++) { const col = p.edge === "left" ? k : COLS - 1 - k; if (!seats[row][col].done) return { row, col, key: p.edge + row }; }
+      }
+      return null;
+    }
+    function init() {
+      seats = picture(); belt = []; shots = []; pops = []; bank = Array(BANK).fill(null); state = "play";
+      const count = [0, 0, 0, 0]; seats.flat().forEach(s => count[s.c]++);
+      const list = [];
+      count.forEach((n, c) => { while (n > 0) { const a = Math.min(n, [10, 12, 15][(n + c) % 3]); list.push({ team: c, ammo: a }); n -= a; } });
+      // Grob von außen nach innen sortiert (Bande, Grund, Ball), dann leicht gemischt, damit es lösbar bleibt.
+      const layer = { 3: 0, 1: 1, 0: 2, 2: 2 };
+      list.sort((a, b) => layer[a.team] - layer[b.team] || Math.random() - 0.5);
+      for (let k = 0; k < 10; k++) { const i = (Math.random() * (list.length - 1)) | 0; [list[i], list[i + 1]] = [list[i + 1], list[i]]; }
+      queue = [[], [], []]; list.forEach((s, i) => queue[i % 3].push({ ...s, v: i }));
+    }
+    function launch(s) {
+      if (belt.length >= MAXBELT) { toast("Runde ist voll"); sfx.clank(); return false; }
+      if (belt.some(b => b.dist < 46)) return false;
+      belt.push({ ...s, dist: 0, tried: new Set() }); sfx.tap(); return true;
+    }
+    function update(dt, t) {
+      if (state !== "play") return;
+      for (const b of belt) {
+        b.dist += SPEED * dt;
+        const p = point(b.dist), tg = target(p);
+        // Wurf, sobald die Spielerin auf Höhe der Feldmitte ist (Toleranz wächst mit der Schrittweite)
+        const tol = Math.max(4, SPEED * dt * 0.6);
+        if (tg && b.ammo > 0 && !b.tried.has(tg.key) && Math.abs((p.edge === "bottom" || p.edge === "top" ? p.x - (GX + (tg.col + 0.5) * CS) : p.y - (GY + (tg.row + 0.5) * CS))) < tol) {
+          b.tried.add(tg.key);
+          const seat = seats[tg.row][tg.col];
+          if (seat.c === b.team) { seat.done = true; b.ammo--; shots.push({ x0: p.x, y0: p.y, row: tg.row, col: tg.col, t0: t, team: b.team }); }
+        }
+      }
+      // Runde beendet: leer verschwindet, sonst zurück auf die Bank
+      for (const b of belt.filter(b => b.dist >= PER)) {
+        belt.splice(belt.indexOf(b), 1);
+        if (b.ammo > 0) {
+          const free = bank.indexOf(null);
+          if (free < 0) { state = "lose"; sfx.buzzer(); return; }
+          bank[free] = { team: b.team, ammo: b.ammo, v: b.v };
+        }
+      }
+      shots = shots.filter(s => { if (t - s.t0 > 0.32) { seats[s.row][s.col].at = t; sfx.swish(); return false; } return true; });
+      if (seats.flat().every(s => s.done) && !shots.length && state === "play") { state = "win"; sfx.win(); }
+    }
+    function draw(t) {
+      g.fillStyle = "#1A2A48"; g.fillRect(0, 0, W, H);
+      banner("Fan-Choreo", "Schick Spielerinnen in die Runde. Sie werfen auf ihre Farbe.");
+      // Laufbahn
+      g.strokeStyle = "#D9573C"; g.lineWidth = 30; g.lineJoin = "round"; g.strokeRect(L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0);
+      g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 1.5; g.strokeRect(L.x0 - 15, L.y0 - 15, L.x1 - L.x0 + 30, L.y1 - L.y0 + 30); g.strokeRect(L.x0 + 15, L.y0 + 15, L.x1 - L.x0 - 30, L.y1 - L.y0 - 30);
+      // Tribüne: freie Sitze zeigen die Zielfarbe blass, gefüllte eine Karte mit Fan
+      for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+        const s = seats[y][x], px = GX + x * CS, py = GY + y * CS, team = TEAMS[s.c];
+        const shown = s.done && t - s.at >= 0;
+        g.fillStyle = shown ? team.c : "#33476B"; rr(px + 1, py + 1, CS - 2, CS - 2, 4); g.fill();
+        if (!shown) { g.fillStyle = team.c; g.globalAlpha = 0.6; rr(px + 4, py + 4, CS - 8, CS - 8, 3); g.fill(); g.globalAlpha = 1; }
+        else {
+          g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.arc(px + CS / 2, py + CS / 2 - 2, 3, 0, 7); g.fill();
+          const u = Math.min(1, (t - s.at) / 0.3); if (u < 1) { g.fillStyle = `rgba(255,255,255,${0.6 * (1 - u)})`; rr(px - 2, py - 2, CS + 4, CS + 4, 6); g.fill(); }
+        }
+      }
+      // Würfe im Bogen
+      for (const s of shots) {
+        const u = Math.min(1, (t - s.t0) / 0.32), tx = GX + (s.col + 0.5) * CS, ty = GY + (s.row + 0.5) * CS;
+        ball(s.x0 + (tx - s.x0) * u, s.y0 + (ty - s.y0) * u - Math.sin(u * Math.PI) * 22, 5, t * 10);
+      }
+      // Spielerinnen auf der Runde mit Restwürfen
+      for (const b of belt) {
+        const p = point(b.dist);
+        player(p.x, p.y + 8, 22, TEAMS[b.team], b.v, t, { dribble: true });
+        g.fillStyle = "#FFFFFF"; oval(p.x - 12, p.y - 22, 9, 9); text(String(b.ammo), p.x - 12, p.y - 21.5, 12, "#16233B");
+      }
+      // Bank
+      text("BANK", 22, 398, 13, "#A9B8D2", "left");
+      bank.forEach((s, i) => {
+        const x = 52 + i * 72, y = 438;
+        g.fillStyle = "#24365C"; rr(x - 28, y - 30, 56, 60, 12); g.fill();
+        if (s) { player(x, y + 20, 30, TEAMS[s.team], s.v, t, { still: true }); g.fillStyle = "#FFFFFF"; oval(x + 18, y - 18, 10, 10); text(String(s.ammo), x + 18, y - 17.5, 13, "#16233B"); }
+      });
+      // Warteschlange: 3 Reihen, vorn antippbar
+      text("NÄCHSTE", 22, 494, 13, "#A9B8D2", "left");
+      queue.forEach((col, ci) => {
+        const x = 95 + ci * 100;
+        col.slice(0, 4).forEach((s, k) => {
+          const y = 560 + k * 46;
+          if (k === 0) { g.fillStyle = "rgba(255,122,26,.25)"; rr(x - 34, y - 54, 68, 62, 14); g.fill(); }
+          g.globalAlpha = k === 0 ? 1 : 0.6 - k * 0.1;
+          player(x, y, k === 0 ? 34 : 26, TEAMS[s.team], s.v, t, { still: k > 0 });
+          g.fillStyle = "#FFFFFF"; oval(x + 22, y - 34, 10, 10); text(String(s.ammo), x + 22, y - 33.5, 13, "#16233B");
+          g.globalAlpha = 1;
+        });
+        if (col.length > 4) text(`+${col.length - 4}`, x, 705, 13, "#A9B8D2");
+      });
+      if (state === "win") overlay("Choreo steht!", "Die ganze Tribüne hält Karten hoch.");
+      if (state === "lose") overlay("Bank voll", "Keine Spielerin konnte mehr zurück.");
+    }
+    function down(x, y) {
+      if (state !== "play") { if (y > H / 2 + 20 && y < H / 2 + 60) init(); return; }
+      if (y > 405 && y < 470) { const i = Math.round((x - 52) / 72); if (bank[i] && launch(bank[i])) bank[i] = null; return; }
+      if (y > 500 && y < 570) { const ci = Math.round((x - 95) / 100); if (queue[ci]?.length && launch(queue[ci][0])) queue[ci].shift(); }
+    }
+    return { init, update, draw, down, stats: () => ({ state, left: seats.flat().filter(x => !x.done).length, belt: belt.length, bank: bank.filter(Boolean).length }),
+      info: `<h2>Fan-Choreo</h2><p class="like">Prinzip wie Pixel Flow, aktuell der größte Puzzle-Hit</p>
+        <p>Auf der Tribüne soll eine Choreo entstehen: ein Basketball auf türkisem Grund mit roter Bande. Die blassen Felder zeigen, welche Farbe wohin gehört.</p>
+        <ul><li><b>Tippe die vorderste Spielerin</b> einer der drei Reihen an. Sie läuft eine Runde um die Tribüne.</li>
+        <li>Im Vorbeilaufen wirft sie auf das <b>äußerste freie Feld</b> in ihrer Reihe oder Spalte, aber nur, wenn es ihre Farbe hat.</li>
+        <li>Die Zahl zeigt ihre restlichen Würfe. Hat sie nach der Runde noch Würfe, setzt sie sich auf die <b>Bank</b>. Von dort kannst du sie wieder losschicken.</li>
+        <li>Höchstens 5 laufen gleichzeitig. Ist die Bank voll, ist das Level verloren.</li></ul>` };
+  })();
+
+  // ---------- 2 · Dribble Jam (Schiebe-Prinzip) ----------
+  // Spielzüge aus 1 bis 4 Spielerinnen über das Feld ziehen, bis sie durch den Korb ihrer Farbe
+  // am Rand hinauslaufen. Hütchen und Gegnerin blockieren.
+  const dribble = (() => {
+    const COLS = 6, ROWS = 7, CS = 50, BX = (W - COLS * CS) / 2, BY = 120;
+    const EXITS = [
+      { side: "top", from: 1, to: 2, team: 0 }, { side: "bottom", from: 3, to: 5, team: 1 },
+      { side: "left", from: 2, to: 3, team: 2 }, { side: "right", from: 4, to: 5, team: 3 },
+    ];
+    const LEVEL = [
+      { team: 0, cells: [[0, 0], [1, 0], [0, 1], [1, 1]] }, { team: 1, cells: [[5, 0], [5, 1]] },
+      { team: 2, cells: [[3, 2], [3, 3]] }, { team: 0, cells: [[1, 3], [2, 3]] },
+      { team: 1, cells: [[3, 4], [4, 4], [5, 4]] }, { team: 3, cells: [[0, 4], [0, 5]] },
+    ];
+    const BLOCK = [[2, 6]];
+    let pieces, drag, moves, state, leaving;
+    function init() { pieces = LEVEL.map((p, i) => ({ id: i, team: p.team, cells: p.cells.map(c => [...c]), v: i * 3 })); drag = null; moves = 0; state = "play"; leaving = []; }
+    const occ = (x, y, self) => BLOCK.some(([a, b]) => a === x && b === y) || pieces.some(p => p !== self && p.cells.some(([a, b]) => a === x && b === y));
+    function tryMove(p, dx, dy) {
+      const next = p.cells.map(([x, y]) => [x + dx, y + dy]);
+      const out = next.filter(([x, y]) => x < 0 || y < 0 || x >= COLS || y >= ROWS);
+      if (out.length) {
+        // Am Rand: passt ein Korb gleicher Farbe über die ganze Breite, läuft der Spielzug hinaus.
+        const side = dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "top" : "bottom";
+        const ex = EXITS.find(e => e.side === side && e.team === p.team);
+        const span = side === "top" || side === "bottom" ? p.cells.map(c => c[0]) : p.cells.map(c => c[1]);
+        if (ex && span.every(v => v >= ex.from && v <= ex.to)) { exit(p, dx, dy); return "exit"; }
+        return false;
+      }
+      if (next.some(([x, y]) => occ(x, y, p))) return false;
+      p.cells = next; return true;
+    }
+    function exit(p, dx, dy) {
+      pieces.splice(pieces.indexOf(p), 1); leaving.push({ p, dx, dy, t0: performance.now() / 1000 }); drag = null; moves++;
+      sfx.swish(); setTimeout(sfx.bounce, 120);
+      if (!pieces.length) { state = "win"; setTimeout(sfx.win, 400); }
+    }
+    const cellAt = (x, y) => [Math.floor((x - BX) / CS), Math.floor((y - BY) / CS)];
+    function down(x, y) {
+      if (state !== "play") { if (y > H / 2 + 20 && y < H / 2 + 60) init(); return; }
+      const [cx, cy] = cellAt(x, y), p = pieces.find(p => p.cells.some(([a, b]) => a === cx && b === cy));
+      if (p) { drag = { p, sx: x, sy: y, ox: 0, oy: 0, moved: false }; sfx.tap(); }
+    }
+    function move(x, y) {
+      if (!drag) return;
+      const want = [Math.round((x - drag.sx) / CS), Math.round((y - drag.sy) / CS)];
+      for (let guard = 0; guard < 12; guard++) {
+        const ddx = Math.sign(want[0] - drag.ox), ddy = Math.sign(want[1] - drag.oy);
+        if (!ddx && !ddy) break;
+        let r = ddx ? tryMove(drag.p, ddx, 0) : false;
+        if (r === "exit") return;
+        if (r) { drag.ox += ddx; drag.moved = true; continue; }
+        r = ddy ? tryMove(drag.p, 0, ddy) : false;
+        if (r === "exit") return;
+        if (r) { drag.oy += ddy; drag.moved = true; continue; }
+        break;
+      }
+    }
+    function up() { if (drag?.moved) moves++; drag = null; }
+    function drawPiece(p, ox, oy, t, alpha = 1) {
+      const team = TEAMS[p.team];
+      g.save(); g.globalAlpha = alpha; g.translate(ox, oy);
+      g.fillStyle = shade(team.c, -0.25);
+      for (const [x, y] of p.cells) { rr(BX + x * CS + 3, BY + y * CS + 6, CS - 6, CS - 6, 12); g.fill(); }
+      g.fillStyle = team.c;
+      for (const [x, y] of p.cells) {
+        rr(BX + x * CS + 3, BY + y * CS + 3, CS - 6, CS - 6, 12); g.fill();
+        for (const [a, b] of p.cells) { if (a === x + 1 && b === y) g.fillRect(BX + x * CS + CS - 8, BY + y * CS + 10, 16, CS - 20); if (b === y + 1 && a === x) g.fillRect(BX + x * CS + 10, BY + y * CS + CS - 8, CS - 20, 16); }
+      }
+      p.cells.forEach(([x, y], i) => player(BX + (x + 0.5) * CS, BY + (y + 0.92) * CS, 30, { ...team, c: shade(team.c, 0.35) }, p.v + i, t, { still: drag?.p !== p }));
+      g.restore();
+    }
+    function update() {}
+    function draw(t) {
+      g.fillStyle = "#1A2A48"; g.fillRect(0, 0, W, H);
+      banner("Dribble Jam", "Zieh jeden Spielzug zum Korb seiner Farbe.");
+      parquet(BX - 10, BY - 10, COLS * CS + 20, ROWS * CS + 20);
+      g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2; rr(BX - 4, BY - 4, COLS * CS + 8, ROWS * CS + 8, 10); g.stroke();
+      g.beginPath(); g.arc(W / 2, BY + (ROWS * CS) / 2, 36, 0, 7); g.stroke();
+      g.beginPath(); g.moveTo(BX - 4, BY + (ROWS * CS) / 2); g.lineTo(BX + COLS * CS + 4, BY + (ROWS * CS) / 2); g.stroke();
+      // Körbe am Rand
+      for (const e of EXITS) {
+        const team = TEAMS[e.team], a = e.from * CS, b = (e.to + 1) * CS;
+        g.fillStyle = team.c;
+        let hx, hy;
+        if (e.side === "top") { g.fillRect(BX + a + 4, BY - 16, b - a - 8, 10); hx = BX + (a + b) / 2; hy = BY - 36; }
+        if (e.side === "bottom") { g.fillRect(BX + a + 4, BY + ROWS * CS + 6, b - a - 8, 10); hx = BX + (a + b) / 2; hy = BY + ROWS * CS + 34; }
+        if (e.side === "left") { g.fillRect(BX - 16, BY + a + 4, 10, b - a - 8); hx = BX - 26; hy = BY + (a + b) / 2 - 6; }
+        if (e.side === "right") { g.fillRect(BX + COLS * CS + 6, BY + a + 4, 10, b - a - 8); hx = BX + COLS * CS + 26; hy = BY + (a + b) / 2 - 6; }
+        g.fillStyle = team.c; oval(hx, hy - 6, 13, 13); glyph(team.g, hx, hy - 6, 6, "#FFFFFF");
+        if (e.side === "top" || e.side === "bottom") hoopIcon(hx + 30, hy, 0.9);
+      }
+      // Hütchen als Hindernis
+      for (const [x, y] of BLOCK) {
+        const cx = BX + (x + 0.5) * CS, cy = BY + (y + 0.5) * CS;
+        g.fillStyle = "#FF7A1A"; g.beginPath(); g.moveTo(cx - 14, cy + 14); g.lineTo(cx + 14, cy + 14); g.lineTo(cx, cy - 16); g.closePath(); g.fill();
+        g.fillStyle = "#FFFFFF"; g.fillRect(cx - 8, cy, 16, 4);
+      }
+      pieces.forEach(p => drawPiece(p, 0, 0, t));
+      const now = performance.now() / 1000;
+      leaving = leaving.filter(l => { const u = (now - l.t0) / 0.45; if (u > 1) return false; drawPiece(l.p, l.dx * u * 140, l.dy * u * 140, t, 1 - u); return true; });
+      text(`Züge: ${moves}`, W / 2, BY + ROWS * CS + 70, 18, "#F6EBD9");
+      if (state === "win") overlay("Alle am Korb!", `Geschafft in ${moves} Zügen.`);
+    }
+    return { init, update, draw, down, move, up, left: () => pieces.length + ":" + state,
+      info: `<h2>Dribble Jam</h2><p class="like">Prinzip wie Color Block Jam</p>
+        <p>Auf dem Spielfeld stehen Spielzüge: ein bis vier Spielerinnen derselben Farbe als Block. Am Rand warten die Körbe der Teams.</p>
+        <ul><li><b>Zieh einen Spielzug</b> mit dem Finger. Er rutscht Feld für Feld, bis etwas im Weg ist.</li>
+        <li>Erreicht er den Rand, wo <b>ein Korb seiner Farbe</b> über die ganze Breite passt, läuft er hinaus.</li>
+        <li>Das Hütchen und die anderen Spielzüge blockieren. Die Reihenfolge ist das Rätsel.</li>
+        <li>Kein Zeitdruck, kein Verlieren. Weniger Züge sind besser.</li></ul>` };
+  })();
+
+  // ---------- 3 · Ballständer (Sortier-Prinzip) ----------
+  const sort = (() => {
+    const CAP = 4, N = 6;
+    let racks, held, moves, state, anim;
+    function init() {
+      const balls = []; for (let c = 0; c < 4; c++) for (let k = 0; k < CAP; k++) balls.push(c);
+      do { for (let i = balls.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [balls[i], balls[j]] = [balls[j], balls[i]]; } }
+      while ([0, 1, 2, 3].some(r => balls.slice(r * CAP, r * CAP + CAP).every(b => b === balls[r * CAP])));
+      racks = [0, 1, 2, 3].map(r => balls.slice(r * CAP, r * CAP + CAP)); racks.push([], []);
+      held = -1; moves = 0; state = "play"; anim = null;
+    }
+    const pos = i => ({ x: 70 + (i % 3) * 125, y: i < 3 ? 330 : 610 });
+    function down(x, y) {
+      if (state !== "play") { if (y > H / 2 + 20 && y < H / 2 + 60) init(); return; }
+      const i = [...Array(N).keys()].find(k => { const p = pos(k); return Math.abs(x - p.x) < 50 && y > p.y - 230 && y < p.y + 20; });
+      if (i === undefined) return;
+      if (held < 0) { if (racks[i].length) { held = i; sfx.bounce(); } return; }
+      if (i === held) { held = -1; return; }
+      const b = racks[held][racks[held].length - 1], top = racks[i][racks[i].length - 1];
+      if (racks[i].length < CAP && (top === undefined || top === b)) {
+        racks[held].pop(); racks[i].push(b); anim = { from: held, to: i, b, t0: performance.now() / 1000 }; held = -1; moves++;
+        sfx.swish();
+        if (racks.every(r => !r.length || (r.length === CAP && r.every(v => v === r[0])))) { state = "win"; setTimeout(sfx.win, 300); }
+      } else { sfx.clank(); toast("Passt nicht"); held = -1; }
+    }
+    function update() {}
+    function draw(t) {
+      g.fillStyle = "#1A2A48"; g.fillRect(0, 0, W, H);
+      banner("Ballständer", "Sortiere die Bälle: jedes Team in einen Ständer.");
+      g.fillStyle = "#C9C1B2"; g.fillRect(0, 52, W, H - 52);
+      g.fillStyle = "#B5AC9B"; for (let y = 60; y < H; y += 16) g.fillRect(0, y, W, 1);
+      const now = performance.now() / 1000;
+      racks.forEach((r, i) => {
+        const p = pos(i);
+        // Ständer: Metallrahmen mit Fächern übereinander
+        g.fillStyle = "#8C97A6"; rr(p.x - 34, p.y - 214, 68, 222, 10); g.fill();
+        g.fillStyle = "#5C6676"; rr(p.x - 28, p.y - 208, 56, 210, 8); g.fill();
+        for (let k = 0; k < CAP; k++) { g.fillStyle = "#7D8796"; g.fillRect(p.x - 28, p.y - 6 - k * 52, 56, 4); }
+        g.fillStyle = "#2A2F3A"; oval(p.x - 26, p.y + 10, 6, 6); oval(p.x + 26, p.y + 10, 6, 6);
+        r.forEach((b, k) => {
+          if (k === r.length - 1 && i === held) return;
+          if (anim && anim.to === i && k === r.length - 1 && now - anim.t0 < 0.3) return;
+          ball(p.x, p.y - 30 - k * 52, 21, k * 0.7 + i, TEAMS[b].c);
+          glyph(TEAMS[b].g, p.x, p.y - 30 - k * 52, 6, "#FFFFFF");
+        });
+        if (i === held) { const b = r[r.length - 1], hy = p.y - 260 + Math.sin(t * 8) * 4; ball(p.x, hy, 21, t * 3, TEAMS[b].c); glyph(TEAMS[b].g, p.x, hy, 6, "#FFFFFF"); }
+      });
+      if (anim) {
+        const u = (now - anim.t0) / 0.3;
+        if (u < 1) { const a = pos(anim.from), b = pos(anim.to), x = a.x + (b.x - a.x) * u, y = (a.y - 260) + ((b.y - 30 - (racks[anim.to].length - 1) * 52) - (a.y - 260)) * u - Math.sin(u * Math.PI) * 60; ball(x, y, 21, u * 8, TEAMS[anim.b].c); }
+        else anim = null;
+      }
+      text(`Züge: ${moves}`, W / 2, 690, 18, "#16233B");
+      if (state === "win") overlay("Alles sortiert!", `Geschafft in ${moves} Zügen.`);
+    }
+    return { init, update, draw, down,
+      info: `<h2>Ballständer</h2><p class="like">Prinzip wie Ball Sort und Water Sort</p>
+        <p>Nach dem Training liegen die Bälle der vier Teams wild durcheinander in den Ständern.</p>
+        <ul><li><b>Tippe einen Ständer</b>: der oberste Ball hebt sich.</li>
+        <li><b>Tippe einen anderen Ständer</b>: der Ball springt hinüber, wenn dort Platz ist und oben dieselbe Farbe liegt oder der Ständer leer ist.</li>
+        <li>Ziel: Jeder Ständer enthält nur noch Bälle eines Teams.</li></ul>
+        <p>Einfach und sofort verständlich. Das Genre ist aber sehr verbreitet und wenig eigenständig.</p>` };
+  })();
+
+  // ---------- 4 · Kabinen-Jam (Abflug-Prinzip) ----------
+  // Mannschaften stehen im Kabinengang verkeilt. Freier Weg: Sie laufen auf einen Court.
+  // Die Fans in der Schlange setzen sich zu ihrem Team, bis die Tribüne voll ist.
+  const kabine = (() => {
+    const COLS = 5, ROWS = 6, CS = 54, BX = (W - COLS * CS) / 2, BY = 300;
+    const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
+    const LEVEL = [[0, 0, "U", 2, 0], [1, 2, "U", 3, 1], [2, 1, "R", 2, 2], [4, 0, "U", 2, 3], [3, 5, "D", 2, 0], [0, 5, "L", 3, 2], [2, 3, "U", 2, 3], [4, 4, "U", 2, 1]];
+    const ORDER = [1, 3, 2, 0, 1, 3, 2, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2];
+    let teams, courts, fans, state, tick, walkers, clock;
+    function init() {
+      teams = LEVEL.map(([x, y, dir, len, team], id) => ({ id, x, y, dir, len, team, where: "gang", need: len === 3 ? 12 : 8, got: 0 }));
+      courts = [null, null, null, null]; fans = []; ORDER.forEach(tm => { for (let k = 0; k < 4; k++) fans.push({ team: tm, v: fans.length }); });
+      state = "play"; tick = 0; walkers = []; clock = 0;
+    }
+    const cells = tm => { const [dx, dy] = DIRS[tm.dir], out = []; for (let k = 0; k < tm.len; k++) out.push([tm.x - k * dx, tm.y - k * dy]); return out; };
+    const at = (x, y) => teams.find(tm => tm.where === "gang" && cells(tm).some(([a, b]) => a === x && b === y));
+    function free(tm) { const [dx, dy] = DIRS[tm.dir]; let x = tm.x + dx, y = tm.y + dy; while (x >= 0 && y >= 0 && x < COLS && y < ROWS) { if (at(x, y)) return false; x += dx; y += dy; } return true; }
+    function down(x, y) {
+      if (state !== "play") { if (y > H / 2 + 20 && y < H / 2 + 60) init(); return; }
+      const cx = Math.floor((x - BX) / CS), cy = Math.floor((y - BY) / CS), tm = at(cx, cy);
+      if (!tm) return;
+      if (!free(tm)) { toast("Weg versperrt"); sfx.clank(); return; }
+      const slot = courts.indexOf(null);
+      if (slot < 0) { toast("Alle Courts belegt"); sfx.clank(); return; }
+      tm.where = "court"; courts[slot] = tm; sfx.bounce();
+    }
+    const courtX = i => 52 + i * 95;
+    function update(dt) {
+      if (state !== "play") return;
+      tick += dt; clock += dt;
+      walkers = walkers.filter(w => (w.u += dt / 0.5) < 1);
+      // Volle Tribüne: kurz feiern, dann wird der Court frei
+      courts.forEach((c, i) => { if (c && c.leaveAt && clock >= c.leaveAt) { c.where = "gone"; courts[i] = null; sfx.buzzer(); } });
+      if (tick < 0.22) return;
+      tick = 0;
+      // Fan vorn in der Schlange: Gibt es einen Court mit ihrem Team, läuft sie hin.
+      const f = fans[0];
+      if (f) {
+        const i = courts.findIndex(c => c && c.team === f.team && c.got < c.need);
+        if (i >= 0) { const c = courts[i]; c.got++; fans.shift(); walkers.push({ team: f.team, v: f.v, i, u: 0 }); sfx.tap(); if (c.got === c.need) c.leaveAt = clock + 0.5; }
+        else if (courts.every(c => c && c.got < c.need)) { state = "lose"; sfx.buzzer(); }
+      }
+      if (!fans.length && teams.every(tm => tm.where === "gone")) { state = "win"; sfx.win(); }
+    }
+    function drawTeam(tm, t) {
+      const cs = cells(tm), team = TEAMS[tm.team], [dx, dy] = DIRS[tm.dir];
+      const xs = cs.map(c => c[0]), ys = cs.map(c => c[1]), x0 = Math.min(...xs), y0 = Math.min(...ys), w = (Math.max(...xs) - x0 + 1) * CS, h = (Math.max(...ys) - y0 + 1) * CS;
+      g.fillStyle = shade(team.c, -0.3); rr(BX + x0 * CS + 3, BY + y0 * CS + 6, w - 6, h - 6, 14); g.fill();
+      g.fillStyle = team.c; rr(BX + x0 * CS + 3, BY + y0 * CS + 3, w - 6, h - 6, 14); g.fill();
+      cs.forEach(([x, y], k) => player(BX + (x + 0.5) * CS, BY + (y + 0.9) * CS, 30, { ...team, c: shade(team.c, 0.35) }, tm.id * 3 + k, t, { still: true }));
+      // Laufrichtung als großer Pfeil am Kopf des Blocks
+      const nx = BX + (tm.x + 0.5) * CS + dx * CS * 0.38, ny = BY + (tm.y + 0.5) * CS + dy * CS * 0.38;
+      g.save(); g.translate(nx, ny); g.rotate(Math.atan2(dy, dx));
+      g.fillStyle = "#FFFFFF"; g.strokeStyle = shade(team.c, -0.5); g.lineWidth = 2;
+      g.beginPath(); g.moveTo(10, 0); g.lineTo(-4, -9); g.lineTo(-4, 9); g.closePath(); g.fill(); g.stroke();
+      g.restore();
+    }
+    function draw(t) {
+      g.fillStyle = "#1A2A48"; g.fillRect(0, 0, W, H);
+      banner("Kabinen-Jam", "Schick Teams auf die Courts, die Fans setzen sich dazu.");
+      // Courts mit Tribüne
+      courts.forEach((c, i) => {
+        const x = courtX(i), y = 66;
+        parquet(x - 42, y, 84, 100);
+        g.strokeStyle = "#FFFFFF"; g.lineWidth = 1.5; g.strokeRect(x - 38, y + 4, 76, 92);
+        hoopIcon(x, y + 22, 0.9);
+        text("Court " + (i + 1), x, y + 88, 12, "#16233B");
+        if (c) {
+          const team = TEAMS[c.team];
+          player(x, y + 70, 30, team, c.id, t, { dribble: true });
+          g.fillStyle = team.c; rr(x - 22, y + 104, 44, 18, 9); g.fill(); text(`${c.got}/${c.need}`, x, y + 113, 13, onTeam(team.c));
+        }
+      });
+      // Fanschlange von rechts nach links zum Eingang
+      text("FANS", 22, 210, 13, "#A9B8D2", "left");
+      g.fillStyle = "#24365C"; rr(14, 222, W - 28, 52, 26); g.fill();
+      fans.slice(0, 12).forEach((f, k) => player(40 + k * 28, 266, 22, TEAMS[f.team], f.v, t));
+      if (fans.length > 12) text(`+${fans.length - 12}`, W - 30, 248, 13, "#A9B8D2");
+      for (const w of walkers) { const x = 40 + (courtX(w.i) - 40) * w.u, y = 266 - (266 - 160) * w.u; player(x, y, 20, TEAMS[w.team], w.v, t); }
+      // Kabinengang
+      g.fillStyle = "#4A5363"; rr(BX - 10, BY - 10, COLS * CS + 20, ROWS * CS + 20, 14); g.fill();
+      g.strokeStyle = "rgba(255,255,255,.12)";
+      for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) { rr(BX + x * CS + 4, BY + y * CS + 4, CS - 8, CS - 8, 8); g.stroke(); }
+      text("KABINENGANG", W / 2, BY - 22, 13, "#A9B8D2");
+      teams.filter(tm => tm.where === "gang").forEach(tm => drawTeam(tm, t));
+      if (state === "win") overlay("Alle Spiele laufen!", "Jedes Team hat seine Fans.");
+      if (state === "lose") overlay("Halle verstopft", "Alle Courts belegt, kein Fan passt.");
+    }
+    return { init, update, draw, down, stats: () => ({ front: fans[0]?.team, state, fans: fans.length, courts: courts.filter(Boolean).length, gang: teams.filter(tm => tm.where === "gang").length }),
+      info: `<h2>Kabinen-Jam</h2><p class="like">Prinzip wie Abflug! und Bus-Jam-Spiele</p>
+        <p>Die Teams stehen im Kabinengang verkeilt. Oben warten 4 Courts, darüber die Schlange der Fans.</p>
+        <ul><li><b>Tippe ein Team</b> an. Ist der Weg in Pfeilrichtung frei, läuft es auf einen freien Court.</li>
+        <li>Die Fans vorn in der Schlange setzen sich zu ihrem Team. Ist die Tribüne voll, ertönt der Buzzer und der Court wird frei.</li>
+        <li>Sind alle Courts belegt und der vorderste Fan findet sein Team nicht, ist das Level verloren.</li></ul>
+        <p>Am nächsten an unserer bestehenden Mechanik, nur mit Basketball-Geschichte.</p>` };
+  })();
+
+  // ---------- Steuerung ----------
+  const GAMES = { choreo, dribble, sort, kabine };
+  let cur = "choreo", last = performance.now() / 1000;
+  function select(id) {
+    cur = id; GAMES[id].init();
+    document.getElementById("info").innerHTML = GAMES[id].info;
+    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === id));
+    try { localStorage.setItem("hallen-probe", id); } catch (e) {}
+  }
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => select(b.dataset.g)));
+  document.getElementById("resetBtn").addEventListener("click", () => GAMES[cur].init());
+  document.getElementById("muteBtn").addEventListener("click", e => { muted = !muted; e.currentTarget.setAttribute("aria-pressed", muted); e.currentTarget.textContent = muted ? "Ton an" : "Ton aus"; });
+  const toLocal = e => { const r = cv.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H]; };
+  cv.addEventListener("pointerdown", e => { audio(); cv.setPointerCapture(e.pointerId); GAMES[cur].down(...toLocal(e)); });
+  cv.addEventListener("pointermove", e => GAMES[cur].move?.(...toLocal(e)));
+  cv.addEventListener("pointerup", () => GAMES[cur].up?.());
+  cv.addEventListener("pointercancel", () => GAMES[cur].up?.());
+  function frame() {
+    const t = performance.now() / 1000, dt = Math.min(0.05, t - last); last = t;
+    GAMES[cur].update(dt, t);
+    GAMES[cur].draw(t);
+    drawToast(dt);
+    requestAnimationFrame(frame);
+  }
+  let start = "choreo"; try { start = localStorage.getItem("hallen-probe") || "choreo"; } catch (e) {}
+  select(GAMES[start] ? start : "choreo");
+  (document.fonts?.ready || Promise.resolve()).then(() => requestAnimationFrame(frame));
+})();
+</script>
