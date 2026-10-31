@@ -38,6 +38,15 @@
         ],
         "createdAt": "2026-10-31T10:48:14.000Z",
         "reason": "Claude: single dark theme; muted #A9B8D2 and orange #FF7A1A sit on #101B30 (above 6:1), checker paired them with a light default background"
+      },
+      {
+        "rule": "wide-tracking",
+        "value": "*",
+        "files": [
+          "look/basketball-proben.html"
+        ],
+        "createdAt": "2026-10-31T10:51:33.000Z",
+        "reason": "Claude: wide tracking (.12em) only on the short uppercase kicker label, body text has none"
       }
     ]
   }
