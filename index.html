@@ -74,6 +74,8 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .stamp .bar { height: 5px; background: #E1E9E8; border-radius: 3px; margin-top: 3px; overflow: hidden; }
 .stamp .bar span { display: block; height: 100%; background: var(--coral); }
 .stamp.locked { opacity: .55; }
+.btn:disabled { opacity: .5; cursor: default; }
+.isle { display: block; width: 100%; aspect-ratio: 320 / 230; border-radius: 18px; margin: 0 0 12px; }
 .stamp .q { display: grid; place-items: center; background: #C9D6D8; color: #FFFFFF; font-weight: 800; }
 </style>
 
@@ -581,6 +583,7 @@ window.Abflug = (() => {
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
   // Siegesserie: Jeder Sieg in Folge bringt fürs nächste Level einen Schlepper mehr (höchstens 3).
   // Reisepass: zählt Touristen pro Land, Stempel an festen Schwellen.
+  let shells = store.get("abflug.shells", 0), built = store.get("abflug.built", 0), builtAt = -9, isleRun = 0;
   let streak = store.get("abflug.streak", 0), pass = store.get("abflug.pass", {}), tows = 0, towArmed = false, newStamps = [];
   const STAMPS = [{ n: 30, name: "Besucher" }, { n: 150, name: "Stammgast" }, { n: 500, name: "Ehrenbürger" }];
   let lv = null, S = null, vis = new Map(), flyers = [], departing = [], confetti = [], sparks = [];
@@ -1078,17 +1081,24 @@ window.Abflug = (() => {
         setStreak(streak + 1);
         sfx.win();
         const next = levelIdx + 1;
+        // Muscheln: Grundbetrag, mehr für große Level, Bonus für die Serie.
+        const gain = 10 + Math.round(lv.tourists / 40) + 3 * Math.min(3, streak), item = BUILDS[built];
+        shells += gain; store.set("abflug.shells", shells);
+        const canBuild = item && shells >= item.cost;
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1} geschafft</div>
           <h2>Alle im Urlaub!</h2>
           <p>${lv.tourists} Touristen sind in ${lv.planes.length} Flugzeugen abgeflogen.</p>
           ${streakMeter()}
           <p class="small"><b>Siegesserie ${streak}.</b> Im nächsten Level wartet${Math.min(3, streak) > 1 ? "en" : ""} ${Math.min(3, streak)} Schlepper auf dich.</p>
+          <p class="small"><b>+${gain} Muscheln.</b> ${item ? (canBuild ? `Genug für: ${item.name}!` : `Noch ${item.cost - shells} bis ${item.name}.`) : "Deine Insel ist fertig gebaut."}</p>
           ${newStamps.length ? `<div class="newstamps">${newStamps.map(s => `<span><img src="${flagURL(s.d)}" alt="">${A.DEST[s.d].name}: ${STAMPS[s.tier].name}</span>`).join("")}</div>` : ""}
           <div class="actions">
-            <button class="btn" id="nextBtn">Weiter zu Level ${next + 1}</button>
+            ${canBuild ? `<button class="btn" id="isleBtn">Insel ausbauen</button>` : ""}
+            <button class="btn ${canBuild ? "alt" : ""}" id="nextBtn">Weiter zu Level ${next + 1}</button>
             <button class="btn alt" id="againBtn">Nochmal spielen</button>
           </div>`);
+        $("#isleBtn")?.addEventListener("click", () => showIsle(next));
         $("#nextBtn").addEventListener("click", () => startLevel(next));
         $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
         // Nächstes Level schon vorbereiten, solange die Karte zu sehen ist.
@@ -1137,6 +1147,201 @@ window.Abflug = (() => {
     store.set("abflug.pass", pass);
     toast(`Stempel: ${A.DEST[d].name} · ${STAMPS[tier].name}`, 1800);
     sfx.stamp();
+  }
+
+  // ---------- Insel-Ausbau ----------
+  // Muscheln aus den Siegen bauen die eigene Insel Stück für Stück aus. Reihenfolge ist fest.
+  const BUILDS = [
+    { name: "Strandbar", cost: 25 }, { name: "Leuchtturm", cost: 40 }, { name: "Segelboot", cost: 60 },
+    { name: "Hängematte", cost: 80 }, { name: "Kontrollturm", cost: 100 }, { name: "Bootssteg", cost: 130 },
+    { name: "Sonnenschirme", cost: 160 }, { name: "Flamingos", cost: 200 }, { name: "Heißluftballon", cost: 240 }, { name: "Delfine", cost: 300 },
+  ];
+  const SPOT = [[62, 176], [262, 80], [48, 34], [232, 184], [106, 96], [282, 150], [160, 204], [40, 140], [222, 36], [150, 224]];
+  const oval = (g, x, y, rx, ry) => { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill(); };
+  function isPalm(g, x, lean, t) {
+    g.strokeStyle = "#A9744A"; g.lineWidth = 3.5; g.lineCap = "round";
+    g.beginPath(); g.moveTo(x, 0); g.quadraticCurveTo(x + lean * 0.3, -14, x + lean, -26); g.stroke();
+    g.fillStyle = "#3FA45B";
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i - 2) * 0.7 + Math.sin(t * 1.5 + i) * 0.05;
+      g.save(); g.translate(x + lean, -26); g.rotate(a); oval(g, 9, 0, 10, 3.2); g.restore();
+    }
+  }
+  const ITEM = [
+    // Strandbar: Hütte mit Strohdach
+    (g, t) => {
+      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 22, 4);
+      g.fillStyle = "#C98A4B"; g.fillRect(-14, -16, 28, 16);
+      g.fillStyle = "#FFFFFF"; g.fillRect(-17, -8, 34, 4);
+      g.fillStyle = "#FF8F7E"; [-9, 0, 9].forEach(x => { g.beginPath(); g.arc(x, -10, 2.5, Math.PI, 0); g.fill(); });
+      g.fillStyle = "#E9B949"; g.beginPath(); g.moveTo(-21, -15); g.lineTo(21, -15); g.lineTo(0, -31); g.closePath(); g.fill();
+      g.strokeStyle = "#C99A2E"; g.lineWidth = 1.2; for (let x = -18; x <= 18; x += 4) { g.beginPath(); g.moveTo(x, -15); g.lineTo(x, -12); g.stroke(); }
+    },
+    // Leuchtturm mit kreisendem Lichtstrahl
+    (g, t) => {
+      const a = t * 1.4;
+      g.save(); g.globalAlpha = 0.28; g.fillStyle = "#FFF3A0";
+      g.beginPath(); g.moveTo(0, -42); g.arc(0, -42, 60, a - 0.18, a + 0.18); g.closePath(); g.fill(); g.restore();
+      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 12, 3);
+      for (let i = 0; i < 4; i++) {
+        const y0 = -i * 9, y1 = y0 - 9, w0 = 7 - i * 0.6, w1 = 7 - (i + 1) * 0.6;
+        g.fillStyle = i % 2 ? "#FFFFFF" : "#FF6F61";
+        g.beginPath(); g.moveTo(-w0, y0); g.lineTo(w0, y0); g.lineTo(w1, y1); g.lineTo(-w1, y1); g.closePath(); g.fill();
+      }
+      g.fillStyle = "#16323A"; g.fillRect(-6, -38, 12, 2);
+      g.fillStyle = "#FFE066"; g.fillRect(-4, -44, 8, 6);
+      g.fillStyle = "#FF6F61"; g.beginPath(); g.moveTo(-5, -44); g.lineTo(5, -44); g.lineTo(0, -50); g.closePath(); g.fill();
+    },
+    // Segelboot, schaukelt
+    (g, t) => {
+      g.translate(Math.sin(t * 0.5) * 6, Math.sin(t * 2) * 1.5); g.rotate(Math.sin(t * 2) * 0.05);
+      g.fillStyle = "rgba(255,255,255,.5)"; oval(g, 0, 2, 18, 3);
+      g.fillStyle = "#FF6F61"; g.beginPath(); g.moveTo(-15, -4); g.lineTo(15, -4); g.lineTo(10, 2); g.lineTo(-10, 2); g.closePath(); g.fill();
+      g.strokeStyle = "#7A5230"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, -4); g.lineTo(0, -28); g.stroke();
+      g.fillStyle = "#FFFFFF"; g.beginPath(); g.moveTo(1.5, -27); g.lineTo(14, -6); g.lineTo(1.5, -6); g.closePath(); g.fill();
+      g.fillStyle = "#FFE066"; g.beginPath(); g.moveTo(-1.5, -24); g.lineTo(-10, -7); g.lineTo(-1.5, -7); g.closePath(); g.fill();
+    },
+    // Hängematte zwischen zwei Palmen
+    (g, t) => {
+      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 26, 4);
+      isPalm(g, -18, -4, t); isPalm(g, 18, 4, t);
+      const sag = 9 + Math.sin(t * 1.6) * 1.2;
+      g.strokeStyle = "#FF6F61"; g.lineWidth = 4.5;
+      g.beginPath(); g.moveTo(-17, -17); g.quadraticCurveTo(0, -17 + sag * 2, 17, -17); g.stroke();
+      g.strokeStyle = "#FFE066"; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(-15, -15.5); g.quadraticCurveTo(0, -15.5 + sag * 2, 15, -15.5); g.stroke();
+    },
+    // Kontrollturm, Antenne blinkt
+    (g, t) => {
+      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 10, 3);
+      g.fillStyle = "#F4EEE2"; g.fillRect(-4, -28, 8, 28);
+      g.fillStyle = "#0E5E6F"; g.beginPath(); g.moveTo(-10, -38); g.lineTo(10, -38); g.lineTo(7, -28); g.lineTo(-7, -28); g.closePath(); g.fill();
+      g.fillStyle = "#8FE3F0"; g.fillRect(-7, -36, 14, 5);
+      g.fillStyle = "#FF6F61"; g.fillRect(-11, -41, 22, 3);
+      g.strokeStyle = "#16323A"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -41); g.lineTo(0, -48); g.stroke();
+      g.fillStyle = Math.sin(t * 5) > 0 ? "#FF3B30" : "#7A1B1B"; oval(g, 0, -49, 1.8, 1.8);
+    },
+    // Bootssteg mit Wasserflugzeug
+    (g, t) => {
+      g.fillStyle = "#B07A45"; g.fillRect(-4, -4, 36, 7);
+      g.fillStyle = "#7A5230"; [2, 14, 26].forEach(x => g.fillRect(x, 3, 2.5, 4));
+      g.strokeStyle = "#8C6239"; g.lineWidth = 0.8; for (let x = 0; x < 32; x += 4) { g.beginPath(); g.moveTo(x, -4); g.lineTo(x, 3); g.stroke(); }
+      g.save(); g.translate(30, 14 + Math.sin(t * 2.2) * 1);
+      g.fillStyle = "rgba(255,255,255,.5)"; oval(g, 0, 4, 14, 2.5);
+      g.fillStyle = "#FFE066"; g.fillRect(-9, 1, 18, 2);
+      g.fillStyle = "#FFFFFF"; oval(g, 0, -4, 12, 3.5);
+      g.fillStyle = "#8FCBFF"; oval(g, 6, -5, 3, 1.6);
+      g.fillStyle = "#FF6F61"; g.fillRect(-3, -9, 6, 2); g.beginPath(); g.moveTo(-12, -4); g.lineTo(-10, -11); g.lineTo(-7, -4); g.closePath(); g.fill();
+      g.restore();
+    },
+    // Sonnenschirme mit Handtüchern
+    (g, t) => {
+      [[-24, 0], [0, 1], [24, 2]].forEach(([x, i]) => {
+        g.fillStyle = PASTEL[(i + 2) % 5]; g.fillRect(x - 3, -2, 12, 5);
+        g.strokeStyle = "#FFFFFF"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, -14); g.stroke();
+        g.fillStyle = PASTEL[i]; g.beginPath(); g.arc(x, -13, 9, Math.PI, 0); g.fill();
+        g.fillStyle = "#FFFFFF"; g.beginPath(); g.moveTo(x, -22); g.lineTo(x - 3, -13); g.lineTo(x + 3, -13); g.closePath(); g.fill();
+      });
+    },
+    // Flamingos im flachen Wasser
+    (g, t) => {
+      [[-8, 0], [8, 1.3]].forEach(([x, ph]) => {
+        const b = Math.sin(t * 1.4 + ph) * 1.2;
+        g.strokeStyle = "#E86A92"; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x, -10); g.lineTo(x, 0); g.moveTo(x + 2, -10); g.lineTo(x + 3, -4); g.lineTo(x + 1, -3); g.stroke();
+        g.fillStyle = "#FF9EC0"; oval(g, x + 1, -13 + b * 0.3, 6, 4);
+        g.strokeStyle = "#FF9EC0"; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(x + 5, -14); g.quadraticCurveTo(x + 10, -20, x + 6, -24 + b); g.stroke();
+        g.fillStyle = "#FF9EC0"; oval(g, x + 7, -25 + b, 2.5, 2);
+        g.fillStyle = "#16323A"; g.beginPath(); g.moveTo(x + 9, -25 + b); g.lineTo(x + 12, -23 + b); g.lineTo(x + 9, -24 + b); g.fill();
+      });
+    },
+    // Heißluftballon, schwebt
+    (g, t) => {
+      g.translate(Math.sin(t * 0.4) * 10, Math.sin(t * 0.9) * 3);
+      g.strokeStyle = "#7A5230"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-5, -6); g.lineTo(-3, 2); g.moveTo(5, -6); g.lineTo(3, 2); g.stroke();
+      g.fillStyle = "#B07A45"; g.fillRect(-4, 1, 8, 5);
+      g.save(); g.beginPath(); g.ellipse(0, -16, 12, 13, 0, 0, 7); g.clip();
+      ["#FF6F61", "#FFE066", "#7FD9B8", "#8FCBFF", "#FF6F61", "#FFE066"].forEach((c, i) => { g.fillStyle = c; g.fillRect(-12 + i * 4, -30, 4, 30); });
+      g.restore();
+      g.fillStyle = "#FF6F61"; g.beginPath(); g.moveTo(-8, -7); g.lineTo(8, -7); g.lineTo(5, -4); g.lineTo(-5, -4); g.closePath(); g.fill();
+    },
+    // Delfine springen im Bogen
+    (g, t) => {
+      [0, 0.45].forEach((ph, i) => {
+        const p = (t * 0.45 + ph) % 1, x = -40 + i * 30 + p * 40, y = -Math.sin(p * Math.PI) * 14;
+        g.save(); g.translate(x, y); g.rotate(-Math.cos(p * Math.PI) * 0.8);
+        g.fillStyle = "#5C8FB8"; oval(g, 0, 0, 8, 3.2);
+        g.beginPath(); g.moveTo(-1, -2.5); g.lineTo(2, -7); g.lineTo(3, -2.5); g.fill();
+        g.beginPath(); g.moveTo(-7, 0); g.lineTo(-11, -3); g.lineTo(-11, 3); g.closePath(); g.fill();
+        g.fillStyle = "#DDEBF5"; oval(g, 1, 1.4, 5, 1.4);
+        g.restore();
+        if (p < 0.08 || p > 0.92) { g.fillStyle = "rgba(255,255,255,.7)"; oval(g, x, 2, 6, 1.5); }
+      });
+    },
+  ];
+  function drawIsle(cvs, t) {
+    const w = cvs.clientWidth, h = cvs.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (!w) return;
+    if (cvs.width !== Math.round(w * dpr)) { cvs.width = Math.round(w * dpr); cvs.height = Math.round(h * dpr); }
+    const g = cvs.getContext("2d"), k = w / 320;
+    g.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
+    const sea = g.createLinearGradient(0, 0, 0, 230);
+    sea.addColorStop(0, C.sea1); sea.addColorStop(1, C.sea2);
+    g.fillStyle = sea; g.fillRect(0, 0, 320, 230);
+    g.strokeStyle = "rgba(255,255,255,.45)"; g.lineWidth = 2; g.lineCap = "round";
+    for (let i = 0; i < 10; i++) {
+      const x = ((i * 71 + t * 8) % 340) - 10, y = 10 + ((i * 53) % 215);
+      g.beginPath(); g.arc(x, y, 6, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
+    }
+    g.fillStyle = "rgba(255,255,255,.55)"; oval(g, 160, 127, 130 + Math.sin(t * 1.3) * 1.5, 83 + Math.sin(t * 1.3) * 1.5);
+    g.fillStyle = C.sand; oval(g, 160, 125, 125, 78);
+    g.fillStyle = "#8FD17A"; oval(g, 166, 116, 92, 48);
+    g.save(); g.translate(172, 112); g.rotate(-0.12);
+    g.fillStyle = "#6E7C8A"; rr(g, -70, -10, 140, 20, 8); g.fill();
+    g.strokeStyle = C.line; g.lineWidth = 2; g.setLineDash([8, 7]);
+    g.beginPath(); g.moveTo(-58, 0); g.lineTo(58, 0); g.stroke(); g.setLineDash([]);
+    g.restore();
+    g.fillStyle = "#FFFFFF"; rr(g, 128, 136, 66, 24, 6); g.fill();
+    for (let i = 0; i < 7; i++) { g.fillStyle = PASTEL[i % 5]; g.fillRect(126 + i * 10, 132, 10, 7); }
+    g.fillStyle = "#8FCBFF"; for (let i = 0; i < 5; i++) { rr(g, 134 + i * 12, 144, 8, 10, 2); g.fill(); }
+    for (let i = 0; i < built; i++) {
+      // Neu gebautes Teil springt mit Überschwinger ins Bild, dazu Funken.
+      const u = i === built - 1 ? (t - builtAt) / 0.6 : 1, x = Math.min(1, Math.max(0, u));
+      const sc = 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
+      g.save(); g.translate(SPOT[i][0], SPOT[i][1]); g.scale(sc, sc); ITEM[i](g, t); g.restore();
+      if (u < 1.4) {
+        g.fillStyle = `rgba(255,246,176,${1 - u / 1.4})`;
+        for (let j = 0; j < 10; j++) { const a = (j / 10) * Math.PI * 2, r = 10 + u * 28; oval(g, SPOT[i][0] + Math.cos(a) * r, SPOT[i][1] - 14 + Math.sin(a) * r, 2.2, 2.2); }
+      }
+    }
+  }
+  function showIsle(next) {
+    const item = BUILDS[built], can = item && shells >= item.cost;
+    showCard(`
+      <div class="eyebrow">${built} von ${BUILDS.length} gebaut · ${shells} Muscheln</div>
+      <h2>Deine Insel</h2>
+      <canvas id="isle" class="isle" role="img" aria-label="Deine Insel mit ${built} von ${BUILDS.length} Bauwerken"></canvas>
+      <p class="small">${item ? `Als Nächstes: <b>${item.name}</b> für ${item.cost} Muscheln.` : "Alles gebaut. Deine Insel ist fertig!"}</p>
+      <div class="actions">
+        ${item ? `<button class="btn" id="buildBtn" ${can ? "" : "disabled"}>${can ? `${item.name} bauen` : `Noch ${item.cost - shells} Muscheln`}</button>` : ""}
+        <button class="btn alt" id="backBtn">${next !== undefined ? `Weiter zu Level ${next + 1}` : "Zurück zum Spiel"}</button>
+      </div>`);
+    $("#buildBtn")?.addEventListener("click", () => {
+      if (!can) return;
+      shells -= item.cost; built++; builtAt = now();
+      store.set("abflug.shells", shells); store.set("abflug.built", built);
+      audioInit(); sfx.build();
+      showIsle(next);
+    });
+    $("#backBtn").addEventListener("click", () => (next !== undefined ? startLevel(next) : ($("#overlay").hidden = true)));
+    const run = ++isleRun, cvs = $("#isle");
+    const loop = () => {
+      if (run !== isleRun || !cvs.isConnected || $("#overlay").hidden) return;
+      drawIsle(cvs, now());
+      requestAnimationFrame(loop);
+    };
+    loop();
   }
   const flags = {};
   function flagURL(d) {
@@ -1512,7 +1717,8 @@ window.Abflug = (() => {
       <h2>Level wählen</h2>
       ${risk ? `<p class="small">Ein Levelwechsel beendet deine Siegesserie von ${streak}.</p>` : ""}
       <div class="levels">${btns}</div>
-      <div class="actions"><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
+      <div class="actions"><button class="btn" id="isleBtn">Deine Insel</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
+    $("#isleBtn").addEventListener("click", () => showIsle());
     $(".levels .cur")?.scrollIntoView({ block: "nearest" });
     $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => { if (risk) setStreak(0); startLevel(+b.dataset.l); }));
     $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
@@ -1585,6 +1791,7 @@ window.Abflug = (() => {
     win: () => [523, 659, 784, 659, 784, 1046].forEach((f, i) => steel(f, 0.45, 0.08, i * 0.13)),
     lose: () => [392, 330, 262].forEach((f, i) => steel(f, 0.5, 0.07, i * 0.16)),
     tow: () => { tone(110, 0.4, "triangle", 0.12, 1.6); steel(392, 0.3, 0.05, 0.12); steel(587, 0.35, 0.05, 0.2); },
+    build: () => { tone(120, 0.15, "triangle", 0.2, 0.6); [523, 659, 784, 1046, 1318].forEach((f, i) => steel(f, 0.5, 0.07, 0.08 + i * 0.08)); },
     stamp: () => { tone(150, 0.12, "triangle", 0.22, 0.5); steel(1046, 0.5, 0.08, 0.1); steel(1318, 0.6, 0.07, 0.2); },
   };
 
