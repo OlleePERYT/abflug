@@ -112,8 +112,8 @@ window.Abflug = (() => {
     { id: "NL", name: "Niederlande", color: "#F28A1E", text: "#2A1604" },
     { id: "MX", name: "Mexiko", color: "#EC5FA8", text: "#FFFFFF" },
     { id: "FR", name: "Frankreich", color: "#8E5BD0", text: "#FFFFFF" },
-    { id: "QA", name: "Katar", color: "#7A1B3A", text: "#FFFFFF" },
-    { id: "EG", name: "Ägypten", color: "#A8773F", text: "#FFFFFF" },
+    { id: "QA", name: "Katar", color: "#14A89C", text: "#FFFFFF" },
+    { id: "EG", name: "Ägypten", color: "#454A55", text: "#FFFFFF" },
   ];
 
   function rng(seed) {
@@ -556,7 +556,11 @@ window.Abflug = (() => {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
   const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
-  const TICK = 0.2, FLY = 0.5, FULL_WAIT = 1.0;
+  // Ring läuft gemächlich. Wer die Reiseleiterin in der Mitte antippt, macht ihn kurz dreimal so schnell.
+  const TICK = 0.3, TICK_FAST = 0.1, BOOST = 1.3, FLY = 0.5, FULL_WAIT = 1.0;
+  // Symbol pro Reiseziel, damit Touristen und Flugzeuge nicht nur über die Farbe zuzuordnen sind.
+  const GLYPH = { ES: "star", IT: "ring", GR: "drop", TR: "moon", JP: "dot", SE: "plus", NL: "square", MX: "heart", FR: "diamond", QA: "x", EG: "tri" };
+  const SHOUTS = ["Hopp, hopp!", "Zum Gate!", "Schneller!", "Der Flieger wartet!"];
   const FONT = '"Baloo 2", "Nunito", system-ui, sans-serif';
   // Insel-Palette: Meer, Sand, Pastell-Häuser, Korallenrot, Sonnengelb.
   const C = {
@@ -566,6 +570,7 @@ window.Abflug = (() => {
   const PASTEL = ["#FF8F7E", "#7FD9B8", "#FFD56B", "#8FCBFF", "#C9A6FF"];
   const SKIN = ["#F6D2B0", "#E7B58B", "#C68A5E", "#9A6542", "#FADFC7"];
   const INTRO = {
+    1: "<b>Tipp:</b> Tippe die <b>Reiseleiterin</b> in der Mitte des Wartebereichs an. Dann laufen alle schneller.",
     3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
     5: "<b>Neu: Ziel unbekannt.</b> Graue Flugzeuge zeigen ihr Ziel, sobald ihr Weg frei ist.",
     6: "<b>Neu: Hangar.</b> Rollt ein Flugzeug heraus, kommt das nächste nach. Die Zahl zeigt, wie viele noch drin sind.",
@@ -587,6 +592,7 @@ window.Abflug = (() => {
   let streak = store.get("abflug.streak", 0), pass = store.get("abflug.pass", {}), tows = 0, towArmed = false, newStamps = [];
   const STAMPS = [{ n: 30, name: "Besucher" }, { n: 150, name: "Stammgast" }, { n: 500, name: "Ehrenbürger" }];
   let lv = null, S = null, vis = new Map(), flyers = [], departing = [], confetti = [], sparks = [];
+  let boostUntil = -9, shout = "", tickNow = TICK;
   let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, shakeT = -9, last = 0, lastPlop = 0, pulse = [], tut = null;
   const cache = {};
   let sprites = {}, pats = {};
@@ -686,12 +692,33 @@ window.Abflug = (() => {
   }
 
   // ---------- Flugzeuge: rundlich, mit Gesicht ----------
+  function glyph(g, kind, x, y, r, fill) {
+    g.save(); g.translate(x, y); g.fillStyle = fill; g.strokeStyle = fill; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath();
+    switch (kind) {
+      case "dot": g.arc(0, 0, r * 0.8, 0, 7); g.fill(); break;
+      case "ring": g.lineWidth = r * 0.45; g.arc(0, 0, r * 0.65, 0, 7); g.stroke(); break;
+      case "square": g.rect(-r * 0.72, -r * 0.72, r * 1.44, r * 1.44); g.fill(); break;
+      case "diamond": g.moveTo(0, -r); g.lineTo(r * 0.8, 0); g.lineTo(0, r); g.lineTo(-r * 0.8, 0); g.closePath(); g.fill(); break;
+      case "tri": g.moveTo(0, -r); g.lineTo(r * 0.95, r * 0.75); g.lineTo(-r * 0.95, r * 0.75); g.closePath(); g.fill(); break;
+      case "plus": g.lineWidth = r * 0.5; g.moveTo(-r * 0.8, 0); g.lineTo(r * 0.8, 0); g.moveTo(0, -r * 0.8); g.lineTo(0, r * 0.8); g.stroke(); break;
+      case "x": g.lineWidth = r * 0.5; g.moveTo(-r * 0.6, -r * 0.6); g.lineTo(r * 0.6, r * 0.6); g.moveTo(r * 0.6, -r * 0.6); g.lineTo(-r * 0.6, r * 0.6); g.stroke(); break;
+      case "star": for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, q = i % 2 ? r * 0.45 : r * 1.05; g.lineTo(Math.cos(a) * q, Math.sin(a) * q); } g.closePath(); g.fill(); break;
+      case "heart": g.moveTo(0, r * 0.85); g.bezierCurveTo(-r * 1.3, -r * 0.1, -r * 0.55, -r * 1.05, 0, -r * 0.35); g.bezierCurveTo(r * 0.55, -r * 1.05, r * 1.3, -r * 0.1, 0, r * 0.85); g.fill(); break;
+      case "moon":
+        g.arc(0, 0, r * 0.9, 0, 7); g.clip();
+        g.beginPath(); g.arc(0, 0, r * 0.9, 0, 7); g.moveTo(r * 1.1, -r * 0.1); g.arc(r * 0.4, -r * 0.1, r * 0.7, 0, 7); g.fill("evenodd");
+        break;
+      case "drop": g.moveTo(0, -r); g.quadraticCurveTo(r * 0.9, r * 0.1, 0, r * 0.85); g.quadraticCurveTo(-r * 0.9, r * 0.1, 0, -r); g.fill(); break;
+    }
+    g.restore();
+  }
   function paintPlane(g, len, c, body, flat) {
     const half = len * c * 0.46, fw = c * (0.34 + len * 0.015);
     const dark = shade(body, -0.4), light = shade(body, 0.45);
     g.lineJoin = "round"; g.lineCap = "round";
     g.lineWidth = Math.max(1.2, c * 0.035); g.strokeStyle = dark;
-    const fill = st => { g.fillStyle = flat ? "#000" : st; g.fill(); if (!flat) g.stroke(); };
+    const fill = st => { g.fillStyle = flat ? (flat === true ? "#000" : flat) : st; g.fill(); if (!flat) g.stroke(); };
     let wg = "#000";
     if (!flat) { wg = g.createLinearGradient(half * 0.25, 0, -half * 0.4, 0); wg.addColorStop(0, light); wg.addColorStop(1, shade(body, -0.14)); }
     for (const s of [-1, 1]) {
@@ -748,7 +775,19 @@ window.Abflug = (() => {
     if (sprites[key]) return sprites[key];
     const w = len * c * 0.95 + c * 0.3, h = c * 1.25, o = offscreen(w, h);
     o.g.translate(w / 2, h / 2);
+    // Weißer Rand wie bei einem Sticker: hebt dunkle Flugzeuge vom Asphalt ab.
+    const ow = Math.max(1.5, c * 0.055);
+    for (let k = 0; k < 8; k++) {
+      o.g.save(); o.g.translate(Math.cos((k * Math.PI) / 4) * ow, Math.sin((k * Math.PI) / 4) * ow);
+      paintPlane(o.g, len, c, "#FFFFFF", "#FFFFFF"); o.g.restore();
+    }
     paintPlane(o.g, len, c, mystery ? "#A3ACB6" : A.DEST[dest].color, false);
+    if (!mystery) {
+      // Symbol am Heck, passend zu den Touristen.
+      const D = A.DEST[dest], gx = -len * c * 0.46 * 0.62, r = c * 0.13;
+      o.g.fillStyle = "#FFFFFF"; o.g.beginPath(); o.g.arc(gx, 0, r * 1.45, 0, 7); o.g.fill();
+      glyph(o.g, GLYPH[D.id], gx, 0, r, D.id === "JP" ? D.text : D.color);
+    }
     return (sprites[key] = o);
   }
   function shadowSprite(len, c) {
@@ -789,7 +828,9 @@ window.Abflug = (() => {
     const bg = g.createLinearGradient(cx - d * 0.45, 0, cx + d * 0.45, 0);
     bg.addColorStop(0, shade(col, 0.4)); bg.addColorStop(0.5, col); bg.addColorStop(1, shade(col, -0.25));
     g.fillStyle = bg; g.beginPath(); g.ellipse(cx, h * 0.68, d * 0.44, d * 0.42, 0, 0, 7); g.fill();
-    if (A.DEST[dest].id === "JP") { g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 1; g.stroke(); }
+    g.strokeStyle = shade(col, -0.45); g.lineWidth = Math.max(1, d * 0.07); g.stroke();
+    const D = A.DEST[dest];
+    glyph(g, GLYPH[D.id], cx, h * 0.7, d * 0.22, ["ES", "JP", "GR", "NL"].includes(D.id) ? D.text : "#FFFFFF");
     const hy = h * 0.32, hr = d * 0.34;
     g.fillStyle = SKIN[v % SKIN.length]; g.beginPath(); g.arc(cx, hy, hr, 0, 7); g.fill();
     const kind = v % 4;
@@ -812,7 +853,7 @@ window.Abflug = (() => {
   }
   function drawTourist(x, y, dest, v, d, t, scale = 1) {
     const spr = touristSprite(dest, v % 20, d);
-    const bob = Math.abs(Math.sin(t * 7 + v * 1.7)) * d * 0.16;
+    const bob = Math.abs(Math.sin(t * (now() < boostUntil ? 16 : 7) + v * 1.7)) * d * 0.16;
     const w = spr.w * scale, h = spr.h * scale;
     ctx.fillStyle = "rgba(60,40,10,.16)"; ctx.beginPath(); ctx.ellipse(x, y, d * 0.42 * scale, d * 0.14 * scale, 0, 0, 7); ctx.fill();
     ctx.drawImage(spr.c, x - w / 2, y - h + d * 0.08 * scale - bob * scale, w, h);
@@ -983,6 +1024,14 @@ window.Abflug = (() => {
     audioInit();
     if (ended || !S || !$("#overlay").hidden) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    // Antippen im Wartebereich: Reiseleiterin treibt an.
+    const reach = lay.rad + lay.laneW / 2 + 8;
+    if (x > lay.x0 - reach && x < lay.x1 + reach && y > lay.cyR - reach && y < lay.cyR + reach) {
+      const t = now();
+      if (t >= boostUntil) { shout = SHOUTS[(Math.random() * SHOUTS.length) | 0]; sfx.whistle(); }
+      boostUntil = t + BOOST;
+      return;
+    }
     const c = lay.cell, gx = Math.floor((x - lay.ax) / c), gy = Math.floor((y - lay.ay) / c);
     let hit = null;
     for (const p of S.planes) {
@@ -1026,8 +1075,10 @@ window.Abflug = (() => {
       else if ((v.kind === "bump" && t - v.t0 > 0.32) || (v.kind === "spawn" && t - v.t0 > 0.4)) vis.delete(id);
     }
     ringT += dt;
-    while (ringT >= TICK) {
-      ringT -= TICK;
+    tickNow = t < boostUntil ? TICK_FAST : TICK;
+    if (ringT > tickNow) ringT = Math.min(ringT, tickNow * 2);
+    while (ringT >= tickNow) {
+      ringT -= tickNow;
       const r = A.tick(S);
       for (const b of r.boards) {
         const p = S.planes[b.plane];
@@ -1480,7 +1531,7 @@ window.Abflug = (() => {
     drawRingLane(t);
     // Figuren nach Höhe sortiert zeichnen, damit sie sich richtig überdecken
     const figs = [];
-    const frac = Math.min(1, ringT / TICK), ring = lay.ring, d = lay.d;
+    const frac = Math.min(1, ringT / tickNow), ring = lay.ring, d = lay.d;
     for (let j = 0; j < A.RING; j++) {
       const pt = at(ring, (((j + S.off + frac) % A.RING) / A.RING) * ring.total);
       for (let c = 0; c < 4; c++) {
@@ -1508,6 +1559,7 @@ window.Abflug = (() => {
     }
     figs.sort((a, b) => a[1] - b[1]);
     for (const [x, y, dd, v] of figs) drawTourist(x, y, dd, v, d, t);
+    drawGuide(t);
     for (const side of ["L", "R"]) {
       const pl = lay.arms[side], cap = lay.capRows[side], topY = at(pl, cap * d + 12).y;
       const txt = hidden[side] > 0 ? "+" + hidden[side] : "Check-in";
@@ -1524,6 +1576,46 @@ window.Abflug = (() => {
       for (let k = 0; k < 3; k++) rr(ctx, g.x - lay.slotW * 0.36 + k * lay.slotW * 0.26, gy0 - 9, lay.slotW * 0.18, 6, 2), ctx.fill();
     });
   }
+  // Reiseleiterin in der Ringmitte: Fähnchen hoch, Megafon. Antippen treibt die Touristen an.
+  function drawGuide(t) {
+    const on = t < boostUntil, s = lay.d * 1.4, x = lay.cx - (lay.x1 - lay.x0) * 0.12, jump = on ? Math.abs(Math.sin(t * 14)) * s * 0.35 : 0;
+    const y = lay.cyR + s * 0.9 - jump;
+    ctx.fillStyle = "rgba(60,40,10,.2)"; ctx.beginPath(); ctx.ellipse(x, lay.cyR + s * 0.95, s * 0.5, s * 0.16, 0, 0, 7); ctx.fill();
+    // Fähnchen am Stab, wedelt beim Antreiben
+    const fx = x - s * 0.55, wave = Math.sin(t * (on ? 20 : 3)) * (on ? 0.35 : 0.12);
+    ctx.strokeStyle = "#7A5230"; ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(fx, y - s * 0.55); ctx.lineTo(fx, y - s * 2.1); ctx.stroke();
+    ctx.save(); ctx.translate(fx, y - s * 2.1); ctx.rotate(wave);
+    ctx.fillStyle = C.band; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(s * 0.5, s * 0.1, s * 0.85, s * 0.05); ctx.lineTo(s * 0.8, s * 0.5); ctx.quadraticCurveTo(s * 0.45, s * 0.6, 0, s * 0.55); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(s * 0.4, s * 0.28, s * 0.13, 0, 7); ctx.fill();
+    ctx.restore();
+    // Körper im Hawaiihemd, Kopf mit Sonnenhut
+    ctx.fillStyle = C.teal; ctx.beginPath(); ctx.ellipse(x, y - s * 0.35, s * 0.42, s * 0.48, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#FFB4A8"; [[-0.15, -0.5], [0.18, -0.25], [-0.05, -0.1]].forEach(([a, b]) => { ctx.beginPath(); ctx.arc(x + a * s, y + b * s, s * 0.08, 0, 7); ctx.fill(); });
+    ctx.strokeStyle = SKIN[1]; ctx.lineWidth = Math.max(2, s * 0.13);
+    ctx.beginPath(); ctx.moveTo(x - s * 0.35, y - s * 0.5); ctx.lineTo(fx + s * 0.05, y - s * 0.7); ctx.stroke();
+    const hy = y - s * 1.05;
+    ctx.fillStyle = SKIN[1]; ctx.beginPath(); ctx.arc(x, hy, s * 0.32, 0, 7); ctx.fill();
+    ctx.fillStyle = "#2A2A2A"; ctx.beginPath(); ctx.arc(x + s * 0.02, hy, s * 0.04, 0, 7); ctx.arc(x + s * 0.16, hy, s * 0.04, 0, 7); ctx.fill();
+    ctx.fillStyle = "#F2CF72"; ctx.beginPath(); ctx.ellipse(x, hy - s * 0.2, s * 0.45, s * 0.1, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, hy - s * 0.32, s * 0.22, s * 0.15, 0, 0, 7); ctx.fill();
+    // Megafon, beim Antreiben mit Schallwellen
+    ctx.save(); ctx.translate(x + s * 0.3, hy + s * 0.12); ctx.rotate(-0.25);
+    ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(0, -s * 0.08); ctx.lineTo(s * 0.45, -s * 0.22); ctx.lineTo(s * 0.45, s * 0.22); ctx.lineTo(0, s * 0.08); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (on) {
+      ctx.strokeStyle = C.band; ctx.lineWidth = 2;
+      for (let k = 0; k < 3; k++) { const r = s * (0.25 + k * 0.18 + ((t * 2) % 0.18)); ctx.beginPath(); ctx.arc(s * 0.45, 0, r, -0.6, 0.6); ctx.stroke(); }
+    }
+    ctx.restore();
+    if (on && shout) {
+      ctx.font = `800 ${Math.round(Math.max(12, s * 0.75))}px ${FONT}`;
+      const w = ctx.measureText(shout).width + 14, bx = Math.min(lay.ox + lay.gw - w / 2 - 6, Math.max(lay.ox + w / 2 + 6, x + s * 0.4)), by = hy - s * 1.3;
+      ctx.fillStyle = "#FFFFFF"; rr(ctx, bx - w / 2, by - s * 0.45, w, s * 0.9, s * 0.45); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + s * 0.2, by + s * 0.4); ctx.lineTo(x + s * 0.45, by + s * 0.4); ctx.lineTo(x + s * 0.25, by + s * 0.75); ctx.fill();
+      ctx.fillStyle = C.band; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(shout, bx, by + 1);
+    }
+  }
   function stadium(k) {
     const { x0, x1, cyR, rad } = lay, r = rad + k;
     ctx.beginPath();
@@ -1537,7 +1629,7 @@ window.Abflug = (() => {
     ctx.fillStyle = C.sand; stadium(-hw); ctx.fill();
     ctx.fillStyle = "#7FD9B8"; stadium(-hw - 4); ctx.fill();
     const ir = lay.rad - hw;
-    if (ir > 8) { umbrella(lay.cx - (lay.x1 - lay.x0) * 0.25, lay.cyR, Math.min(12, ir * 0.75), t); palm(lay.cx + (lay.x1 - lay.x0) * 0.3, lay.cyR + ir * 0.5, Math.min(14, ir * 0.9), t, 5); }
+    if (ir > 8) palm(lay.cx + (lay.x1 - lay.x0) * 0.42, lay.cyR + ir * 0.5, Math.min(12, ir * 0.8), t, 5);
     // Absperrbänder mit Pfosten
     for (const k of [hw, -hw]) {
       ctx.strokeStyle = C.band; ctx.lineWidth = 3; stadium(k); ctx.stroke();
@@ -1662,6 +1754,7 @@ window.Abflug = (() => {
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(h.queue.length, hx + c * 0.3, hy + c * 0.3 + 1);
       }
     }
+    const arrows = [];
     for (const p of S.planes) {
       if (p.where !== "apron") continue;
       const v = vis.get(p.id), [dx, dy] = A.DIRS[p.dir];
@@ -1672,6 +1765,17 @@ window.Abflug = (() => {
       }
       if (v && v.kind === "spawn") { const s = Math.min(1, (t - v.t0) / 0.4), o = (1 - s) * c * 1.4; x -= dx * o; y -= dy * o; alpha = s; }
       drawPlane(x, y, ang, c, p, alpha);
+      arrows.push([x + dx * (p.len * c * 0.46 + c * 0.2), y + dy * (p.len * c * 0.46 + c * 0.2), ang, alpha]);
+    }
+    // Pfeil vor jeder Nase: zeigt die Rollrichtung, auch bei dunklen Flugzeugen.
+    const sz = c * 0.2, nudge = Math.sin(t * 4) * c * 0.04;
+    for (const [x, y, ang, alpha] of arrows) {
+      ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(ang); ctx.translate(nudge, 0);
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(-sz * 0.5, -sz * 0.75); ctx.lineTo(sz * 0.4, 0); ctx.lineTo(-sz * 0.5, sz * 0.75);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = sz * 0.75; ctx.stroke();
+      ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = sz * 0.4; ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -1792,6 +1896,7 @@ window.Abflug = (() => {
     lose: () => [392, 330, 262].forEach((f, i) => steel(f, 0.5, 0.07, i * 0.16)),
     tow: () => { tone(110, 0.4, "triangle", 0.12, 1.6); steel(392, 0.3, 0.05, 0.12); steel(587, 0.35, 0.05, 0.2); },
     build: () => { tone(120, 0.15, "triangle", 0.2, 0.6); [523, 659, 784, 1046, 1318].forEach((f, i) => steel(f, 0.5, 0.07, 0.08 + i * 0.08)); },
+    whistle: () => { tone(2300, 0.1, "sine", 0.05, 1.04); tone(2300, 0.22, "sine", 0.05, 0.96, 0.13); },
     stamp: () => { tone(150, 0.12, "triangle", 0.22, 0.5); steel(1046, 0.5, 0.08, 0.1); steel(1318, 0.6, 0.07, 0.2); },
   };
 
