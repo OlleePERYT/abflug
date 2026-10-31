@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-10-31T10:30:09.000Z",
         "reason": "Claude: single dark theme; muted #9FB0CC and orange #FF7A1A sit on #101B30/#1A2A48 (about 6:1), checker paired them with a light default background"
+      },
+      {
+        "rule": "all-caps-body",
+        "value": "*",
+        "files": [
+          "look/basketball.html"
+        ],
+        "createdAt": "2026-10-31T10:31:23.000Z",
+        "reason": "Claude: uppercase only on short labels (kicker, section headings, table headers, two toggle buttons), no running text"
       }
     ]
   }
