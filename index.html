@@ -26,7 +26,7 @@ body { background: var(--sea); color: var(--ink); font-family: var(--font-body);
 #cv { position: absolute; inset: 0; display: block; }
 #safe { position: absolute; width: 0; height: 0; padding-bottom: env(safe-area-inset-bottom, 0px); visibility: hidden; }
 .hud { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-block: calc(8px + env(safe-area-inset-top, 0px)) 4px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); pointer-events: none; }
-.hud > * { pointer-events: auto; }
+.hud > * { pointer-events: auto; zoom: var(--z, 1); }
 .board { display: flex; align-items: baseline; gap: 8px; min-width: 0; background: var(--teal); color: var(--sun); border: 0; border-radius: 14px; padding: 1px 13px 2px; font-family: var(--font-display); box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; }
 .board-k { font-weight: 800; font-size: 21px; }
 .board-v { font-weight: 700; font-size: 15px; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -37,14 +37,14 @@ body { background: var(--sea); color: var(--ink); font-family: var(--font-body);
 .icon { width: 36px; }
 .icon svg { width: 18px; height: 18px; }
 button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
-.toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--coral); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 21px; padding: 6px 20px; border-radius: 999px; box-shadow: 0 4px 0 var(--coral-dark); pointer-events: none; white-space: nowrap; }
-.hint { box-sizing: border-box; position: absolute; left: 50%; top: calc(60px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(92vw, 400px); background: linear-gradient(180deg, #FFF9EA, #FFEFC9); color: var(--ink); border: 3px solid #FFFFFF; border-radius: 18px; padding: 10px 16px 10px 46px; font-size: 15px; font-weight: 700; line-height: 1.4; text-align: left; pointer-events: none; box-shadow: 0 6px 0 rgba(8,65,77,.18), 0 10px 24px rgba(8,65,77,.25); }
+.toast { zoom: var(--z, 1); position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--coral); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 21px; padding: 6px 20px; border-radius: 999px; box-shadow: 0 4px 0 var(--coral-dark); pointer-events: none; white-space: nowrap; }
+.hint { zoom: var(--z, 1); box-sizing: border-box; position: absolute; left: 50%; top: calc(60px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(calc(92vw / var(--z, 1)), 400px); background: linear-gradient(180deg, #FFF9EA, #FFEFC9); color: var(--ink); border: 3px solid #FFFFFF; border-radius: 18px; padding: 10px 16px 10px 46px; font-size: 15px; font-weight: 700; line-height: 1.4; text-align: left; pointer-events: none; box-shadow: 0 6px 0 rgba(8,65,77,.18), 0 10px 24px rgba(8,65,77,.25); }
 /* Kleine Sonne links im Hinweis */
 .hint::before { content: ""; position: absolute; left: 12px; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; background: radial-gradient(circle, #FFE066 0 55%, transparent 57%), repeating-conic-gradient(#FFC400 0 12deg, transparent 12deg 30deg); }
 .hint b { color: var(--coral); }
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(31,169,198,.35), rgba(8,65,77,.6)); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 /* Karten wie ein Strandkiosk: Markise oben, Sand in der Mitte, Wellen unten. */
-.card { position: relative; overflow: hidden; width: 100%; max-width: 340px; max-height: calc(100vh - 32px); overflow-y: auto; color: var(--ink); border: 4px solid #FFFFFF; border-radius: 28px; padding: 40px 20px 30px; text-align: center; box-shadow: 0 8px 0 rgba(8,65,77,.25), 0 18px 40px rgba(8,65,77,.35);
+.card { position: relative; overflow: hidden; width: 100%; max-width: 340px; max-height: calc((100vh - 32px) / var(--z, 1)); overflow-y: auto; zoom: var(--z, 1); color: var(--ink); border: 4px solid #FFFFFF; border-radius: 28px; padding: 40px 20px 30px; text-align: center; box-shadow: 0 8px 0 rgba(8,65,77,.25), 0 18px 40px rgba(8,65,77,.35);
   background: radial-gradient(circle at 12px 0, transparent 11px, #7FD9B8 12px) left bottom / 24px 12px repeat-x, linear-gradient(180deg, #FFF9EA 0%, #FFEDC2 100%); }
 .card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 26px;
   background: repeating-linear-gradient(90deg, #FF8F7E 0 22px, #FFFFFF 22px 44px, #7FD9B8 44px 66px, #FFFFFF 66px 88px, #FFD56B 88px 110px, #FFFFFF 110px 132px);
@@ -660,7 +660,8 @@ window.Abflug = (() => {
     { text: "Jetzt du! Schick Flugzeuge los, deren Touristen bald dran sind. Sind alle Gates belegt und niemand passt, ist das Spiel vorbei.", timeout: 9 },
   ];
 
-  let W = 0, H = 0, DPR = 1, lay = null;
+  // W, H: Spielfläche in logischen Pixeln (Handy-Maß). Z vergrößert alles auf Tablets.
+  let W = 0, H = 0, DPR = 1, Z = 1, lay = null;
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
   // Siegesserie: Jeder Sieg in Folge bringt fürs nächste Level einen Schlepper mehr (höchstens 3).
   // Reisepass: zählt Touristen pro Land, Stempel an festen Schwellen.
@@ -705,8 +706,8 @@ window.Abflug = (() => {
   }
   function offscreen(w, h) {
     const c = document.createElement("canvas");
-    c.width = Math.ceil(w * DPR); c.height = Math.ceil(h * DPR);
-    const g = c.getContext("2d"); g.scale(DPR, DPR);
+    c.width = Math.ceil(w * DPR * Z); c.height = Math.ceil(h * DPR * Z);
+    const g = c.getContext("2d"); g.scale(DPR * Z, DPR * Z);
     return { c, g, w, h };
   }
   function poly(points) {
@@ -994,28 +995,38 @@ window.Abflug = (() => {
 
   // ---------- Layout ----------
   function layout() {
-    W = window.innerWidth; H = window.innerHeight; DPR = Math.min(2, window.devicePixelRatio || 1);
-    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-    cv.style.width = W + "px"; cv.style.height = H + "px";
+    // Große Bildschirme: in Handy-Maßen rechnen und alles mit Z vergrößern, statt einen schmalen Streifen zu zeigen.
+    const vw = window.innerWidth, vh = window.innerHeight;
+    Z = Math.max(1, Math.min(2, vw / 430, vh / 880));
+    document.documentElement.style.setProperty("--z", Z);
+    W = vw / Z; H = vh / Z; DPR = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(vw * DPR); cv.height = Math.round(vh * DPR);
+    cv.style.width = vw + "px"; cv.style.height = vh + "px";
     sprites = {}; pats = {};
     if (!S) return;
-    const hudB = $(".hud").getBoundingClientRect().bottom;
-    const sab = parseFloat(getComputedStyle($("#safe")).paddingBottom) || 0;
-    const gw = Math.min(W, 520), ox = (W - gw) / 2, top = hudB + 2;
+    const gw = Math.min(W, 520), ox = (W - gw) / 2;
+    // Kopfzeile über der Insel ausrichten, nicht an den Bildschirmrändern.
+    const pad = Math.max(16, ((W - gw) / 2 + 8) * Z) + "px";
+    $(".hud").style.paddingLeft = pad; $(".hud").style.paddingRight = pad;
+    const hudB = $(".hud").getBoundingClientRect().bottom / Z;
+    const sab = (parseFloat(getComputedStyle($("#safe")).paddingBottom) || 0) / Z;
+    const top = hudB + 2;
     const avail = H - top - sab - 10;
-    const termH = Math.round(Math.max(200, Math.min(avail * 0.31, 270)));
-    const gatesH = Math.round(Math.max(92, Math.min(avail * 0.17, 126)));
+    // Terminal bekommt mehr Höhe für größere Touristen, die Gates weniger.
+    const termH = Math.round(Math.max(220, Math.min(avail * 0.37, 330)));
+    const gatesH = Math.round(Math.max(84, Math.min(avail * 0.12, 104)));
     const apronTop = top + termH + gatesH + 16;
     const apronH = H - sab - 30 - apronTop;
     // Links und rechts bleibt ein Streifen für Fluglotse und Pilot.
     const sideW = 50;
     const cell = Math.max(16, Math.floor(Math.min((gw - 8 - 2 * sideW) / S.cols, apronH / S.rows, 64)));
-    const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop + Math.max(0, apronH - cell * S.rows) * 0.3;
+    // Vorfeld direkt unter den Gates, übriger Platz bleibt unten.
+    const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop;
 
     // Wartering als Stadion, Ausgang unten in der Mitte. Zuläufe kommen von oben.
-    const d = Math.max(10, Math.min(15, Math.floor(gw / 30)));
+    const d = Math.max(12, Math.min(19, Math.floor(gw / 22)));
     const laneW = 4 * d + 6, cx = ox + gw / 2;
-    const rad = laneW * 0.85;
+    const rad = laneW * 0.7;
     const straight = Math.max(10, (A.RING * d * 1.45 - 2 * Math.PI * rad) / 2);
     const gy0 = top + termH;
     const cyR = gy0 - 26 - laneW / 2 - rad;
@@ -1079,7 +1090,8 @@ window.Abflug = (() => {
     if (s.timeout) setTimeout(() => { if (tut && TUT[tut.step] === s) tutNext(); }, s.timeout * 1000);
   }
   // Am Gate: kleine Flugzeuge größer zeichnen, damit jedes Gate gut gefüllt ist.
-  function gateC(p) { return Math.min(lay.slotW * 0.8, (lay.slotH * 0.95) / (p.len * 0.95)); }
+  // Am Gate höchstens wenig größer als auf dem Vorfeld, damit die Gates nicht alles dominieren.
+  function gateC(p) { return Math.min(lay.slotW * 0.8, (lay.slotH * 0.95) / (p.len * 0.95), lay.cell * 1.15); }
   function planeCenter(p) {
     const [dx, dy] = A.DIRS[p.dir], c = lay.cell;
     const nx = lay.ax + (p.x + 0.5) * c, ny = lay.ay + (p.y + 0.5) * c;
@@ -1116,7 +1128,7 @@ window.Abflug = (() => {
   function onTap(e) {
     audioInit();
     if (ended || !S || !$("#overlay").hidden || peeking) return;
-    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / Z, y = (e.clientY - r.top) / Z;
     // Seitenstreifen neben dem Vorfeld: links Fluglotse, rechts Pilot.
     if (y > lay.ay - 10) {
       const mode = x < lay.ax - 2 ? "slow" : x > lay.ax + S.cols * lay.cell + 2 ? "fast" : "";
@@ -1828,7 +1840,7 @@ window.Abflug = (() => {
 
   // ---------- Zeichnen ----------
   function draw(t) {
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.setTransform(DPR * Z, 0, 0, DPR * Z, 0, 0);
     drawSea(t);
     if (!S || !lay) return;
     const sh = t - shakeT < 0.3 ? (1 - (t - shakeT) / 0.3) * 4 : 0;
@@ -2088,8 +2100,10 @@ window.Abflug = (() => {
       ctx.fillStyle = PASTEL[i % PASTEL.length]; rr(ctx, bx - 6, gy0 - 2, 12, doorY - gy0 + 6, 4); ctx.fill();
       ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.fillRect(bx - 4, gy0, 3, doorY - gy0);
       if (locked) {
-        ctx.font = `800 24px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillText("+", g.x, g.y + 4);
+        // Gesperrtes fünftes Gate: öffnet nur als zweite Chance nach einer Niederlage.
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.45)";
+        ctx.font = `800 13px ${FONT}`; ctx.fillText("2.", g.x, g.y - 4);
+        ctx.font = `800 11px ${FONT}`; ctx.fillText("Chance", g.x, g.y + 9);
       }
       if (!docked) return;
       const v = vis.get(id), dst = A.DEST[p.dest];
