@@ -1061,6 +1061,8 @@ window.Abflug = (() => {
   function startLevel(i, ch = null) {
     levelIdx = Math.max(0, i);
     chal = levelIdx > 0 ? ch : null;
+    lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
+    setMusicStyle(lv.storm ? "funk" : chal ? "house" : "son");
     store.set("abflug.level", levelIdx);
     lv = cache[levelIdx] || (cache[levelIdx] = A.generate(levelIdx));
     S = A.createState(lv, { lookahead: fx("leucht", "look", 0), fog: chal?.id === "nebel" });
@@ -1129,6 +1131,11 @@ window.Abflug = (() => {
     audioInit();
     if (ended || !S || !$("#overlay").hidden || peeking) return;
     const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / Z, y = (e.clientY - r.top) / Z;
+    // Terminal links und rechts vom Wartering: Bauplätze, Antippen öffnet den Ausbau.
+    if (y < lay.gy0 - 10 && y > lay.top + 20 && !tut) {
+      const ringL = lay.x0 - lay.rad - lay.laneW / 2 - 6, ringR = lay.x1 + lay.rad + lay.laneW / 2 + 6;
+      if (x < ringL || x > ringR) { showShop(); return; }
+    }
     // Seitenstreifen neben dem Vorfeld: links Fluglotse, rechts Pilot.
     if (y > lay.ay - 10) {
       const mode = x < lay.ax - 2 ? "slow" : x > lay.ax + S.cols * lay.cell + 2 ? "fast" : "";
@@ -1239,6 +1246,7 @@ window.Abflug = (() => {
 
   function finish(won) {
     ended = true;
+    musicDuck(0.25, 3);
     if (tut) { tut = null; hideHint(); }
     setTimeout(() => {
       store.set("abflug.pass", pass);
@@ -1442,12 +1450,29 @@ window.Abflug = (() => {
     for (let j = 0; j < 12; j++) { const a = (j / 12) * Math.PI * 2, r = 12 + u * 44; oval(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r, 3, 3); }
   }
   function item(id, x, y, k, fn, t) {
-    if (!has(id)) return;
+    if (!has(id)) return bauplatz(x, y, k, t);
     const sc = k * pop(id, t);
     ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); fn(t); ctx.restore();
     sparkle(id, x, y - 22 * k, t);
   }
 
+  // Leerer Bauplatz: gestrichelter Kreis, Pylone und Schild. Zeigt, wo man etwas bauen kann.
+  function bauplatz(x, y, k, t) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = "rgba(14,94,111,.35)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, -2, 22, 7, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    for (const cx of [-14, 14]) {
+      ctx.fillStyle = "#FF8A1F"; ctx.beginPath(); ctx.moveTo(cx - 4, -1); ctx.lineTo(cx + 4, -1); ctx.lineTo(cx, -13); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(cx - 2.2, -7, 4.4, 2);
+    }
+    const bob = Math.sin(t * 2) * 1;
+    ctx.fillStyle = "#B07A45"; ctx.fillRect(-1, -22, 2, 20);
+    ctx.fillStyle = "#FFFFFF"; rr(ctx, -13, -31 + bob, 26, 12, 4); ctx.fill();
+    ctx.strokeStyle = "#E3C98F"; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.fillStyle = C.teal; ctx.font = `800 8px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("Bauen", 0, -25 + bob);
+    ctx.restore();
+  }
   function drawTerminalDeco(t) {
     const I = lay.island, top = lay.top, gy0 = lay.gy0;
     const ringL = lay.x0 - lay.rad - lay.laneW / 2 - 6, ringR = lay.x1 + lay.rad + lay.laneW / 2 + 6;
@@ -2387,8 +2412,11 @@ window.Abflug = (() => {
     const len = ac.sampleRate * 1.8, ir = ac.createBuffer(2, len, ac.sampleRate);
     for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3; }
     rev.buffer = ir; revG.gain.value = 0.28; musG.gain.value = 0.8;
+    const musIn = ac.createGain(), musLp = ac.createBiquadFilter();
+    musLp.type = "lowpass"; musLp.frequency.value = 16000;
+    musIn.connect(musLp).connect(musG);
     sfxG.connect(master); musG.connect(master); sfxG.connect(rev); musG.connect(rev); rev.connect(revG).connect(master); master.connect(ac.destination);
-    bus = { sfx: sfxG, mus: musG };
+    bus = { sfx: sfxG, mus: musIn, musGain: musG, musLp };
   }
   const out = () => (bus ? bus.sfx : ac.destination);
   document.addEventListener("visibilitychange", () => {
@@ -2443,28 +2471,46 @@ window.Abflug = (() => {
     stamp: () => { tone(150, 0.12, "triangle", 0.22, 0.5); steel(1046, 0.5, 0.08, 0.1); steel(1318, 0.6, 0.07, 0.2); },
   };
 
-  // ---------- Musik: entspannter kubanischer Son, live erzeugt ----------
-  // Eigene Komposition im Stil, keine Melodie aus einem anderen Spiel: 92 BPM mit leichtem Swing,
-  // Son-Clave 3-2, Bongo-Martillo, Maracas, Conga, Tumbao-Bass, Gitarren-Montuno und eine
-  // Marimba, die in kurzen Phrasen frei über die Akkorde spielt.
-  let musicOn = store.get("abflug.music", true), mus = null, noiseBuf = null;
-  const E8 = 60 / 92 / 2;
-  // C – F – G7 – C – Am – Dm – G7 – C, je ein Takt
-  const PROG = [[0, "maj"], [5, "maj"], [7, "dom"], [0, "maj"], [9, "min"], [2, "min"], [7, "dom"], [0, "maj"]];
+  // ---------- Musik: live erzeugt, Stil je nach Lage ----------
+  // Eigene Kompositionen im Stil, keine Stücke aus anderen Spielen, daher lizenzfrei.
+  // son:   entspannter kubanischer Son für normale Level (Clave 3-2, Bongos, Tumbao-Bass, Gitarre, Marimba)
+  // house: Tropical House für Herausforderungen (Four-on-the-floor, Offbeat-Bass, Marimba-Stabs, Fläche)
+  // funk:  Brasil-Funk mit Tamborzão-Groove für Sturm-Level
+  // Pilot beschleunigt die Musik, der Fluglotse bremst sie und dämpft die Höhen.
+  let musicOn = store.get("abflug.music", true), mus = null, noiseBuf = null, musicStyle = "son";
+  const STYLES = {
+    son: { bpm: 92, sub: 2, swing: 0.1, prog: [[0, "maj"], [5, "maj"], [7, "dom"], [0, "maj"], [9, "min"], [2, "min"], [7, "dom"], [0, "maj"]] },
+    house: { bpm: 108, sub: 2, swing: 0, prog: [[9, "min"], [5, "maj"], [0, "maj"], [7, "maj"]] },
+    funk: { bpm: 128, sub: 4, swing: 0, prog: [[4, "min"], [4, "min"], [0, "maj"], [2, "maj"]] },
+  };
   const TONES = { maj: [0, 4, 7], min: [0, 3, 7], dom: [0, 4, 7, 10] };
   const SCALE = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
   const CLAVE = [[0, 3, 6], [2, 4]];
   const mtof = m => 440 * 2 ** ((m - 69) / 12);
+  function setMusicStyle(st) {
+    if (st === musicStyle) return;
+    musicStyle = st;
+    if (mus) { mus.step = 0; mus.mel = 4; }
+  }
   function musicStart() {
     if (!ac || !bus || mus || !musicOn || muted) return;
     mus = { next: ac.currentTime + 0.15, step: 0, mel: 4, timer: setInterval(musicTick, 25) };
   }
   function musicStop() { if (mus) { clearInterval(mus.timer); mus = null; } }
+  function musicDuck(level, secs) {
+    if (!bus) return;
+    const g = bus.musGain.gain, t = ac.currentTime;
+    g.cancelScheduledValues(t); g.setTargetAtTime(0.8 * level, t, 0.08); g.setTargetAtTime(0.8, t + secs, 0.5);
+  }
   function musicTick() {
     if (!mus || ac.state !== "running") return;
+    const S2 = STYLES[musicStyle], sp = speedOn(now());
+    const tempo = sp === "fast" ? 1.15 : sp === "slow" ? 0.85 : 1;
+    bus.musLp.frequency.setTargetAtTime(sp === "slow" ? 900 : 16000, ac.currentTime, 0.15);
+    const base = 60 / (S2.bpm * tempo) / S2.sub;
     while (mus.next < ac.currentTime + 0.2) {
-      playStep(mus.step, mus.next);
-      mus.next += E8 * (mus.step % 2 ? 0.9 : 1.1);
+      PLAY[musicStyle](mus.step, mus.next, base);
+      mus.next += base * (S2.swing ? (mus.step % 2 ? 1 - S2.swing : 1 + S2.swing) : 1);
       mus.step++;
     }
   }
@@ -2479,52 +2525,85 @@ window.Abflug = (() => {
     if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur * 0.5);
     o.connect(to); o.start(t); o.stop(t + dur + 0.05);
   }
-  function noise(t, v, hp, dur) {
-    if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.2, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  function noise(t, v, hp, dur, band) {
+    if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.3, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
     const src = ac.createBufferSource(), f = ac.createBiquadFilter();
-    src.buffer = noiseBuf; f.type = "highpass"; f.frequency.value = hp;
+    src.buffer = noiseBuf; f.type = band ? "bandpass" : "highpass"; f.frequency.value = hp; if (band) f.Q.value = 1.2;
     src.connect(f).connect(env(t, v, 0.004, dur)); src.start(t); src.stop(t + dur + 0.05);
   }
+  function lp(freq, to) { const f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq; f.connect(to); return f; }
   const inst = {
     clave: t => { const g = env(t, 0.07, 0.002, 0.06); osc("sine", 2500, t, 0.08, g); osc("sine", 1650, t, 0.08, g); },
     shaker: (t, v) => noise(t, v, 7000, 0.06),
+    hat: (t, v, d = 0.05) => noise(t, v, 8500, d),
+    clap: (t, v) => { noise(t, v, 1500, 0.12, true); noise(t + 0.012, v * 0.7, 1500, 0.1, true); },
+    kick: (t, v) => { osc("sine", 140, t, 0.3, env(t, v, 0.003, 0.28), 48); osc("triangle", 280, t, 0.04, env(t, v * 0.3, 0.001, 0.03), 120); },
     bongo: (t, f, v) => osc("sine", f, t, 0.14, env(t, v, 0.002, 0.12), f * 0.82),
-    conga: (t, v) => osc("sine", 210, t, 0.3, env(t, v, 0.003, 0.26), 175),
-    bass(f, t, d) {
-      const g = env(t, 0.16, 0.012, d), lp = ac.createBiquadFilter();
-      lp.type = "lowpass"; lp.frequency.value = 420; lp.connect(g);
-      osc("triangle", f, t, d, lp); osc("sine", f, t, d, lp);
+    conga: (t, v, f = 210) => osc("sine", f, t, 0.3, env(t, v, 0.003, 0.26), f * 0.83),
+    // Bass eine Oktave höher und mit Obertönen, damit er auch aus Handylautsprechern hörbar ist.
+    bass(f, t, d, v = 0.15) {
+      const to = lp(900, env(t, v, 0.012, d));
+      osc("triangle", f, t, d, to); osc("sawtooth", f, t, d, lp(600, env(t, v * 0.35, 0.012, d)));
     },
-    pluck(f, t, v) {
-      const g = env(t, v, 0.004, 0.42), lp = ac.createBiquadFilter();
-      lp.type = "lowpass"; lp.frequency.setValueAtTime(2600, t); lp.frequency.exponentialRampToValueAtTime(500, t + 0.3); lp.connect(g);
-      osc("sawtooth", f, t, 0.45, lp);
+    sub808(f, t, d, v = 0.17) {
+      osc("sine", f * 1.5, t, d, env(t, v, 0.005, d), f);
+      osc("square", f * 2, t, d * 0.5, lp(700, env(t, v * 0.18, 0.005, d * 0.5)), f * 1.4);
+    },
+    pluck(f, t, v, d = 0.42) {
+      const g = env(t, v, 0.004, d), f1 = ac.createBiquadFilter();
+      f1.type = "lowpass"; f1.frequency.setValueAtTime(2600, t); f1.frequency.exponentialRampToValueAtTime(500, t + d * 0.7); f1.connect(g);
+      osc("sawtooth", f, t, d + 0.03, f1);
     },
     marimba(f, t, v) {
       osc("sine", f, t, 0.7, env(t, v, 0.003, 0.65));
       osc("sine", f * 4, t, 0.1, env(t, v * 0.25, 0.002, 0.06));
     },
+    pad(fs, t, d, v) { const to = lp(1100, env(t, v, d * 0.3, d * 0.7)); fs.forEach(f => { osc("sawtooth", f, t, d, to); osc("sawtooth", f * 1.006, t, d, to); }); },
   };
-  function playStep(step, t) {
-    const bar = Math.floor(step / 8), pos = step % 8, [r, q] = PROG[bar % PROG.length], [nr] = PROG[(bar + 1) % PROG.length];
-    if (CLAVE[bar % 2].includes(pos)) inst.clave(t);
-    inst.shaker(t, pos % 2 ? 0.045 : 0.02);
-    inst.bongo(t, pos % 2 ? 540 : 400, pos === 0 ? 0.08 : 0.045);
-    if (pos === 6 || pos === 7) inst.conga(t, 0.07);
-    // Tumbao: Quinte auf „2 und“, Grundton des nächsten Akkords schon auf der 4
-    if (pos === 3) inst.bass(mtof(36 + r + 7), t, E8 * 2.6);
-    if (pos === 6) inst.bass(mtof(36 + nr), t, E8 * 3.2);
-    const gp = [0, 2, 3, 5, 6].indexOf(pos), ct = TONES[q];
-    if (gp >= 0) inst.pluck(mtof(60 + r + ct[[0, 2, 1, 2, 1][gp] % ct.length]), t, 0.035);
-    // Marimba: Phrasen in Takt 1–2 und 5–6 jeder Runde, dazwischen Pause wie Frage und Antwort.
-    const inPhrase = [0, 1, 4, 5].includes(bar % 8);
-    if (inPhrase && Math.random() < (pos % 2 ? 0.3 : 0.6)) {
-      mus.mel = Math.max(0, Math.min(SCALE.length - 1, mus.mel + [-2, -1, -1, 1, 1, 2][(Math.random() * 6) | 0]));
-      let n = SCALE[mus.mel];
-      if (pos === 0) { const want = ct.map(c => (r + c) % 12); while (!want.includes(n % 12) && mus.mel > 0) n = SCALE[--mus.mel]; }
-      inst.marimba(mtof(72 + n), t, 0.06);
-    }
+  // Marimba-Phrase: wandert in kleinen Schritten über die Tonleiter und landet auf Akkordtönen.
+  function melody(r, ct, pos, t, chance, v) {
+    if (Math.random() >= chance) return;
+    mus.mel = Math.max(0, Math.min(SCALE.length - 1, mus.mel + [-2, -1, -1, 1, 1, 2][(Math.random() * 6) | 0]));
+    let n = SCALE[mus.mel];
+    if (pos === 0) { const want = ct.map(c => (r + c) % 12); while (!want.includes(n % 12) && mus.mel > 0) n = SCALE[--mus.mel]; }
+    inst.marimba(mtof(72 + n), t, v);
   }
+  const PLAY = {
+    son(step, t, e8) {
+      const P = STYLES.son.prog, bar = Math.floor(step / 8), pos = step % 8, [r, q] = P[bar % P.length], [nr] = P[(bar + 1) % P.length], ct = TONES[q];
+      if (CLAVE[bar % 2].includes(pos)) inst.clave(t);
+      inst.shaker(t, pos % 2 ? 0.045 : 0.02);
+      inst.bongo(t, pos % 2 ? 540 : 400, pos === 0 ? 0.08 : 0.045);
+      if (pos === 6 || pos === 7) inst.conga(t, 0.07);
+      // Tumbao: Quinte auf „2 und“, Grundton des nächsten Akkords schon auf der 4
+      if (pos === 3) inst.bass(mtof(48 + r + 7), t, e8 * 2.6);
+      if (pos === 6) inst.bass(mtof(48 + nr), t, e8 * 3.2);
+      const gp = [0, 2, 3, 5, 6].indexOf(pos);
+      if (gp >= 0) inst.pluck(mtof(60 + r + ct[[0, 2, 1, 2, 1][gp] % ct.length]), t, 0.035);
+      if ([0, 1, 4, 5].includes(bar % 8)) melody(r, ct, pos, t, pos % 2 ? 0.3 : 0.6, 0.07);
+    },
+    house(step, t, e8) {
+      const P = STYLES.house.prog, bar = Math.floor(step / 8), pos = step % 8, [r, q] = P[bar % P.length], ct = TONES[q];
+      if (pos % 2 === 0) inst.kick(t, 0.22);
+      else { inst.hat(t, 0.05, 0.08); inst.bass(mtof(45 + r), t, e8 * 0.9, 0.13); }
+      if (pos === 2 || pos === 6) inst.clap(t, 0.06);
+      inst.shaker(t, 0.012);
+      // Typische 3-3-2-Stabs der Marimba über dem Akkord
+      if ([0, 3, 6].includes(pos)) ct.forEach((c, i) => inst.marimba(mtof(69 + r + c), t + i * 0.008, 0.035));
+      if (pos === 0) inst.pad(ct.map(c => mtof(57 + r + c)), t, e8 * 8, 0.018);
+      if (bar % 4 >= 2) melody(r, ct, pos, t, pos % 2 ? 0.2 : 0.45, 0.05);
+    },
+    funk(step, t, e16) {
+      const P = STYLES.funk.prog, bar = Math.floor(step / 16), pos = step % 16, [r, q] = P[bar % P.length], ct = TONES[q];
+      // Tamborzão: Bumm – – Bumm – – – Bumm – – Bumm … mit Tak auf 5 und 13
+      if ([0, 3, 7, 10].includes(pos)) { inst.kick(t, 0.24); inst.sub808(mtof(40 + r), t, e16 * 2.5, 0.12); }
+      if (pos === 4 || pos === 12) inst.clap(t, 0.075);
+      if ([6, 14, 15].includes(pos)) inst.conga(t, 0.08, pos === 15 ? 260 : 220);
+      if (pos % 2 === 0) inst.hat(t, pos % 4 ? 0.025 : 0.04, 0.03);
+      if ([2, 8, 11].includes(pos)) inst.pluck(mtof(64 + r + ct[pos % ct.length]), t, 0.03, 0.25);
+      if (bar % 4 === 3 && pos % 2 === 0) melody(r, ct, pos, t, 0.4, 0.045);
+    },
+  };
 
   // ---------- Start ----------
   function frame() {
