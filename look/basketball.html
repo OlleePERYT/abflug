@@ -49,12 +49,12 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
   <header>
     <div class="kicker">Look-Probe · zweites Thema für Abflug!</div>
     <h1>Turniertag in der Halle</h1>
-    <p>Gleiche Mechanik, neues Setting: Mannschaftsbusse haben sich auf dem Hallenparkplatz verkeilt, die Spielerinnen drehen im Foyer ihre Runden und wollen zu ihrem Court. Alle Teams sind erfunden.</p>
+    <p>Gleiche Mechanik, ganz Basketball: Im Geräteraum stehen die fahrbaren Korbanlagen ineinander verkeilt. Rollt eine an den Court, werfen die Spielerinnen ihres Teams, bis der Korb voll ist. Alle Teams sind erfunden.</p>
   </header>
 
   <div class="stage">
     <div>
-      <div class="phone"><canvas id="scene" width="390" height="800" role="img" aria-label="Spielbild: Foyer mit Laufbahn und Spielerinnen, fünf Courts, Parkplatz mit Mannschaftsbussen, links Schiedsrichterin, rechts Coach"></canvas></div>
+      <div class="phone"><canvas id="scene" width="390" height="800" role="img" aria-label="Spielbild: Foyer mit Laufbahn und dribbelnden Spielerinnen, fünf Courts mit Korbanlagen und Würfen, Geräteraum mit verkeilten Korbanlagen, links Schiedsrichterin, rechts Coach"></canvas></div>
       <div class="toggle" role="group" aria-label="Spielbild-Variante">
         <button id="normalBtn" aria-pressed="true">Normales Spiel</button>
         <button id="playoffBtn" aria-pressed="false">Playoffs</button>
@@ -63,33 +63,37 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
 
     <div class="parts">
       <section class="part">
-        <h2>Mannschaftsbusse</h2>
-        <p>Klein, mittel, groß: 16, 24 oder 40 Plätze. Großer Pfeil auf dem Dach für die Fahrtrichtung, Teamwappen am Heck, Frontscheibe mit Äuglein.</p>
-        <canvas id="buses" width="640" height="200" role="img" aria-label="Drei Mannschaftsbusse in Orange, Türkis und Lila"></canvas>
+        <h2>Fahrbare Korbanlagen</h2>
+        <p>Von oben gesehen: Sockel mit Rollen, Ausleger, Brett und Ring. Das Brett ist die Nase und zeigt die Rollrichtung, dazu der Pfeil auf dem Sockel. Kinderkorb, Standardkorb und Profi-Anlage fassen 16, 24 oder 40 Würfe.</p>
+        <canvas id="buses" width="640" height="210" role="img" aria-label="Drei Korbanlagen in Orange, Türkis und Lila: Kinderkorb, Standardkorb, Profi-Anlage"></canvas>
       </section>
       <section class="part">
         <h2>Spielerinnen und Teams</h2>
-        <p>Trikot in Teamfarbe mit Symbol auf der Brust, Stirnband, Zopf oder Kurzhaar. Dazu acht erfundene Teams mit Wappen.</p>
+        <p>Trikot in Teamfarbe mit Symbol auf der Brust, Stirnband, Zopf oder Kurzhaar. Alle dribbeln im Takt der Musik. Dazu acht erfundene Teams mit Wappen.</p>
         <canvas id="teams" width="640" height="260" role="img" aria-label="Acht Spielerinnen in Teamtrikots mit Wappen und Teamnamen"></canvas>
       </section>
       <section class="part">
-        <h2>Schiri und Coach</h2>
-        <p>Die Schiedsrichterin links bremst mit „Timeout!“, der Coach rechts gibt Gas mit „Fast Break!“.</p>
-        <canvas id="crew" width="640" height="260" role="img" aria-label="Schiedsrichterin mit Pfeife und Coach mit Klemmbrett"></canvas>
+        <h2>Schiri, Coach und Hausmeister</h2>
+        <p>Die Schiedsrichterin bremst mit „Timeout!“, der Coach gibt Gas mit „Fast Break!“. Der Hausmeister mit Hubwagen ersetzt den Schlepper und zieht eine verkeilte Anlage heraus.</p>
+        <canvas id="crew" width="640" height="260" role="img" aria-label="Schiedsrichterin mit Pfeife, Hausmeister mit Hubwagen und Coach mit Klemmbrett"></canvas>
       </section>
       <section class="part">
         <h2>Was wird woraus</h2>
         <div class="map-wrap">
           <table class="map">
             <tr><th>Karibik</th><th>Halle</th></tr>
-            <tr><td>Vorfeld, Flugzeuge</td><td>Hallenparkplatz, Mannschaftsbusse</td></tr>
+            <tr><td>Vorfeld, Flugzeuge</td><td>Geräteraum, fahrbare Korbanlagen</td></tr>
             <tr><td>Gates A1 bis A5</td><td>Courts 1 bis 5, Court 5 als zweite Chance</td></tr>
-            <tr><td>Touristen im Wartering</td><td>Spielerinnen auf der Laufbahn im Foyer</td></tr>
+            <tr><td>Touristen steigen ein</td><td>Spielerinnen dribbeln und werfen, Swish ins Netz</td></tr>
+            <tr><td>Flugzeug voll, hebt ab</td><td>Korb voll: Buzzer, Konfetti, Anlage rollt weg</td></tr>
+            <tr><td>Schlepper</td><td>Hausmeister mit Hubwagen</td></tr>
+            <tr><td>Kettenbonus</td><td>Heißer Lauf: brennende Bälle</td></tr>
             <tr><td>Länderflaggen</td><td>Teamwappen</td></tr>
             <tr><td>Fluglotse, Pilot</td><td>Schiedsrichterin, Coach</td></tr>
             <tr><td>Ausbau Flughafen</td><td>Ausbau Halle: Anzeigetafel, Snackbar, Fan-Shop, Flutlicht, Ballwagen</td></tr>
             <tr><td>Reisepass</td><td>Stickeralbum</td></tr>
             <tr><td>Sturm-Level</td><td>Playoffs mit Flutlicht und Konfetti</td></tr>
+            <tr><td>Herausforderungen</td><td>Shot Clock, Auswärtsspiel, Stromausfall</td></tr>
             <tr><td>Son, House, Funk</td><td>Arena-Groove, Hallenorgel, Sneaker-Quietschen, Buzzer</td></tr>
           </table>
         </div>
@@ -143,33 +147,51 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
     glyph(g, team.g, 0, 0, 5, "#FFFFFF");
     g.restore();
   }
-  // Bus von oben, Nase nach rechts. len 2/3/4 Felder, c Feldgröße.
-  function bus(g, x, y, ang, len, c, team) {
-    const half = len * c * 0.46, hw = c * 0.4;
+  // Fahrbare Korbanlage von oben, Brett (Nase) nach rechts. len 2/3/4 Felder, c Feldgröße.
+  // swing: Netz schwingt nach einem Treffer (0..1).
+  function hoop(g, x, y, ang, len, c, team, swing = 0) {
+    const half = len * c * 0.46, hw = c * 0.36, bx = half - c * 0.16;
+    const dark = shade(team.c, -0.4);
     g.save(); g.translate(x, y); g.rotate(ang);
-    g.fillStyle = "rgba(0,0,0,.22)"; rr(g, -half + 3, -hw + 4, half * 2, hw * 2, c * 0.18); g.fill();
-    g.fillStyle = "#FFFFFF"; rr(g, -half - 2, -hw - 2, half * 2 + 4, hw * 2 + 4, c * 0.2); g.fill();
-    const body = g.createLinearGradient(0, -hw, 0, hw); body.addColorStop(0, shade(team.c, 0.25)); body.addColorStop(0.5, team.c); body.addColorStop(1, shade(team.c, -0.2));
-    g.fillStyle = body; rr(g, -half, -hw, half * 2, hw * 2, c * 0.18); g.fill();
-    g.strokeStyle = shade(team.c, -0.4); g.lineWidth = Math.max(1, c * 0.04); g.stroke();
-    // Fensterreihen an den Seiten
-    g.fillStyle = "rgba(30,58,74,.55)";
-    for (let k = -half + c * 0.55; k < half - c * 0.5; k += c * 0.32) { rr(g, k, -hw + c * 0.06, c * 0.24, c * 0.1, 2); g.fill(); rr(g, k, hw - c * 0.16, c * 0.24, c * 0.1, 2); g.fill(); }
-    // Frontscheibe mit Äuglein
-    g.fillStyle = "#1E3A4A"; rr(g, half - c * 0.3, -hw + c * 0.08, c * 0.2, hw * 2 - c * 0.16, c * 0.07); g.fill();
-    g.fillStyle = "#FFFFFF"; oval(g, half - c * 0.19, -hw * 0.38, c * 0.05, c * 0.05); oval(g, half - c * 0.19, hw * 0.38, c * 0.05, c * 0.05);
-    // Pfeil auf dem Dach
-    const x0 = -half + c * 0.55, x1 = half - c * 0.42, hl = Math.min(c * 0.4, (x1 - x0) * 0.5), sw = hw * 0.26, hh = hw * 0.62;
+    g.fillStyle = "rgba(0,0,0,.22)"; rr(g, -half + 3, -hw + 4, half * 2, hw * 2, c * 0.16); g.fill();
+    // Rollen
+    g.fillStyle = "#2A2F3A";
+    for (const sx of [-half + c * 0.12, bx - c * 0.5]) for (const sy of [-1, 1]) { rr(g, sx - c * 0.09, sy * hw - c * 0.07, c * 0.18, c * 0.14, c * 0.05); g.fill(); }
+    // Sockel mit Sticker-Rand
+    g.fillStyle = "#FFFFFF"; rr(g, -half - 2, -hw - 2, bx - c * 0.1 + half + 4, hw * 2 + 4, c * 0.18); g.fill();
+    const base = g.createLinearGradient(0, -hw, 0, hw); base.addColorStop(0, shade(team.c, 0.25)); base.addColorStop(0.5, team.c); base.addColorStop(1, shade(team.c, -0.2));
+    g.fillStyle = base; rr(g, -half, -hw, bx - c * 0.1 + half, hw * 2, c * 0.16); g.fill();
+    g.strokeStyle = dark; g.lineWidth = Math.max(1, c * 0.04); g.stroke();
+    // Ausleger zur Brettmitte
+    g.fillStyle = "#AEB8C6"; rr(g, -half + c * 0.25, -c * 0.07, bx - c * 0.05 + half - c * 0.25, c * 0.14, c * 0.05); g.fill();
+    g.strokeStyle = "#7D8796"; g.lineWidth = 1; g.stroke();
+    // Pfeil auf dem Sockel
+    const x0 = -half + c * 0.32, x1 = bx - c * 0.28, hl = Math.min(c * 0.32, (x1 - x0) * 0.45), sw = hw * 0.24, hh = hw * 0.6;
     g.beginPath(); g.moveTo(x0, -sw); g.lineTo(x1 - hl, -sw); g.lineTo(x1 - hl, -hh); g.lineTo(x1, 0); g.lineTo(x1 - hl, hh); g.lineTo(x1 - hl, sw); g.lineTo(x0, sw); g.closePath();
-    g.fillStyle = team.c === "#FFC400" ? "#16233B" : "#FFFFFF"; g.fill(); g.strokeStyle = shade(team.c, -0.4); g.lineWidth = Math.max(1, c * 0.03); g.stroke();
+    g.fillStyle = team.c === "#FFC400" ? "#16233B" : "#FFFFFF"; g.fill(); g.strokeStyle = dark; g.lineWidth = Math.max(1, c * 0.03); g.stroke();
+    // Brett quer zur Rollrichtung, Rahmen in Teamfarbe
+    g.fillStyle = "#FFFFFF"; rr(g, bx - c * 0.08, -c * 0.46, c * 0.16, c * 0.92, c * 0.04); g.fill();
+    g.strokeStyle = team.c; g.lineWidth = Math.max(1.5, c * 0.05); g.stroke();
+    // Ring mit Netz vor dem Brett
+    const rx = bx + c * 0.24, rr2 = c * 0.17;
+    g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = Math.max(1, c * 0.025);
+    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2, sx = Math.sin(swing * 9) * swing * c * 0.06; g.beginPath(); g.moveTo(rx + Math.cos(a) * rr2, Math.sin(a) * rr2); g.lineTo(rx + Math.cos(a) * rr2 * 0.45 + sx, Math.sin(a) * rr2 * 0.45); g.stroke(); }
+    g.strokeStyle = "#FF6A13"; g.lineWidth = Math.max(1.5, c * 0.05); g.beginPath(); g.arc(rx, 0, rr2, 0, 7); g.stroke();
     g.restore();
-    // Wappen am Heck, aufrecht
-    crest(g, x - Math.cos(ang) * (half - c * 0.28), y - Math.sin(ang) * (half - c * 0.28), c * 0.024, team);
+    // Wappen hinten auf dem Sockel, aufrecht
+    crest(g, x - Math.cos(ang) * (half - c * 0.26), y - Math.sin(ang) * (half - c * 0.26), c * 0.022, team);
   }
+  function ringPos(x, y, ang, len, c) { const bx = len * c * 0.46 - c * 0.16 + c * 0.24; return [x + Math.cos(ang) * bx, y + Math.sin(ang) * bx]; }
   // Spielerin: Trikot mit Symbol, Stirnband, Haare. v variiert Haut und Frisur.
-  function player(g, x, y, d, team, v, t) {
+  function player(g, x, y, d, team, v, t, dribble = true) {
     const bob = Math.abs(Math.sin(t * 7 + v * 1.7)) * d * 0.14;
     g.fillStyle = "rgba(0,0,0,.18)"; oval(g, x, y, d * 0.42, d * 0.13);
+    // Dribbeln: Ball springt neben der Spielerin, Takt wie die Musik
+    if (dribble) {
+      const ph = Math.abs(Math.sin(t * Math.PI * 2 * 1.53 + v * 0.4)), by = y - ph * d * 0.62 - d * 0.12;
+      g.fillStyle = "rgba(0,0,0,.18)"; oval(g, x + d * 0.5, y, d * 0.16 * (1 - ph * 0.4), d * 0.06);
+      ball(g, x + d * 0.5, by, d * 0.2, v);
+    }
     g.save(); g.translate(x, y - bob);
     g.fillStyle = shade(team.c, -0.35); rr(g, -d * 0.3, -d * 0.3, d * 0.6, d * 0.32, d * 0.1); g.fill();
     g.fillStyle = team.c; rr(g, -d * 0.4, -d * 0.86, d * 0.8, d * 0.62, d * 0.24); g.fill();
@@ -246,6 +268,31 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
     g.strokeStyle = "#7A2E2E"; g.lineWidth = 1.6; g.beginPath(); g.arc(0, -74, 3.5, 0.3, Math.PI - 0.3); g.stroke();
     g.fillStyle = "#FF7A1A"; rr(g, -16, -101, 32, 12, 6); g.fill(); g.fillRect(-2, -93, 24, 4);
     g.fillStyle = "#FFFFFF"; oval(g, 0, -96, 3, 3);
+    g.restore();
+  }
+  // Hausmeister mit Hubwagen: grauer Overall, Schlüsselbund, zieht nach rechts.
+  function janitor(g, x, y, h, t) {
+    const s = h / 110, step = Math.sin(t * 6); g.save(); g.translate(x, y); g.scale(s, s);
+    g.fillStyle = "rgba(0,0,0,.25)"; oval(g, 10, 0, 50, 6);
+    // Hubwagen: Gabel und Deichsel
+    g.fillStyle = "#FFC400"; g.fillRect(14, -10, 60, 6); g.fillRect(14, -4, 60, 4);
+    g.fillStyle = "#2A2F3A"; oval(g, 70, -2, 4, 4); oval(g, 20, -2, 4, 4);
+    g.strokeStyle = "#FFC400"; g.lineWidth = 5; g.lineCap = "round"; g.beginPath(); g.moveTo(16, -8); g.lineTo(2, -52); g.stroke();
+    g.fillStyle = "#16233B"; g.fillRect(-4, -58, 12, 7);
+    // Figur
+    g.fillStyle = "#4E5A6B";
+    g.save(); g.translate(-18, -32); g.rotate(step * 0.3); rr(g, -5, 0, 10, 32, 4); g.fill(); g.restore();
+    g.save(); g.translate(-8, -32); g.rotate(-step * 0.3); rr(g, -5, 0, 10, 32, 4); g.fill(); g.restore();
+    g.fillStyle = "#2A2F3A"; oval(g, -18 + step * 5, -1, 8, 4); oval(g, -8 - step * 5, -1, 8, 4);
+    g.fillStyle = "#5F6D80"; rr(g, -31, -70, 36, 42, 11); g.fill();
+    g.fillStyle = "#FF7A1A"; g.fillRect(-31, -52, 36, 3);
+    g.strokeStyle = "#5F6D80"; g.lineWidth = 8; g.beginPath(); g.moveTo(-2, -62); g.lineTo(2, -54); g.stroke();
+    g.fillStyle = SKIN[2]; oval(g, 3, -54, 5, 5);
+    g.fillStyle = "#C0C8D2"; g.beginPath(); g.arc(-26, -38, 4, 0, 7); g.fill();
+    g.fillStyle = SKIN[2]; oval(g, -13, -84, 15, 15);
+    g.fillStyle = "#9A9A9A"; rr(g, -22, -76, 18, 6, 3); g.fill();
+    g.fillStyle = "#2A2A2A"; oval(g, -8, -86, 1.8, 2.2); oval(g, -17, -86, 1.8, 2.2);
+    g.fillStyle = "#3D7AB8"; rr(g, -29, -102, 32, 11, 5); g.fill(); g.fillRect(-8, -95, 20, 4);
     g.restore();
   }
   function bubble(g, txt, x, y, minX, maxX) {
@@ -344,24 +391,37 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
       g.fillStyle = "#16233B"; g.font = `800 10px "Barlow Condensed", sans-serif`; g.textAlign = "left"; g.fillText("C" + (i + 1), x + 5, y + 10);
       if (i === 4) { g.fillStyle = "rgba(255,255,255,.85)"; g.textAlign = "center"; g.font = `800 13px "Barlow Condensed", sans-serif`; g.fillText("2. Chance", x + w / 2, y + h / 2 + 6); }
     }
-    // Gedockte Busse an Court 1 bis 4, mit Füllstand
-    [[0, 2, 0, "16"], [1, 3, 3, "9"], [2, 2, 4, "12"], [3, 2, 6, "20"]].forEach(([i, len, tm, n]) => {
-      const x = 10 + i * 75 + 34, y = 368;
-      bus(g, x, y, -Math.PI / 2, len, 30, TEAMS[tm]);
-      g.fillStyle = TEAMS[tm].c; rr(g, x - 15, 412, 30, 16, 8); g.fill(); g.fillStyle = "#FFFFFF"; g.font = `800 12px "Barlow Condensed", sans-serif`; g.textAlign = "center"; g.fillText(n, x, 420.5);
+    // Korbanlagen an Court 1 bis 4, Brett zum Spielfeld, mit Trefferzähler
+    const docked = [[0, 2, 0, 11, 16], [1, 3, 3, 9, 24], [2, 2, 4, 5, 16], [3, 4, 6, 27, 40]];
+    docked.forEach(([i, len, tm, n, cap], k) => {
+      const x = 10 + i * 75 + 34, y = 376 - (len - 2) * 8, ang = -Math.PI / 2;
+      const ph = (t * 0.9 + k * 0.27) % 1, swing = ph < 0.25 ? 1 - ph / 0.25 : 0;
+      hoop(g, x, y, ang, len, 28, TEAMS[tm], swing);
+      g.fillStyle = TEAMS[tm].c; rr(g, x - 20, 410, 40, 17, 8.5); g.fill(); g.fillStyle = TEAMS[tm].c === "#FFC400" ? "#16233B" : "#FFFFFF";
+      g.font = `800 12px "Barlow Condensed", sans-serif`; g.textAlign = "center"; g.fillText(`${n + Math.floor(t * 0.9 + k * 0.27) % 3}/${cap}`, x, 419);
+      // Wurf: Ball fliegt im Bogen vom Ring-Ausgang in den Korb
+      const fl = (t * 0.9 + k * 0.27 + 0.6) % 1;
+      if (fl < 0.6) {
+        const u = fl / 0.6, [hx, hy] = ringPos(x, y, ang, len, 28), sx = W / 2 + (k - 1.5) * 10, sy = 290;
+        const bxp = sx + (hx - sx) * u, byp = sy + (hy - sy) * u - Math.sin(u * Math.PI) * 70;
+        ball(g, bxp, byp, 5, t * 8);
+      }
     });
-    // Laufende Spielerin vom Foyer zum Court
-    const u = (t * 0.5) % 1; player(g, 120 + u * 20, 296 + u * 6, 13, TEAMS[0], 3, t * 2);
-    // Parkplatz
-    g.fillStyle = "#3BB273"; g.fillRect(0, 432, W, H - 432);
+    // Geräteraum: Wände, gestapelte Matten und Hütchen am Rand, Gummiboden mit Feldraster
+    g.fillStyle = "#C9C1B2"; g.fillRect(0, 432, W, H - 432);
+    g.fillStyle = "#B5AC9B"; for (let y = 440; y < H; y += 14) g.fillRect(0, y, W, 1);
+    g.fillStyle = "#3D7AB8"; rr(g, 6, 450, 40, 70, 6); g.fill(); g.fillStyle = "#4F8FCC"; rr(g, 6, 450, 40, 8, 4); g.fill(); rr(g, 6, 470, 40, 8, 4); g.fill();
+    for (let k = 0; k < 3; k++) { g.fillStyle = "#FF7A1A"; g.beginPath(); g.moveTo(W - 34 + k * 9, 470); g.lineTo(W - 28 + k * 9, 452 - k * 2); g.lineTo(W - 22 + k * 9, 470); g.closePath(); g.fill(); }
     g.fillStyle = asphalt; rr(g, AX - 8, AY - 8, COLS * C0 + 16, ROWS * C0 + 16, 14); g.fill();
-    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 1.5;
-    for (let c = 0; c <= COLS; c++) { g.beginPath(); g.moveTo(AX + c * C0, AY); g.lineTo(AX + c * C0, AY + ROWS * C0); g.stroke(); }
-    g.setLineDash([6, 6]); for (let r2 = 1; r2 < ROWS; r2++) { g.beginPath(); g.moveTo(AX, AY + r2 * C0); g.lineTo(AX + COLS * C0, AY + r2 * C0); g.stroke(); } g.setLineDash([]);
+    g.fillStyle = "#4A5363"; g.fillRect(AX - 8, AY - 8, COLS * C0 + 16, 0);
+    g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 1;
+    for (let c = 0; c <= COLS; c++) for (let r2 = 0; r2 < ROWS; r2++) { rr(g, AX + c * C0 + 3, AY + r2 * C0 + 3, C0 - 6, C0 - 6, 5); if (c < COLS) g.stroke(); }
+    g.fillStyle = "#16233B"; rr(g, W / 2 - 46, 436, 92, 16, 8); g.fill();
+    g.fillStyle = "#FFC400"; g.font = `800 11px "Barlow Condensed", sans-serif`; g.textAlign = "center"; g.fillText("GERÄTERAUM", W / 2, 444.5);
     BUSES.forEach(([x, y, d, len, tm]) => {
       const [dx, dy, ang] = DIR[d];
       const nx = AX + (x + 0.5) * C0, ny = AY + (y + 0.5) * C0;
-      bus(g, nx - (dx * (len - 1) * C0) / 2, ny - (dy * (len - 1) * C0) / 2, ang, len, C0, TEAMS[tm]);
+      hoop(g, nx - (dx * (len - 1) * C0) / 2, ny - (dy * (len - 1) * C0) / 2, ang, len, C0, TEAMS[tm]);
     });
     // Schiri links, Coach rechts
     const on = Math.floor(t / 2.5) % 3;
@@ -396,9 +456,10 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
     const B = setup.cache.buses, T = setup.cache.teams, R = setup.cache.crew;
     B.g.clearRect(0, 0, B.w, B.h);
     B.g.fillStyle = "#24365C"; B.g.fillRect(0, 0, B.w, B.h);
-    [[2, 0, 90, "16 Plätze"], [3, 1, 270, "24 Plätze"], [4, 2, 495, "40 Plätze"]].forEach(([len, tm, x, lab]) => {
-      bus(B.g, x, 86, 0, len, 62, [TEAMS[0], TEAMS[1], TEAMS[2]][tm]);
-      B.g.fillStyle = "#9FB0CC"; B.g.font = `800 17px "Barlow Condensed", sans-serif`; B.g.textAlign = "center"; B.g.fillText(lab, x, 150);
+    [[2, 0, 82, "Kinderkorb · 16"], [3, 1, 262, "Standard · 24"], [4, 2, 492, "Profi-Anlage · 40"]].forEach(([len, tm, x, lab], k) => {
+      const ph = (t * 0.7 + k * 0.33) % 1;
+      hoop(B.g, x - 10, 88, 0, len, 48, [TEAMS[0], TEAMS[1], TEAMS[2]][tm], ph < 0.25 ? 1 - ph / 0.25 : 0);
+      B.g.fillStyle = "#9FB0CC"; B.g.font = `800 17px "Barlow Condensed", sans-serif`; B.g.textAlign = "center"; B.g.fillText(lab, x, 160);
     });
     T.g.clearRect(0, 0, T.w, T.h);
     TEAMS.forEach((tm, i) => {
@@ -409,8 +470,8 @@ button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
     });
     R.g.clearRect(0, 0, R.w, R.h);
     const on = Math.floor(t / 2) % 2;
-    referee(R.g, 170, 230, 170, t, on === 0); coach(R.g, 470, 230, 170, t, on === 1);
-    if (on === 0) bubble(R.g, "Timeout!", 170, 46, 4, R.w - 4); else bubble(R.g, "Fast Break!", 470, 46, 4, R.w - 4);
+    referee(R.g, 110, 230, 160, t, on === 0); janitor(R.g, 320, 230, 160, t); coach(R.g, 530, 230, 160, t, on === 1);
+    if (on === 0) bubble(R.g, "Timeout!", 110, 56, 4, R.w - 4); else bubble(R.g, "Fast Break!", 530, 56, 4, R.w - 4);
   }
   setup.cache = { buses: setup("buses"), teams: setup("teams"), crew: setup("crew") };
 
