@@ -75,7 +75,14 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .stamp .bar span { display: block; height: 100%; background: var(--coral); }
 .stamp.locked { opacity: .55; }
 .btn:disabled { opacity: .5; cursor: default; }
-.isle { display: block; width: 100%; aspect-ratio: 320 / 230; border-radius: 18px; margin: 0 0 12px; }
+.shop { display: grid; gap: 6px; max-height: 52vh; overflow-y: auto; margin-bottom: 14px; text-align: left; }
+.shop h3 { font-family: var(--font-display); font-size: 15px; color: var(--muted); margin: 6px 0 0; }
+.shop-row { display: flex; align-items: center; gap: 10px; background: #F3EFE3; border-radius: 12px; padding: 6px 6px 6px 12px; }
+.shop-row span { flex: 1; font-weight: 800; font-size: 15px; }
+.shop-row small { display: block; font-weight: 700; font-size: 12px; color: var(--muted); }
+.shop-row button { height: 36px; min-width: 96px; border: 0; border-radius: 10px; background: var(--coral); color: #FFFFFF; font-family: var(--font-display); font-weight: 800; font-size: 14px; box-shadow: 0 3px 0 var(--coral-dark); cursor: pointer; }
+.shop-row button.alt { background: #E6F5F2; color: var(--teal); box-shadow: 0 3px 0 #C4DED9; }
+.shop-row button:disabled { opacity: .45; cursor: default; }
 .stamp .q { display: grid; place-items: center; background: #C9D6D8; color: #FFFFFF; font-weight: 800; }
 </style>
 
@@ -559,11 +566,15 @@ window.Abflug = (() => {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
   const ANG = { U: -Math.PI / 2, D: Math.PI / 2, L: Math.PI, R: 0 };
-  // Ring läuft gemächlich. Wer die Reiseleiterin in der Mitte antippt, macht ihn kurz dreimal so schnell.
-  const TICK = 0.3, TICK_FAST = 0.1, BOOST = 1.3, FLY = 0.5, FULL_WAIT = 1.0;
+  // Ring läuft gemächlich. Neben dem Vorfeld stehen Fluglotse (links, bremst) und Pilot (rechts, gibt Gas).
+  // Antippen wirkt kurz, Festhalten so lange man hält.
+  const TICK = 0.3, TICK_FAST = 0.1, TICK_SLOW = 0.75, BOOST = 1.3, FLY = 0.5, FULL_WAIT = 1.0;
   // Symbol pro Reiseziel, damit Touristen und Flugzeuge nicht nur über die Farbe zuzuordnen sind.
   const GLYPH = { ES: "star", IT: "ring", GR: "drop", TR: "moon", JP: "dot", SE: "plus", NL: "square", MX: "heart", FR: "diamond", QA: "x", EG: "tri" };
-  const SHOUTS = ["Hopp, hopp!", "Zum Gate!", "Schneller!", "Der Flieger wartet!"];
+  const SHOUTS = {
+    slow: ["Langsam!", "Halt, halt!", "Moooment!", "Ruhig, Leute!"],
+    fast: ["Volle Kraft!", "Einsteigen, zack!", "Wir sind spät dran!", "Abflug!"],
+  };
   const FONT = '"Baloo 2", "Nunito", system-ui, sans-serif';
   // Insel-Palette: Meer, Sand, Pastell-Häuser, Korallenrot, Sonnengelb.
   const C = {
@@ -573,7 +584,7 @@ window.Abflug = (() => {
   const PASTEL = ["#FF8F7E", "#7FD9B8", "#FFD56B", "#8FCBFF", "#C9A6FF"];
   const SKIN = ["#F6D2B0", "#E7B58B", "#C68A5E", "#9A6542", "#FADFC7"];
   const INTRO = {
-    1: "<b>Tipp:</b> Tippe die <b>Reiseleiterin</b> in der Mitte des Wartebereichs an. Dann laufen alle schneller.",
+    1: "<b>Tipp:</b> Der <b>Pilot</b> rechts macht die Touristen schneller, der <b>Fluglotse</b> links bremst sie. Antippen oder festhalten.",
     3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
     5: "<b>Neu: Ziel unbekannt.</b> Graue Flugzeuge zeigen ihr Ziel, sobald ihr Weg frei ist.",
     6: "<b>Neu: Hangar.</b> Rollt ein Flugzeug heraus, kommt das nächste nach. Die Zahl zeigt, wie viele noch drin sind.",
@@ -591,11 +602,15 @@ window.Abflug = (() => {
   let levelIdx = 0, maxLevel = store.get("abflug.max", 0), muted = store.get("abflug.muted", false);
   // Siegesserie: Jeder Sieg in Folge bringt fürs nächste Level einen Schlepper mehr (höchstens 3).
   // Reisepass: zählt Touristen pro Land, Stempel an festen Schwellen.
-  let shells = store.get("abflug.shells", 0), built = store.get("abflug.built", 0), builtAt = -9, isleRun = 0;
+  let shells = store.get("abflug.shells", 0), owned = store.get("abflug.owned", []), decor = store.get("abflug.decor", { awning: "pastell", floor: "fliesen", center: "palme" }), placedAt = {};
+  // Alte eigene Insel (bis Version 9): gebaute Teile als Muscheln zurückgeben.
+  { const old = store.get("abflug.built", 0); if (old) { shells += [25, 40, 60, 80, 100, 130, 160, 200, 240, 300].slice(0, old).reduce((a, b) => a + b, 0); store.set("abflug.shells", shells); try { localStorage.removeItem("abflug.built"); } catch (e) {} } }
   let streak = store.get("abflug.streak", 0), pass = store.get("abflug.pass", {}), tows = 0, towArmed = false, newStamps = [];
   const STAMPS = [{ n: 30, name: "Besucher" }, { n: 150, name: "Stammgast" }, { n: 500, name: "Ehrenbürger" }];
   let lv = null, S = null, vis = new Map(), flyers = [], departing = [], confetti = [], sparks = [];
-  let boostUntil = -9, shout = "", tickNow = TICK;
+  // Tempo: mode "slow" oder "fast", wirkt bis until oder solange gehalten wird.
+  let speed = { mode: "", until: -9, held: false, shout: "" }, tickNow = TICK, peeking = false;
+  const speedOn = t => speed.mode && (speed.held || t < speed.until) ? speed.mode : "";
   let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, shakeT = -9, last = 0, lastPlop = 0, pulse = [], tut = null;
   const cache = {};
   let sprites = {}, pats = {};
@@ -841,7 +856,7 @@ window.Abflug = (() => {
   }
   function drawTourist(x, y, dest, v, d, t, scale = 1) {
     const spr = touristSprite(dest, v % 20, d);
-    const bob = Math.abs(Math.sin(t * (now() < boostUntil ? 16 : 7) + v * 1.7)) * d * 0.16;
+    const sp = speedOn(t), bob = Math.abs(Math.sin(t * (sp === "fast" ? 16 : sp === "slow" ? 3 : 7) + v * 1.7)) * d * 0.16;
     const w = spr.w * scale, h = spr.h * scale;
     ctx.fillStyle = "rgba(60,40,10,.16)"; ctx.beginPath(); ctx.ellipse(x, y, d * 0.42 * scale, d * 0.14 * scale, 0, 0, 7); ctx.fill();
     ctx.drawImage(spr.c, x - w / 2, y - h + d * 0.08 * scale - bob * scale, w, h);
@@ -858,10 +873,20 @@ window.Abflug = (() => {
     for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? "255,255,255" : "0,0,0"},${Math.random() * 0.07})`; g.fillRect(Math.random() * 96, Math.random() * 96, 1.4, 1.4); }
     return c;
   });
-  const tilePat = () => pattern("tile", () => {
+  // Terminalboden in drei Ausführungen, wählbar im Ausbau.
+  const floorPat = () => pattern("floor-" + decor.floor, () => {
     const c = document.createElement("canvas"); c.width = c.height = 32;
     const g = c.getContext("2d"); g.fillStyle = C.floor; g.fillRect(0, 0, 32, 32);
-    g.fillStyle = "rgba(230,160,90,.10)"; g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16);
+    if (decor.floor === "holz") {
+      g.fillStyle = "#F3D9AE"; g.fillRect(0, 0, 32, 32);
+      g.fillStyle = "rgba(150,95,40,.18)"; for (let y = 0; y < 32; y += 8) g.fillRect(0, y, 32, 1.2);
+      g.fillRect(10, 0, 1.2, 8); g.fillRect(26, 8, 1.2, 8); g.fillRect(4, 16, 1.2, 8); g.fillRect(18, 24, 1.2, 8);
+    } else if (decor.floor === "mosaik") {
+      const cols = ["#FFE3D6", "#D9F3EC", "#FFF1C2", "#E2ECFF"];
+      for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.fillStyle = cols[(x + y * 2) % 4]; g.fillRect(x * 8 + 0.5, y * 8 + 0.5, 7, 7); }
+    } else {
+      g.fillStyle = "rgba(230,160,90,.10)"; g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16);
+    }
     return c;
   });
   function palm(x, y, s, t, seed) {
@@ -909,7 +934,9 @@ window.Abflug = (() => {
     const gatesH = Math.round(Math.max(92, Math.min(avail * 0.17, 126)));
     const apronTop = top + termH + gatesH + 16;
     const apronH = H - sab - 30 - apronTop;
-    const cell = Math.max(16, Math.floor(Math.min((gw - 40) / S.cols, apronH / S.rows, 64)));
+    // Links und rechts bleibt ein Streifen für Fluglotse und Pilot.
+    const sideW = 50;
+    const cell = Math.max(16, Math.floor(Math.min((gw - 8 - 2 * sideW) / S.cols, apronH / S.rows, 64)));
     const ax = ox + (gw - cell * S.cols) / 2, ay = apronTop + Math.max(0, apronH - cell * S.rows) * 0.3;
 
     // Wartering als Stadion, Ausgang unten in der Mitte. Zuläufe kommen von oben.
@@ -1010,15 +1037,17 @@ window.Abflug = (() => {
   // ---------- Eingabe ----------
   function onTap(e) {
     audioInit();
-    if (ended || !S || !$("#overlay").hidden) return;
+    if (ended || !S || !$("#overlay").hidden || peeking) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    // Antippen im Wartebereich: Reiseleiterin treibt an.
-    const reach = lay.rad + lay.laneW / 2 + 8;
-    if (x > lay.x0 - reach && x < lay.x1 + reach && y > lay.cyR - reach && y < lay.cyR + reach) {
-      const t = now();
-      if (t >= boostUntil) { shout = SHOUTS[(Math.random() * SHOUTS.length) | 0]; sfx.whistle(); }
-      boostUntil = t + BOOST;
-      return;
+    // Seitenstreifen neben dem Vorfeld: links Fluglotse, rechts Pilot.
+    if (y > lay.ay - 10) {
+      const mode = x < lay.ax - 2 ? "slow" : x > lay.ax + S.cols * lay.cell + 2 ? "fast" : "";
+      if (mode) {
+        const t = now();
+        if (speedOn(t) !== mode) { speed.shout = SHOUTS[mode][(Math.random() * SHOUTS[mode].length) | 0]; sfx[mode === "fast" ? "engine" : "whistle"](); }
+        speed.mode = mode; speed.until = t + BOOST; speed.held = true;
+        return;
+      }
     }
     const c = lay.cell, gx = Math.floor((x - lay.ax) / c), gy = Math.floor((y - lay.ay) / c);
     let hit = null;
@@ -1047,6 +1076,9 @@ window.Abflug = (() => {
     }
   }
   cv.addEventListener("pointerdown", onTap);
+  const release = () => { if (speed.held) { speed.held = false; speed.until = Math.max(speed.until, now() + 0.3); } };
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
 
   // ---------- Ablauf ----------
   function burst(x, y, dest) {
@@ -1063,7 +1095,8 @@ window.Abflug = (() => {
       else if ((v.kind === "bump" && t - v.t0 > 0.32) || (v.kind === "spawn" && t - v.t0 > 0.4)) vis.delete(id);
     }
     ringT += dt;
-    tickNow = t < boostUntil ? TICK_FAST : TICK;
+    const sp = speedOn(t);
+    tickNow = sp === "fast" ? TICK_FAST : sp === "slow" ? TICK_SLOW : TICK;
     if (ringT > tickNow) ringT = Math.min(ringT, tickNow * 2);
     while (ringT >= tickNow) {
       ringT -= tickNow;
@@ -1121,23 +1154,23 @@ window.Abflug = (() => {
         sfx.win();
         const next = levelIdx + 1;
         // Muscheln: Grundbetrag, mehr für große Level, Bonus für die Serie.
-        const gain = 10 + Math.round(lv.tourists / 40) + 3 * Math.min(3, streak), item = BUILDS[built];
+        const gain = 10 + Math.round(lv.tourists / 40) + 3 * Math.min(3, streak);
         shells += gain; store.set("abflug.shells", shells);
-        const canBuild = item && shells >= item.cost;
+        const item = nextBuy(), canBuild = item && shells >= item.cost;
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1} geschafft</div>
           <h2>Alle im Urlaub!</h2>
           <p>${lv.tourists} Touristen sind in ${lv.planes.length} Flugzeugen abgeflogen.</p>
           ${streakMeter()}
           <p class="small"><b>Siegesserie ${streak}.</b> Im nächsten Level wartet${Math.min(3, streak) > 1 ? "en" : ""} ${Math.min(3, streak)} Schlepper auf dich.</p>
-          <p class="small"><b>+${gain} Muscheln.</b> ${item ? (canBuild ? `Genug für: ${item.name}!` : `Noch ${item.cost - shells} bis ${item.name}.`) : "Deine Insel ist fertig gebaut."}</p>
+          <p class="small"><b>+${gain} Muscheln.</b> ${item ? (canBuild ? `Genug für: ${item.name}!` : `Noch ${item.cost - shells} bis ${item.name}.`) : "Dein Flughafen ist fertig ausgebaut."}</p>
           ${newStamps.length ? `<div class="newstamps">${newStamps.map(s => `<span><img src="${flagURL(s.d)}" alt="">${A.DEST[s.d].name}: ${STAMPS[s.tier].name}</span>`).join("")}</div>` : ""}
           <div class="actions">
-            ${canBuild ? `<button class="btn" id="isleBtn">Insel ausbauen</button>` : ""}
+            ${canBuild ? `<button class="btn" id="isleBtn">Flughafen ausbauen</button>` : ""}
             <button class="btn ${canBuild ? "alt" : ""}" id="nextBtn">Weiter zu Level ${next + 1}</button>
             <button class="btn alt" id="againBtn">Nochmal spielen</button>
           </div>`);
-        $("#isleBtn")?.addEventListener("click", () => showIsle(next));
+        $("#isleBtn")?.addEventListener("click", () => showShop(next));
         $("#nextBtn").addEventListener("click", () => startLevel(next));
         $("#againBtn").addEventListener("click", () => startLevel(levelIdx));
         // Nächstes Level schon vorbereiten, solange die Karte zu sehen ist.
@@ -1188,199 +1221,367 @@ window.Abflug = (() => {
     sfx.stamp();
   }
 
-  // ---------- Insel-Ausbau ----------
-  // Muscheln aus den Siegen bauen die eigene Insel Stück für Stück aus. Reihenfolge ist fest.
-  const BUILDS = [
-    { name: "Strandbar", cost: 25 }, { name: "Leuchtturm", cost: 40 }, { name: "Segelboot", cost: 60 },
-    { name: "Hängematte", cost: 80 }, { name: "Kontrollturm", cost: 100 }, { name: "Bootssteg", cost: 130 },
-    { name: "Sonnenschirme", cost: 160 }, { name: "Flamingos", cost: 200 }, { name: "Heißluftballon", cost: 240 }, { name: "Delfine", cost: 300 },
+  // ---------- Flughafen ausbauen ----------
+  // Muscheln aus den Siegen kaufen Bauten und Deko direkt im Spielbild: Terminal links und rechts
+  // vom Wartering, Strand neben dem Vorfeld. Deko gibt es in Varianten, gekaufte sind frei wählbar.
+  const SHOP = [
+    { id: "eis", name: "Eiswagen", where: "Terminal", cost: 30 },
+    { id: "leucht", name: "Leuchtturm", where: "Strand", cost: 50 },
+    { id: "tafel", name: "Abflugtafel", where: "Terminal", cost: 70 },
+    { id: "bar", name: "Strandbar", where: "Strand", cost: 90 },
+    { id: "wimpel", name: "Wimpelkette", where: "Terminal", cost: 120 },
+    { id: "flamingo", name: "Flamingos", where: "Strand", cost: 150 },
+    { id: "band", name: "Steeldrum-Band", where: "Terminal", cost: 190 },
+    { id: "souvenir", name: "Souvenirstand", where: "Terminal", cost: 240 },
   ];
-  const SPOT = [[62, 176], [262, 80], [48, 34], [232, 184], [106, 96], [282, 150], [160, 204], [40, 140], [222, 36], [150, 224]];
+  const DECOR = [
+    { key: "awning", name: "Markise", opts: [["pastell", "Pastell", 0], ["karibik", "Karibik", 60], ["abend", "Sonnenuntergang", 100]] },
+    { key: "floor", name: "Terminalboden", opts: [["fliesen", "Fliesen", 0], ["holz", "Holzdielen", 70], ["mosaik", "Mosaik", 120]] },
+    { key: "center", name: "Ringmitte", opts: [["palme", "Palme", 0], ["brunnen", "Brunnen", 80], ["papagei", "Papagei", 130]] },
+  ];
+  const AWNINGS = { pastell: PASTEL, karibik: ["#FFD23F", "#2EC4B6", "#FF5E5B", "#3BB273"], abend: ["#FF7B54", "#FFB26B", "#C147E9", "#FF5D8F"] };
+  const has = id => owned.includes(id);
   const oval = (g, x, y, rx, ry) => { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill(); };
-  function isPalm(g, x, lean, t) {
-    g.strokeStyle = "#A9744A"; g.lineWidth = 3.5; g.lineCap = "round";
-    g.beginPath(); g.moveTo(x, 0); g.quadraticCurveTo(x + lean * 0.3, -14, x + lean, -26); g.stroke();
-    g.fillStyle = "#3FA45B";
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI / 2 + (i - 2) * 0.7 + Math.sin(t * 1.5 + i) * 0.05;
-      g.save(); g.translate(x + lean, -26); g.rotate(a); oval(g, 9, 0, 10, 3.2); g.restore();
-    }
+  function nextBuy() {
+    const all = [...SHOP.map(i => ({ id: i.id, name: i.name, cost: i.cost }))];
+    DECOR.forEach(d => d.opts.forEach(([o, n, c]) => c && all.push({ id: d.key + ":" + o, name: `${d.name} ${n}`, cost: c })));
+    return all.filter(i => !has(i.id)).sort((a, b) => a.cost - b.cost)[0] || null;
   }
-  const ITEM = [
-    // Strandbar: Hütte mit Strohdach
-    (g, t) => {
-      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 22, 4);
-      g.fillStyle = "#C98A4B"; g.fillRect(-14, -16, 28, 16);
-      g.fillStyle = "#FFFFFF"; g.fillRect(-17, -8, 34, 4);
-      g.fillStyle = "#FF8F7E"; [-9, 0, 9].forEach(x => { g.beginPath(); g.arc(x, -10, 2.5, Math.PI, 0); g.fill(); });
-      g.fillStyle = "#E9B949"; g.beginPath(); g.moveTo(-21, -15); g.lineTo(21, -15); g.lineTo(0, -31); g.closePath(); g.fill();
-      g.strokeStyle = "#C99A2E"; g.lineWidth = 1.2; for (let x = -18; x <= 18; x += 4) { g.beginPath(); g.moveTo(x, -15); g.lineTo(x, -12); g.stroke(); }
-    },
-    // Leuchtturm mit kreisendem Lichtstrahl
-    (g, t) => {
-      const a = t * 1.4;
-      g.save(); g.globalAlpha = 0.28; g.fillStyle = "#FFF3A0";
-      g.beginPath(); g.moveTo(0, -42); g.arc(0, -42, 60, a - 0.18, a + 0.18); g.closePath(); g.fill(); g.restore();
-      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 12, 3);
-      for (let i = 0; i < 4; i++) {
-        const y0 = -i * 9, y1 = y0 - 9, w0 = 7 - i * 0.6, w1 = 7 - (i + 1) * 0.6;
-        g.fillStyle = i % 2 ? "#FFFFFF" : "#FF6F61";
-        g.beginPath(); g.moveTo(-w0, y0); g.lineTo(w0, y0); g.lineTo(w1, y1); g.lineTo(-w1, y1); g.closePath(); g.fill();
-      }
-      g.fillStyle = "#16323A"; g.fillRect(-6, -38, 12, 2);
-      g.fillStyle = "#FFE066"; g.fillRect(-4, -44, 8, 6);
-      g.fillStyle = "#FF6F61"; g.beginPath(); g.moveTo(-5, -44); g.lineTo(5, -44); g.lineTo(0, -50); g.closePath(); g.fill();
-    },
-    // Segelboot, schaukelt
-    (g, t) => {
-      g.translate(Math.sin(t * 0.5) * 6, Math.sin(t * 2) * 1.5); g.rotate(Math.sin(t * 2) * 0.05);
-      g.fillStyle = "rgba(255,255,255,.5)"; oval(g, 0, 2, 18, 3);
-      g.fillStyle = "#FF6F61"; g.beginPath(); g.moveTo(-15, -4); g.lineTo(15, -4); g.lineTo(10, 2); g.lineTo(-10, 2); g.closePath(); g.fill();
-      g.strokeStyle = "#7A5230"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, -4); g.lineTo(0, -28); g.stroke();
-      g.fillStyle = "#FFFFFF"; g.beginPath(); g.moveTo(1.5, -27); g.lineTo(14, -6); g.lineTo(1.5, -6); g.closePath(); g.fill();
-      g.fillStyle = "#FFE066"; g.beginPath(); g.moveTo(-1.5, -24); g.lineTo(-10, -7); g.lineTo(-1.5, -7); g.closePath(); g.fill();
-    },
-    // Hängematte zwischen zwei Palmen
-    (g, t) => {
-      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 26, 4);
-      isPalm(g, -18, -4, t); isPalm(g, 18, 4, t);
-      const sag = 9 + Math.sin(t * 1.6) * 1.2;
-      g.strokeStyle = "#FF6F61"; g.lineWidth = 4.5;
-      g.beginPath(); g.moveTo(-17, -17); g.quadraticCurveTo(0, -17 + sag * 2, 17, -17); g.stroke();
-      g.strokeStyle = "#FFE066"; g.lineWidth = 1.5;
-      g.beginPath(); g.moveTo(-15, -15.5); g.quadraticCurveTo(0, -15.5 + sag * 2, 15, -15.5); g.stroke();
-    },
-    // Kontrollturm, Antenne blinkt
-    (g, t) => {
-      g.fillStyle = "rgba(0,0,0,.15)"; oval(g, 0, 1, 10, 3);
-      g.fillStyle = "#F4EEE2"; g.fillRect(-4, -28, 8, 28);
-      g.fillStyle = "#0E5E6F"; g.beginPath(); g.moveTo(-10, -38); g.lineTo(10, -38); g.lineTo(7, -28); g.lineTo(-7, -28); g.closePath(); g.fill();
-      g.fillStyle = "#8FE3F0"; g.fillRect(-7, -36, 14, 5);
-      g.fillStyle = "#FF6F61"; g.fillRect(-11, -41, 22, 3);
-      g.strokeStyle = "#16323A"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -41); g.lineTo(0, -48); g.stroke();
-      g.fillStyle = Math.sin(t * 5) > 0 ? "#FF3B30" : "#7A1B1B"; oval(g, 0, -49, 1.8, 1.8);
-    },
-    // Bootssteg mit Wasserflugzeug
-    (g, t) => {
-      g.fillStyle = "#B07A45"; g.fillRect(-4, -4, 36, 7);
-      g.fillStyle = "#7A5230"; [2, 14, 26].forEach(x => g.fillRect(x, 3, 2.5, 4));
-      g.strokeStyle = "#8C6239"; g.lineWidth = 0.8; for (let x = 0; x < 32; x += 4) { g.beginPath(); g.moveTo(x, -4); g.lineTo(x, 3); g.stroke(); }
-      g.save(); g.translate(30, 14 + Math.sin(t * 2.2) * 1);
-      g.fillStyle = "rgba(255,255,255,.5)"; oval(g, 0, 4, 14, 2.5);
-      g.fillStyle = "#FFE066"; g.fillRect(-9, 1, 18, 2);
-      g.fillStyle = "#FFFFFF"; oval(g, 0, -4, 12, 3.5);
-      g.fillStyle = "#8FCBFF"; oval(g, 6, -5, 3, 1.6);
-      g.fillStyle = "#FF6F61"; g.fillRect(-3, -9, 6, 2); g.beginPath(); g.moveTo(-12, -4); g.lineTo(-10, -11); g.lineTo(-7, -4); g.closePath(); g.fill();
-      g.restore();
-    },
-    // Sonnenschirme mit Handtüchern
-    (g, t) => {
-      [[-24, 0], [0, 1], [24, 2]].forEach(([x, i]) => {
-        g.fillStyle = PASTEL[(i + 2) % 5]; g.fillRect(x - 3, -2, 12, 5);
-        g.strokeStyle = "#FFFFFF"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, -14); g.stroke();
-        g.fillStyle = PASTEL[i]; g.beginPath(); g.arc(x, -13, 9, Math.PI, 0); g.fill();
-        g.fillStyle = "#FFFFFF"; g.beginPath(); g.moveTo(x, -22); g.lineTo(x - 3, -13); g.lineTo(x + 3, -13); g.closePath(); g.fill();
-      });
-    },
-    // Flamingos im flachen Wasser
-    (g, t) => {
-      [[-8, 0], [8, 1.3]].forEach(([x, ph]) => {
-        const b = Math.sin(t * 1.4 + ph) * 1.2;
-        g.strokeStyle = "#E86A92"; g.lineWidth = 1.2;
-        g.beginPath(); g.moveTo(x, -10); g.lineTo(x, 0); g.moveTo(x + 2, -10); g.lineTo(x + 3, -4); g.lineTo(x + 1, -3); g.stroke();
-        g.fillStyle = "#FF9EC0"; oval(g, x + 1, -13 + b * 0.3, 6, 4);
-        g.strokeStyle = "#FF9EC0"; g.lineWidth = 2;
-        g.beginPath(); g.moveTo(x + 5, -14); g.quadraticCurveTo(x + 10, -20, x + 6, -24 + b); g.stroke();
-        g.fillStyle = "#FF9EC0"; oval(g, x + 7, -25 + b, 2.5, 2);
-        g.fillStyle = "#16323A"; g.beginPath(); g.moveTo(x + 9, -25 + b); g.lineTo(x + 12, -23 + b); g.lineTo(x + 9, -24 + b); g.fill();
-      });
-    },
-    // Heißluftballon, schwebt
-    (g, t) => {
-      g.translate(Math.sin(t * 0.4) * 10, Math.sin(t * 0.9) * 3);
-      g.strokeStyle = "#7A5230"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-5, -6); g.lineTo(-3, 2); g.moveTo(5, -6); g.lineTo(3, 2); g.stroke();
-      g.fillStyle = "#B07A45"; g.fillRect(-4, 1, 8, 5);
-      g.save(); g.beginPath(); g.ellipse(0, -16, 12, 13, 0, 0, 7); g.clip();
-      ["#FF6F61", "#FFE066", "#7FD9B8", "#8FCBFF", "#FF6F61", "#FFE066"].forEach((c, i) => { g.fillStyle = c; g.fillRect(-12 + i * 4, -30, 4, 30); });
-      g.restore();
-      g.fillStyle = "#FF6F61"; g.beginPath(); g.moveTo(-8, -7); g.lineTo(8, -7); g.lineTo(5, -4); g.lineTo(-5, -4); g.closePath(); g.fill();
-    },
-    // Delfine springen im Bogen
-    (g, t) => {
-      [0, 0.45].forEach((ph, i) => {
-        const p = (t * 0.45 + ph) % 1, x = -40 + i * 30 + p * 40, y = -Math.sin(p * Math.PI) * 14;
-        g.save(); g.translate(x, y); g.rotate(-Math.cos(p * Math.PI) * 0.8);
-        g.fillStyle = "#5C8FB8"; oval(g, 0, 0, 8, 3.2);
-        g.beginPath(); g.moveTo(-1, -2.5); g.lineTo(2, -7); g.lineTo(3, -2.5); g.fill();
-        g.beginPath(); g.moveTo(-7, 0); g.lineTo(-11, -3); g.lineTo(-11, 3); g.closePath(); g.fill();
-        g.fillStyle = "#DDEBF5"; oval(g, 1, 1.4, 5, 1.4);
-        g.restore();
-        if (p < 0.08 || p > 0.92) { g.fillStyle = "rgba(255,255,255,.7)"; oval(g, x, 2, 6, 1.5); }
-      });
-    },
-  ];
-  function drawIsle(cvs, t) {
-    const w = cvs.clientWidth, h = cvs.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
-    if (!w) return;
-    if (cvs.width !== Math.round(w * dpr)) { cvs.width = Math.round(w * dpr); cvs.height = Math.round(h * dpr); }
-    const g = cvs.getContext("2d"), k = w / 320;
-    g.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
-    const sea = g.createLinearGradient(0, 0, 0, 230);
-    sea.addColorStop(0, C.sea1); sea.addColorStop(1, C.sea2);
-    g.fillStyle = sea; g.fillRect(0, 0, 320, 230);
-    g.strokeStyle = "rgba(255,255,255,.45)"; g.lineWidth = 2; g.lineCap = "round";
-    for (let i = 0; i < 10; i++) {
-      const x = ((i * 71 + t * 8) % 340) - 10, y = 10 + ((i * 53) % 215);
-      g.beginPath(); g.arc(x, y, 6, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
-    }
-    g.fillStyle = "rgba(255,255,255,.55)"; oval(g, 160, 127, 130 + Math.sin(t * 1.3) * 1.5, 83 + Math.sin(t * 1.3) * 1.5);
-    g.fillStyle = C.sand; oval(g, 160, 125, 125, 78);
-    g.fillStyle = "#8FD17A"; oval(g, 166, 116, 92, 48);
-    g.save(); g.translate(172, 112); g.rotate(-0.12);
-    g.fillStyle = "#6E7C8A"; rr(g, -70, -10, 140, 20, 8); g.fill();
-    g.strokeStyle = C.line; g.lineWidth = 2; g.setLineDash([8, 7]);
-    g.beginPath(); g.moveTo(-58, 0); g.lineTo(58, 0); g.stroke(); g.setLineDash([]);
-    g.restore();
-    g.fillStyle = "#FFFFFF"; rr(g, 128, 136, 66, 24, 6); g.fill();
-    for (let i = 0; i < 7; i++) { g.fillStyle = PASTEL[i % 5]; g.fillRect(126 + i * 10, 132, 10, 7); }
-    g.fillStyle = "#8FCBFF"; for (let i = 0; i < 5; i++) { rr(g, 134 + i * 12, 144, 8, 10, 2); g.fill(); }
-    for (let i = 0; i < built; i++) {
-      // Neu gebautes Teil springt mit Überschwinger ins Bild, dazu Funken.
-      const u = i === built - 1 ? (t - builtAt) / 0.6 : 1, x = Math.min(1, Math.max(0, u));
-      const sc = 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
-      g.save(); g.translate(SPOT[i][0], SPOT[i][1]); g.scale(sc, sc); ITEM[i](g, t); g.restore();
-      if (u < 1.4) {
-        g.fillStyle = `rgba(255,246,176,${1 - u / 1.4})`;
-        for (let j = 0; j < 10; j++) { const a = (j / 10) * Math.PI * 2, r = 10 + u * 28; oval(g, SPOT[i][0] + Math.cos(a) * r, SPOT[i][1] - 14 + Math.sin(a) * r, 2.2, 2.2); }
-      }
-    }
+  function pop(id, t) {
+    const u = (t - (placedAt[id] ?? -9)) / 0.6;
+    if (u >= 1) return 1;
+    const x = Math.max(0, u);
+    return 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
   }
-  function showIsle(next) {
-    const item = BUILDS[built], can = item && shells >= item.cost;
-    showCard(`
-      <div class="eyebrow">${built} von ${BUILDS.length} gebaut · ${shells} Muscheln</div>
-      <h2>Deine Insel</h2>
-      <canvas id="isle" class="isle" role="img" aria-label="Deine Insel mit ${built} von ${BUILDS.length} Bauwerken"></canvas>
-      <p class="small">${item ? `Als Nächstes: <b>${item.name}</b> für ${item.cost} Muscheln.` : "Alles gebaut. Deine Insel ist fertig!"}</p>
-      <div class="actions">
-        ${item ? `<button class="btn" id="buildBtn" ${can ? "" : "disabled"}>${can ? `${item.name} bauen` : `Noch ${item.cost - shells} Muscheln`}</button>` : ""}
-        <button class="btn alt" id="backBtn">${next !== undefined ? `Weiter zu Level ${next + 1}` : "Zurück zum Spiel"}</button>
-      </div>`);
-    $("#buildBtn")?.addEventListener("click", () => {
-      if (!can) return;
-      shells -= item.cost; built++; builtAt = now();
-      store.set("abflug.shells", shells); store.set("abflug.built", built);
-      audioInit(); sfx.build();
-      showIsle(next);
+  function sparkle(id, x, y, t) {
+    const u = (t - (placedAt[id] ?? -9)) / 1.2;
+    if (u < 0 || u > 1) return;
+    ctx.fillStyle = `rgba(255,236,120,${1 - u})`;
+    for (let j = 0; j < 12; j++) { const a = (j / 12) * Math.PI * 2, r = 12 + u * 44; oval(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r, 3, 3); }
+  }
+  function item(id, x, y, k, fn, t) {
+    if (!has(id)) return;
+    const sc = k * pop(id, t);
+    ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); fn(t); ctx.restore();
+    sparkle(id, x, y - 22 * k, t);
+  }
+
+  function drawTerminalDeco(t) {
+    const I = lay.island, top = lay.top, gy0 = lay.gy0;
+    const ringL = lay.x0 - lay.rad - lay.laneW / 2 - 6, ringR = lay.x1 + lay.rad + lay.laneW / 2 + 6;
+    const wL = ringL - I.x, wR = I.x + I.w - ringR;
+    const xL = I.x + wL / 2, xR = ringR + wR / 2, k = Math.max(0.55, Math.min(1.15, Math.min(wL, wR) / 80));
+    const y1 = top + (gy0 - top) * 0.4, y2 = top + (gy0 - top) * 0.7;
+    if (has("wimpel")) drawWimpel(t, top + 10);
+    item("eis", xL, y1, k, drawEis, t);
+    item("souvenir", xL, y2, k, drawSouvenir, t);
+    item("tafel", xR, y1, k, drawTafel, t);
+    item("band", xR, y2, k, drawBand, t);
+  }
+  function sides() {
+    const I = lay.island, right = lay.ax + S.cols * lay.cell;
+    const gapL = lay.ax - I.x, gapR = I.x + I.w - right;
+    return { I, gapL, gapR, xL: I.x + gapL / 2, xR: right + gapR / 2, k: Math.max(0.5, Math.min(1.1, Math.min(gapL, gapR) / 55)), apB: lay.ay + lay.cell * S.rows };
+  }
+  function drawBeachDeco(t) {
+    const { xL, xR, k, apB } = sides(), mid = lay.ay + (apB - lay.ay) * 0.45;
+    palm(xL - 6 * k, mid, 22 * k, t, 3);
+    palm(xR - 8 * k, mid + 10 * k, 20 * k, t, 4);
+    item("leucht", xL, lay.ay + 62 * k, k, drawLeucht, t);
+    item("bar", xR, lay.ay + 44 * k, k, drawBar, t);
+    item("flamingo", xL, mid + 36 * k, k, drawFlamingo, t);
+  }
+  function drawCenter(t, ir) {
+    const sc = pop("decor:center", t);
+    ctx.save(); ctx.translate(lay.cx, lay.cyR); ctx.scale(sc, sc);
+    if (decor.center === "brunnen") {
+      ctx.fillStyle = "#FFFFFF"; oval(ctx, 0, ir * 0.35, ir * 1.35, ir * 0.5);
+      ctx.fillStyle = "#8FDDF2"; oval(ctx, 0, ir * 0.35, ir * 1.15, ir * 0.38);
+      ctx.fillStyle = "#5FC3E4";
+      for (const k of [-1, 0, 1]) for (let j = 0; j < 6; j++) {
+        const p = (t * 1.1 + j / 6 + k * 0.13) % 1;
+        oval(ctx, k * ir * 0.2 + k * p * ir * 0.7, ir * 0.25 - Math.sin(p * Math.PI) * ir * (k ? 0.9 : 1.3), 1.8, 1.8);
+      }
+    } else if (decor.center === "papagei") {
+      const b = Math.sin(t * 3) * 1.5;
+      ctx.strokeStyle = "#8C5E2F"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(0, ir * 0.6); ctx.lineTo(0, -ir * 0.2); ctx.moveTo(-ir * 0.6, -ir * 0.2); ctx.lineTo(ir * 0.6, -ir * 0.2); ctx.stroke();
+      ctx.fillStyle = "#FFD23F"; ctx.beginPath(); ctx.moveTo(-2, -ir * 0.3 + b); ctx.lineTo(-ir * 0.5, ir * 0.35 + b); ctx.lineTo(2, -ir * 0.1 + b); ctx.fill();
+      ctx.fillStyle = "#F0302A"; oval(ctx, 0, -ir * 0.55 + b, ir * 0.32, ir * 0.42);
+      ctx.fillStyle = "#1F57F0"; oval(ctx, -ir * 0.12, -ir * 0.45 + b, ir * 0.18, ir * 0.3);
+      ctx.fillStyle = "#F0302A"; oval(ctx, ir * 0.05, -ir * 0.95 + b, ir * 0.24, ir * 0.24);
+      ctx.fillStyle = "#FFFFFF"; oval(ctx, ir * 0.12, -ir * 1.0 + b, 2.2, 2.2);
+      ctx.fillStyle = "#1E2B33"; oval(ctx, ir * 0.14, -ir * 1.0 + b, 1.1, 1.1);
+      ctx.fillStyle = "#FFB000"; ctx.beginPath(); ctx.moveTo(ir * 0.25, -ir * 0.98 + b); ctx.lineTo(ir * 0.45, -ir * 0.85 + b); ctx.lineTo(ir * 0.22, -ir * 0.8 + b); ctx.fill();
+    } else {
+      palm(ir * 0.1, ir * 0.55, Math.min(14, ir * 0.9), t, 5);
+    }
+    ctx.restore();
+  }
+
+  // ---------- Bauten (Ursprung: Mitte unten, etwa 50 px hoch) ----------
+  function drawEis(t) {
+    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 24, 4);
+    ctx.fillStyle = "#33414D"; oval(ctx, -12, -3, 4, 4); oval(ctx, 12, -3, 4, 4);
+    ctx.fillStyle = "#FF8FB1"; rr(ctx, -21, -25, 42, 21, 6); ctx.fill();
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(-21, -16, 42, 4);
+    [["#FFF3C4", -10], ["#9BE3C8", 0], ["#FF8FB1", 10]].forEach(([c, x], i) => {
+      ctx.fillStyle = "#E3B26B"; ctx.beginPath(); ctx.moveTo(x - 4, -27); ctx.lineTo(x + 4, -27); ctx.lineTo(x, -19); ctx.fill();
+      ctx.fillStyle = c; oval(ctx, x, -29 - Math.abs(Math.sin(t * 2 + i)) * 0.8, 4.5, 4);
     });
-    $("#backBtn").addEventListener("click", () => (next !== undefined ? startLevel(next) : ($("#overlay").hidden = true)));
-    const run = ++isleRun, cvs = $("#isle");
-    const loop = () => {
-      if (run !== isleRun || !cvs.isConnected || $("#overlay").hidden) return;
-      drawIsle(cvs, now());
-      requestAnimationFrame(loop);
+    ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(16, -25); ctx.lineTo(16, -52); ctx.stroke();
+    for (let k = 0; k < 6; k++) {
+      ctx.fillStyle = k % 2 ? "#FFFFFF" : "#2EC4B6";
+      ctx.beginPath(); ctx.moveTo(16, -52); ctx.arc(16, -52, 17, Math.PI + (k * Math.PI) / 6, Math.PI + ((k + 1) * Math.PI) / 6); ctx.closePath(); ctx.fill();
+    }
+  }
+  function drawSouvenir(t) {
+    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 26, 4);
+    ctx.fillStyle = "#B07A45"; ctx.fillRect(-23, -40, 3, 40); ctx.fillRect(20, -40, 3, 40);
+    ctx.fillStyle = "#C98A4B"; rr(ctx, -24, -18, 48, 14, 3); ctx.fill();
+    for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? "#FFFFFF" : "#FF6F61"; ctx.fillRect(-26 + k * 9, -46, 9, 8); ctx.beginPath(); ctx.arc(-21.5 + k * 9, -38, 4.5, 0, Math.PI); ctx.fill(); }
+    ["#2EC4B6", "#FFD23F", "#C147E9", "#FF8FB1"].forEach((c, i) => {
+      const sw = Math.sin(t * 2 + i) * 0.15;
+      ctx.save(); ctx.translate(-15 + i * 10, -34); ctx.rotate(sw);
+      ctx.fillStyle = c; ctx.fillRect(-3.5, 0, 7, 8); ctx.fillRect(-5, 0, 10, 3); ctx.restore();
+    });
+    ctx.fillStyle = "#F2CF72"; oval(ctx, -10, -19, 7, 2.5); oval(ctx, -10, -21, 3.5, 2.5); oval(ctx, 8, -19, 7, 2.5); oval(ctx, 8, -21, 3.5, 2.5);
+  }
+  function drawTafel(t) {
+    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 24, 4);
+    ctx.fillStyle = "#4E6A72"; ctx.fillRect(-16, -14, 3, 14); ctx.fillRect(13, -14, 3, 14);
+    ctx.fillStyle = "#1E2B33"; rr(ctx, -28, -50, 56, 38, 6); ctx.fill();
+    ctx.fillStyle = "#FFD23F"; ctx.font = `800 7px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("ABFLUG", 0, -44);
+    const ids = [...new Set(lv.planes.map(p => p.dest))].slice(0, 3), flip = Math.floor(t / 2.2) % 3;
+    ids.forEach((d, i) => {
+      const y = -37 + i * 8.5, flick = i === flip && (t % 2.2) < 0.25;
+      ctx.save(); ctx.beginPath(); ctx.rect(-24, y, 10, 6.5); ctx.clip(); drawFlag(ctx, A.DEST[d].id, -24, y, 10, 6.5); ctx.restore();
+      ctx.fillStyle = flick ? "#FFFFFF" : "#FFD23F";
+      for (let k = 0; k < 5; k++) ctx.fillRect(-11 + k * 5.5, y + 2, 4, 2.5);
+      ctx.fillStyle = "#7FD9B8"; ctx.fillRect(17, y + 1.5, 5, 3.5);
+    });
+  }
+  function drawBand(t) {
+    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 24, 4);
+    ctx.fillStyle = "#2F4858"; ctx.fillRect(-7, -16, 5, 16); ctx.fillRect(2, -16, 5, 16);
+    ctx.fillStyle = "#FF6F61"; rr(ctx, -9, -34, 18, 20, 6); ctx.fill();
+    ctx.fillStyle = "#FFD23F"; oval(ctx, -3, -28, 2, 2); oval(ctx, 4, -22, 2, 2);
+    ctx.fillStyle = SKIN[2]; oval(ctx, 0, -40, 7, 7);
+    ctx.fillStyle = "#F2CF72"; oval(ctx, 0, -45, 11, 2.5); oval(ctx, 0, -47, 5.5, 3.5);
+    ctx.fillStyle = "#2A2A2A"; oval(ctx, -2.5, -40, 1, 1); oval(ctx, 2.5, -40, 1, 1);
+    ctx.fillStyle = "#B8C4CC"; ctx.fillRect(-15, -14, 30, 7);
+    ctx.fillStyle = "#DDE6EC"; oval(ctx, 0, -14, 15, 4.5);
+    ctx.strokeStyle = SKIN[2]; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+    [-1, 1].forEach((s, i) => {
+      const a = Math.sin(t * 9 + i * Math.PI) * 0.5;
+      ctx.beginPath(); ctx.moveTo(s * 7, -30); ctx.lineTo(s * 10 + Math.sin(a) * 4, -19 + Math.cos(a) * 2); ctx.stroke();
+    });
+    ctx.fillStyle = "#FF6F61"; ctx.font = `800 11px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    [0, 0.5].forEach(ph => {
+      const p = (t * 0.6 + ph) % 1;
+      ctx.globalAlpha = 1 - p; ctx.fillText("♪", 12 + Math.sin(p * 6) * 4, -40 - p * 26); ctx.globalAlpha = 1;
+    });
+  }
+  function drawWimpel(t, y) {
+    const I = lay.island, sc = pop("wimpel", t), drop = (1 - sc) * 30, n = Math.floor((I.w - 12) / 13);
+    const cols = lv ? [...new Set(lv.planes.map(p => p.dest))].map(d => A.DEST[d].color) : PASTEL;
+    const at2 = u => [I.x + 6 + u * (I.w - 12), y - drop + Math.sin(u * Math.PI * 3) * 4 + Math.sin(u * Math.PI) * 6];
+    ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let k = 0; k <= 40; k++) { const [x, yy] = at2(k / 40); ctx.lineTo(x, yy); }
+    ctx.stroke();
+    for (let k = 0; k < n; k++) {
+      const [x, yy] = at2((k + 0.5) / n), sw = Math.sin(t * 3 + k) * 1.5;
+      ctx.fillStyle = cols[k % cols.length];
+      ctx.beginPath(); ctx.moveTo(x - 5, yy); ctx.lineTo(x + 5, yy); ctx.lineTo(x + sw, yy + 10); ctx.closePath(); ctx.fill();
+    }
+  }
+  function drawLeucht(t) {
+    const a = t * 1.4;
+    ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = "#FFF3A0";
+    ctx.beginPath(); ctx.moveTo(0, -56); ctx.arc(0, -56, 70, a - 0.16, a + 0.16); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.fillStyle = "#8A97A3"; oval(ctx, -6, -1, 10, 5); oval(ctx, 7, 0, 9, 4.5);
+    for (let i = 0; i < 4; i++) {
+      const y0 = -i * 12, y1 = y0 - 12, w0 = 9 - i * 0.9, w1 = 9 - (i + 1) * 0.9;
+      ctx.fillStyle = i % 2 ? "#FFFFFF" : "#FF5E5B";
+      ctx.beginPath(); ctx.moveTo(-w0, y0); ctx.lineTo(w0, y0); ctx.lineTo(w1, y1); ctx.lineTo(-w1, y1); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = "#1E2B33"; ctx.fillRect(-8, -50, 16, 2.5);
+    ctx.fillStyle = Math.sin(t * 4) > 0 ? "#FFF59A" : "#FFD23F"; ctx.fillRect(-5, -57, 10, 7);
+    ctx.fillStyle = "#FF5E5B"; ctx.beginPath(); ctx.moveTo(-7, -57); ctx.lineTo(7, -57); ctx.lineTo(0, -65); ctx.closePath(); ctx.fill();
+  }
+  function drawBar(t) {
+    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 26, 4);
+    ctx.fillStyle = "#C98A4B"; ctx.fillRect(-18, -20, 36, 20);
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(-21, -11, 42, 4);
+    ctx.fillStyle = "#E9B949"; ctx.beginPath(); ctx.moveTo(-26, -19); ctx.lineTo(26, -19); ctx.lineTo(0, -40); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#C99A2E"; ctx.lineWidth = 1.2;
+    for (let x = -23; x <= 23; x += 4) { ctx.beginPath(); ctx.moveTo(x, -19); ctx.lineTo(x + Math.sin(t * 2 + x) * 0.6, -15); ctx.stroke(); }
+    ctx.fillStyle = "#7A4E24"; oval(ctx, -8, -16, 4, 4);
+    ctx.fillStyle = "#FF8FB1"; ctx.fillRect(4, -19, 5, 7); ctx.fillStyle = "#3BB273"; ctx.fillRect(7, -24, 1.2, 6);
+    ctx.fillStyle = "#33414D"; [-14, 14].forEach(x => { ctx.fillRect(x - 1, -6, 2, 6); oval(ctx, x, -7, 4, 1.5); });
+  }
+  function drawFlamingo(t) {
+    [[-9, 0], [9, 1.3]].forEach(([x, ph]) => {
+      const b = Math.sin(t * 1.4 + ph) * 1.5;
+      ctx.strokeStyle = "#E86A92"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(x, -14); ctx.lineTo(x, 0); ctx.moveTo(x + 2, -14); ctx.lineTo(x + 4, -6); ctx.lineTo(x + 1, -5); ctx.stroke();
+      ctx.fillStyle = "#FF9EC0"; oval(ctx, x + 1, -18 + b * 0.3, 8, 5.5);
+      ctx.strokeStyle = "#FF9EC0"; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.moveTo(x + 6, -19); ctx.quadraticCurveTo(x + 13, -27, x + 8, -33 + b); ctx.stroke();
+      ctx.fillStyle = "#FF9EC0"; oval(ctx, x + 9, -34 + b, 3.3, 2.7);
+      ctx.fillStyle = "#16323A"; ctx.beginPath(); ctx.moveTo(x + 12, -34 + b); ctx.lineTo(x + 16, -31 + b); ctx.lineTo(x + 12, -32 + b); ctx.fill();
+    });
+  }
+
+  // ---------- Fluglotse (links, bremst) und Pilot (rechts, gibt Gas) ----------
+  function drawCrew(t) {
+    const { I, xL, xR, gapL, gapR, apB } = sides(), sp = speedOn(t);
+    const h = Math.max(46, Math.min(84, Math.min(gapL, gapR) * 1.5)), yb = Math.min(apB, I.y + I.h - 20);
+    drawLotse(xL, yb, h, t, sp === "slow");
+    drawPilot(xR, yb, h, t, sp === "fast");
+    if (I.y + I.h - yb > 14) {
+      ctx.font = `800 11px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      [[xL, "langsam"], [xR, "schnell"]].forEach(([x, txt]) => {
+        const w = ctx.measureText(txt).width + 10;
+        ctx.fillStyle = C.teal; rr(ctx, x - w / 2, yb + 3, w, 14, 7); ctx.fill();
+        ctx.fillStyle = C.sun; ctx.fillText(txt, x, yb + 10.5);
+      });
+    }
+    if (sp && speed.shout) bubble(speed.shout, sp === "slow" ? xL : xR, yb - h - 6);
+  }
+  function bubble(txt, x, y) {
+    const I = lay.island;
+    ctx.font = `800 14px ${FONT}`;
+    const w = ctx.measureText(txt).width + 18, bx = Math.max(I.x + w / 2 + 2, Math.min(I.x + I.w - w / 2 - 2, x));
+    ctx.fillStyle = "rgba(8,65,77,.25)"; rr(ctx, bx - w / 2, y - 22, w, 24, 12); ctx.fill();
+    ctx.fillStyle = "#FFFFFF"; rr(ctx, bx - w / 2, y - 24, w, 24, 12); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 5, y - 2); ctx.lineTo(x + 5, y - 2); ctx.lineTo(x, y + 6); ctx.fill();
+    ctx.fillStyle = C.band; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, bx, y - 11);
+  }
+  // Figuren in Einheiten von 100 = Körperhöhe, Ursprung zwischen den Füßen.
+  function drawLotse(x, y, h, t, on) {
+    const s = h / 110, jump = on ? Math.abs(Math.sin(t * 13)) * 7 : Math.abs(Math.sin(t * 2)) * 1.2;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = "rgba(60,40,10,.22)"; oval(ctx, 0, 0, 22, 5);
+    ctx.translate(0, -jump);
+    ctx.fillStyle = "#2F4858"; rr(ctx, -12, -32, 10, 32, 4); ctx.fill(); rr(ctx, 2, -32, 10, 32, 4); ctx.fill();
+    ctx.fillStyle = "#1E2B33"; oval(ctx, -8, -1, 8, 4); oval(ctx, 8, -1, 8, 4);
+    // Arme mit Einweisungsstäben: ruhig nach unten, beim Bremsen über Kopf gekreuzt
+    for (const sd of [-1, 1]) {
+      const mag = on ? 2.55 + Math.sin(t * 16 + (sd > 0 ? 0 : Math.PI)) * 0.45 : 0.45 + Math.sin(t * 2.5 + sd) * 0.18;
+      const th = -sd * mag, ex = -Math.sin(th) * 22, ey = Math.cos(th) * 22;
+      ctx.strokeStyle = "#FF8A1F"; ctx.lineWidth = 8; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(sd * 15, -62); ctx.lineTo(sd * 15 + ex, -62 + ey); ctx.stroke();
+      const wx = -Math.sin(th) * 18, wy = Math.cos(th) * 18;
+      if (on) { ctx.strokeStyle = "rgba(255,180,60,.35)"; ctx.lineWidth = 11; ctx.beginPath(); ctx.moveTo(sd * 15 + ex, -62 + ey); ctx.lineTo(sd * 15 + ex + wx, -62 + ey + wy); ctx.stroke(); }
+      ctx.strokeStyle = "#FF5E1A"; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(sd * 15 + ex, -62 + ey); ctx.lineTo(sd * 15 + ex + wx, -62 + ey + wy); ctx.stroke();
+      ctx.fillStyle = SKIN[0]; oval(ctx, sd * 15 + ex, -62 + ey, 4, 4);
+    }
+    ctx.fillStyle = "#FF8A1F"; rr(ctx, -18, -70, 36, 42, 11); ctx.fill();
+    ctx.fillStyle = "#FFF59A"; ctx.fillRect(-18, -54, 36, 4); ctx.fillRect(-18, -43, 36, 4);
+    // Kopf mit wilden Haaren, Gehörschutz, dicker Brille
+    ctx.strokeStyle = "#8B4A2B"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    for (let k = 0; k < 8; k++) {
+      const a = -Math.PI + 0.15 + (k * (Math.PI - 0.3)) / 7, l = 12 + (k % 2) * 6 + (on ? Math.sin(t * 20 + k) * 3 : 0);
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * 12, -84 + Math.sin(a) * 12); ctx.lineTo(Math.cos(a) * (12 + l), -84 + Math.sin(a) * (12 + l)); ctx.stroke();
+    }
+    ctx.fillStyle = SKIN[0]; oval(ctx, 0, -84, 15, 15);
+    ctx.strokeStyle = "#FFD23F"; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(0, -84, 17, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+    ctx.fillStyle = "#FFD23F"; oval(ctx, -16, -83, 5, 7); oval(ctx, 16, -83, 5, 7);
+    ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = "#1E2B33"; ctx.lineWidth = 2;
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(sd * 6.5, -86, 6, 0, 7); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = "#1E2B33";
+    if (on) { oval(ctx, -6.5 + Math.cos(t * 9) * 2, -86 + Math.sin(t * 9) * 2, 2.6, 2.6); oval(ctx, 6.5 + Math.cos(-t * 9) * 2, -86 + Math.sin(-t * 9) * 2, 1.6, 1.6); }
+    else { oval(ctx, -5, -86, 2.2, 2.2); oval(ctx, 8, -86, 2.2, 2.2); }
+    if (on) { ctx.fillStyle = "#7A2E2E"; oval(ctx, 0, -76, 4, 3.5); }
+    else { ctx.strokeStyle = "#7A2E2E"; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(0, -78, 4, 0.2, Math.PI - 0.2); ctx.stroke(); }
+    ctx.restore();
+  }
+  function drawPilot(x, y, h, t, on) {
+    const s = h / 110, run = on ? Math.sin(t * 18) : 0, bounce = on ? Math.abs(run) * 5 : Math.abs(Math.sin(t * 2)) * 1.2;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = "rgba(60,40,10,.22)"; oval(ctx, 0, 0, 22, 5);
+    ctx.translate(0, -bounce);
+    ctx.fillStyle = "#1F2F5C";
+    ctx.save(); ctx.translate(-7, -32); ctx.rotate(run * 0.4); rr(ctx, -5, 0, 10, 32, 4); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(7, -32); ctx.rotate(-run * 0.4); rr(ctx, -5, 0, 10, 32, 4); ctx.fill(); ctx.restore();
+    ctx.fillStyle = "#1E2B33"; oval(ctx, -7 + run * 6, -1, 8, 4); oval(ctx, 7 - run * 6, -1, 8, 4);
+    // Schal flattert, beim Gasgeben wild
+    const fl = on ? 10 : 3, sp = on ? 14 : 3;
+    ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(-6, -72);
+    ctx.quadraticCurveTo(-24, -74 + Math.sin(t * sp) * fl, -40, -68 + Math.sin(t * sp + 1) * fl);
+    ctx.lineTo(-38, -62 + Math.sin(t * sp + 1.5) * fl); ctx.quadraticCurveTo(-22, -66 + Math.sin(t * sp + 0.5) * fl, -6, -64); ctx.closePath(); ctx.fill();
+    // Arme: links in die Hüfte, rechts winkt; beim Gasgeben Daumen hoch
+    ctx.strokeStyle = "#1F2F5C"; ctx.lineWidth = 8; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); ctx.moveTo(-15, -62); ctx.lineTo(-24, -48); ctx.lineTo(-15, -40); ctx.stroke();
+    const ra = on ? -2.6 + Math.sin(t * 10) * 0.2 : -0.5 + Math.sin(t * 2) * 0.25, hx = 15 + Math.sin(-ra) * 22, hy = -62 + Math.cos(ra) * 22;
+    ctx.beginPath(); ctx.moveTo(15, -62); ctx.lineTo(hx, hy); ctx.stroke();
+    ctx.fillStyle = "#FFD23F"; ctx.fillRect(hx - 4 + (hx - 15) * -0.25, hy - 2 + (hy + 62) * -0.25, 8, 2.5);
+    ctx.fillStyle = SKIN[3]; oval(ctx, hx, hy, 4.5, 4.5);
+    if (on) { ctx.fillRect(hx - 1.5, hy - 10, 3.5, 7); }
+    ctx.fillStyle = "#1F2F5C"; rr(ctx, -18, -70, 36, 42, 11); ctx.fill();
+    ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.moveTo(-7, -70); ctx.lineTo(7, -70); ctx.lineTo(0, -56); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#F0302A"; ctx.beginPath(); ctx.moveTo(-2, -64); ctx.lineTo(2, -64); ctx.lineTo(3, -54); ctx.lineTo(0, -51); ctx.lineTo(-3, -54); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#FFD23F"; oval(ctx, -9, -48, 2, 2); oval(ctx, -9, -38, 2, 2); oval(ctx, 9, -48, 2, 2); oval(ctx, 9, -38, 2, 2);
+    // Kopf: Sonnenbrille, Riesenschnurrbart, Kapitänsmütze
+    ctx.fillStyle = SKIN[3]; oval(ctx, 0, -84, 15, 15);
+    ctx.fillStyle = "#1E2B33";
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 6.5, -86, 6, 4.5, sd * 0.2, 0, 7); ctx.fill(); }
+    ctx.fillRect(-2, -88, 4, 1.8);
+    ctx.fillStyle = "rgba(255,255,255,.6)"; oval(ctx, -8, -88, 1.8, 1.2); oval(ctx, 5, -88, 1.8, 1.2);
+    const tw = on ? Math.sin(t * 16) * 0.15 : 0;
+    ctx.fillStyle = "#5A3418";
+    for (const sd of [-1, 1]) {
+      ctx.save(); ctx.translate(0, -78); ctx.rotate(sd * tw);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(sd * 6, -4, sd * 13, -2, sd * 15, -6); ctx.bezierCurveTo(sd * 14, 2, sd * 6, 4, 0, 2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.strokeStyle = "#7A2E2E"; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(0, -74, 3.5, 0.3, Math.PI - 0.3); ctx.stroke();
+    const hatY = on ? -99 - Math.abs(Math.sin(t * 9)) * 4 : -99;
+    ctx.fillStyle = "#1F2F5C"; rr(ctx, -16, hatY - 4, 32, 12, 6); ctx.fill();
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(-16, hatY + 4, 32, 3);
+    ctx.fillStyle = "#1E2B33"; oval(ctx, 3, hatY + 8.5, 15, 3.5);
+    ctx.fillStyle = "#FFD23F"; oval(ctx, 0, hatY + 1, 3.5, 3); ctx.fillRect(-9, hatY, 18, 1.6);
+    ctx.restore();
+  }
+
+  function showShop(next) {
+    const btnBuy = (id, cost) => `<button data-buy="${id}" data-cost="${cost}" ${shells < cost ? "disabled" : ""}>${cost} Muscheln</button>`;
+    const build = SHOP.map(i => `<div class="shop-row"><span>${i.name}<small>${i.where}</small></span>${has(i.id) ? `<button class="alt" disabled>Steht</button>` : btnBuy(i.id, i.cost)}</div>`).join("");
+    const deco = DECOR.map(d => `<h3>${d.name}</h3>` + d.opts.map(([o, n, c]) => {
+      const id = d.key + ":" + o, mine = !c || has(id);
+      const b = decor[d.key] === o ? `<button class="alt" disabled>Aktiv</button>` : mine ? `<button class="alt" data-pick="${id}">Wählen</button>` : btnBuy(id, c);
+      return `<div class="shop-row"><span>${n}</span>${b}</div>`;
+    }).join("")).join("");
+    showCard(`
+      <div class="eyebrow">${shells} Muscheln</div>
+      <h2>Flughafen ausbauen</h2>
+      <div class="shop"><h3>Bauen</h3>${build}${deco}</div>
+      <div class="actions"><button class="btn alt" id="backBtn">${next !== undefined ? `Weiter zu Level ${next + 1}` : "Zurück zum Spiel"}</button></div>`);
+    // Nach dem Kauf kurz die Karte ausblenden, damit man das neue Teil ins Bild springen sieht.
+    const peek = (key, id) => {
+      placedAt[key] = now();
+      $("#overlay").hidden = true; peeking = true; audioInit(); sfx.build();
+      setTimeout(() => { peeking = false; showShop(next); }, 1700);
+      void id;
     };
-    loop();
+    const apply = id => {
+      if (!id.includes(":")) return peek(id);
+      const [k, o] = id.split(":");
+      decor[k] = o; store.set("abflug.decor", decor);
+      peek("decor:" + k);
+    };
+    $("#card").querySelectorAll("[data-buy]").forEach(b => b.addEventListener("click", () => {
+      const id = b.dataset.buy, cost = +b.dataset.cost;
+      if (shells < cost || has(id)) return;
+      shells -= cost; owned.push(id);
+      store.set("abflug.shells", shells); store.set("abflug.owned", owned);
+      apply(id);
+    }));
+    $("#card").querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => apply(b.dataset.pick)));
+    $("#backBtn").addEventListener("click", () => (next !== undefined ? startLevel(next) : ($("#overlay").hidden = true)));
   }
   const flags = {};
   function flagURL(d) {
@@ -1418,6 +1619,7 @@ window.Abflug = (() => {
     drawTerminal(t);
     drawGates(t);
     drawApron(t);
+    drawCrew(t);
     for (const [id, v] of vis) {
       if (v.kind !== "taxi") continue;
       const p = S.planes[id];
@@ -1483,23 +1685,18 @@ window.Abflug = (() => {
     sg.addColorStop(0, C.sand); sg.addColorStop(1, C.sand2);
     ctx.fillStyle = sg; rr(ctx, I.x, I.y, I.w, I.h, 34); ctx.fill();
     // Palmen und Schirm am Strand
-    const b = I.y + I.h, side = lay.ax - I.x;
-    palm(I.x + 16, b - 12, 22, t, 1);
-    palm(I.x + I.w - 30, b - 10, 20, t, 2);
-    if (side > 44) {
-      palm(I.x + side * 0.4, lay.ay + lay.cell * S.rows * 0.45, Math.min(30, side * 0.45), t, 3);
-      palm(I.x + I.w - side * 0.55, lay.ay + lay.cell * S.rows * 0.7, Math.min(28, side * 0.42), t, 4);
-    }
+    const b = I.y + I.h;
     if (b - (lay.ay + lay.cell * S.rows) > 22) umbrella(I.x + I.w * 0.5, b - 12, 9, t);
+    drawBeachDeco(t);
   }
 
   function drawTerminal(t) {
     const { top, gy0, ox, gw } = lay, I = lay.island;
-    ctx.fillStyle = tilePat(); ctx.fillRect(I.x, 0, I.w, gy0);
+    ctx.fillStyle = floorPat(); ctx.fillRect(I.x, 0, I.w, gy0);
     // Markise unter der Kopfzeile
-    const aw = 22, ah = top + 6;
+    const aw = 22, ah = top + 6, awn = AWNINGS[decor.awning] || PASTEL;
     for (let x = I.x, k = 0; x < I.x + I.w; x += aw, k++) {
-      ctx.fillStyle = k % 2 ? "#FFFFFF" : PASTEL[(k >> 1) % PASTEL.length];
+      ctx.fillStyle = k % 2 ? "#FFFFFF" : awn[(k >> 1) % awn.length];
       ctx.fillRect(x, 0, aw, ah);
       ctx.beginPath(); ctx.arc(x + aw / 2, ah, aw / 2, 0, Math.PI); ctx.fill();
     }
@@ -1515,6 +1712,7 @@ window.Abflug = (() => {
     for (let y = ex.y + lay.laneW / 2 + 2; y < gy0 - 12; y += 10) {
       ctx.beginPath(); ctx.moveTo(ex.x - 5, y); ctx.lineTo(ex.x, y + 5); ctx.lineTo(ex.x + 5, y); ctx.stroke();
     }
+    drawTerminalDeco(t);
     for (const side of ["L", "R"]) drawArmLane(side);
     drawRingLane(t);
     // Figuren nach Höhe sortiert zeichnen, damit sie sich richtig überdecken
@@ -1547,7 +1745,6 @@ window.Abflug = (() => {
     }
     figs.sort((a, b) => a[1] - b[1]);
     for (const [x, y, dd, v] of figs) drawTourist(x, y, dd, v, d, t);
-    drawGuide(t);
     for (const side of ["L", "R"]) {
       const pl = lay.arms[side], cap = lay.capRows[side], topY = at(pl, cap * d + 12).y;
       const txt = hidden[side] > 0 ? "+" + hidden[side] : "Check-in";
@@ -1564,46 +1761,6 @@ window.Abflug = (() => {
       for (let k = 0; k < 3; k++) rr(ctx, g.x - lay.slotW * 0.36 + k * lay.slotW * 0.26, gy0 - 9, lay.slotW * 0.18, 6, 2), ctx.fill();
     });
   }
-  // Reiseleiterin in der Ringmitte: Fähnchen hoch, Megafon. Antippen treibt die Touristen an.
-  function drawGuide(t) {
-    const on = t < boostUntil, s = lay.d * 1.4, x = lay.cx - (lay.x1 - lay.x0) * 0.12, jump = on ? Math.abs(Math.sin(t * 14)) * s * 0.35 : 0;
-    const y = lay.cyR + s * 0.9 - jump;
-    ctx.fillStyle = "rgba(60,40,10,.2)"; ctx.beginPath(); ctx.ellipse(x, lay.cyR + s * 0.95, s * 0.5, s * 0.16, 0, 0, 7); ctx.fill();
-    // Fähnchen am Stab, wedelt beim Antreiben
-    const fx = x - s * 0.55, wave = Math.sin(t * (on ? 20 : 3)) * (on ? 0.35 : 0.12);
-    ctx.strokeStyle = "#7A5230"; ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(fx, y - s * 0.55); ctx.lineTo(fx, y - s * 2.1); ctx.stroke();
-    ctx.save(); ctx.translate(fx, y - s * 2.1); ctx.rotate(wave);
-    ctx.fillStyle = C.band; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(s * 0.5, s * 0.1, s * 0.85, s * 0.05); ctx.lineTo(s * 0.8, s * 0.5); ctx.quadraticCurveTo(s * 0.45, s * 0.6, 0, s * 0.55); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(s * 0.4, s * 0.28, s * 0.13, 0, 7); ctx.fill();
-    ctx.restore();
-    // Körper im Hawaiihemd, Kopf mit Sonnenhut
-    ctx.fillStyle = C.teal; ctx.beginPath(); ctx.ellipse(x, y - s * 0.35, s * 0.42, s * 0.48, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = "#FFB4A8"; [[-0.15, -0.5], [0.18, -0.25], [-0.05, -0.1]].forEach(([a, b]) => { ctx.beginPath(); ctx.arc(x + a * s, y + b * s, s * 0.08, 0, 7); ctx.fill(); });
-    ctx.strokeStyle = SKIN[1]; ctx.lineWidth = Math.max(2, s * 0.13);
-    ctx.beginPath(); ctx.moveTo(x - s * 0.35, y - s * 0.5); ctx.lineTo(fx + s * 0.05, y - s * 0.7); ctx.stroke();
-    const hy = y - s * 1.05;
-    ctx.fillStyle = SKIN[1]; ctx.beginPath(); ctx.arc(x, hy, s * 0.32, 0, 7); ctx.fill();
-    ctx.fillStyle = "#2A2A2A"; ctx.beginPath(); ctx.arc(x + s * 0.02, hy, s * 0.04, 0, 7); ctx.arc(x + s * 0.16, hy, s * 0.04, 0, 7); ctx.fill();
-    ctx.fillStyle = "#F2CF72"; ctx.beginPath(); ctx.ellipse(x, hy - s * 0.2, s * 0.45, s * 0.1, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x, hy - s * 0.32, s * 0.22, s * 0.15, 0, 0, 7); ctx.fill();
-    // Megafon, beim Antreiben mit Schallwellen
-    ctx.save(); ctx.translate(x + s * 0.3, hy + s * 0.12); ctx.rotate(-0.25);
-    ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(0, -s * 0.08); ctx.lineTo(s * 0.45, -s * 0.22); ctx.lineTo(s * 0.45, s * 0.22); ctx.lineTo(0, s * 0.08); ctx.closePath(); ctx.fill(); ctx.stroke();
-    if (on) {
-      ctx.strokeStyle = C.band; ctx.lineWidth = 2;
-      for (let k = 0; k < 3; k++) { const r = s * (0.25 + k * 0.18 + ((t * 2) % 0.18)); ctx.beginPath(); ctx.arc(s * 0.45, 0, r, -0.6, 0.6); ctx.stroke(); }
-    }
-    ctx.restore();
-    if (on && shout) {
-      ctx.font = `800 ${Math.round(Math.max(12, s * 0.75))}px ${FONT}`;
-      const w = ctx.measureText(shout).width + 14, bx = Math.min(lay.ox + lay.gw - w / 2 - 6, Math.max(lay.ox + w / 2 + 6, x + s * 0.4)), by = hy - s * 1.3;
-      ctx.fillStyle = "#FFFFFF"; rr(ctx, bx - w / 2, by - s * 0.45, w, s * 0.9, s * 0.45); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(x + s * 0.2, by + s * 0.4); ctx.lineTo(x + s * 0.45, by + s * 0.4); ctx.lineTo(x + s * 0.25, by + s * 0.75); ctx.fill();
-      ctx.fillStyle = C.band; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(shout, bx, by + 1);
-    }
-  }
   function stadium(k) {
     const { x0, x1, cyR, rad } = lay, r = rad + k;
     ctx.beginPath();
@@ -1617,7 +1774,7 @@ window.Abflug = (() => {
     ctx.fillStyle = C.sand; stadium(-hw); ctx.fill();
     ctx.fillStyle = "#7FD9B8"; stadium(-hw - 4); ctx.fill();
     const ir = lay.rad - hw;
-    if (ir > 8) palm(lay.cx + (lay.x1 - lay.x0) * 0.42, lay.cyR + ir * 0.5, Math.min(12, ir * 0.8), t, 5);
+    if (ir > 8) drawCenter(t, ir);
     // Absperrbänder mit Pfosten
     for (const k of [hw, -hw]) {
       ctx.strokeStyle = C.band; ctx.lineWidth = 3; stadium(k); ctx.stroke();
@@ -1797,8 +1954,8 @@ window.Abflug = (() => {
       <h2>Level wählen</h2>
       ${risk ? `<p class="small">Ein Levelwechsel beendet deine Siegesserie von ${streak}.</p>` : ""}
       <div class="levels">${btns}</div>
-      <div class="actions"><button class="btn" id="isleBtn">Deine Insel</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
-    $("#isleBtn").addEventListener("click", () => showIsle());
+      <div class="actions"><button class="btn" id="isleBtn">Flughafen ausbauen</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button></div>`);
+    $("#isleBtn").addEventListener("click", () => showShop());
     $(".levels .cur")?.scrollIntoView({ block: "nearest" });
     $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => { if (risk) setStreak(0); startLevel(+b.dataset.l); }));
     $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
@@ -1826,10 +1983,18 @@ window.Abflug = (() => {
 
   // ---------- Ton: Steeldrum ----------
   let ac = null;
+  // Auf Touch-Geräten zählt pointerdown nicht als Nutzergeste, erst pointerup/touchend/click.
+  // iOS: audioSession "playback" spielt auch bei stummgeschaltetem Klingelschalter.
   function audioInit() {
-    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } }
-    if (ac.state === "suspended") ac.resume();
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    if (!ac) {
+      try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+      const b = ac.createBuffer(1, 1, 22050), src = ac.createBufferSource();
+      src.buffer = b; src.connect(ac.destination); src.start(0);
+    }
+    if (ac.state !== "running") ac.resume().catch(() => {});
   }
+  ["pointerup", "touchend", "click", "keydown"].forEach(ev => window.addEventListener(ev, audioInit, { passive: true }));
   function tone(freq, dur, type = "sine", vol = 0.12, slide = 1, delay = 0) {
     if (muted || !ac) return;
     const t0 = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
@@ -1873,6 +2038,7 @@ window.Abflug = (() => {
     tow: () => { tone(110, 0.4, "triangle", 0.12, 1.6); steel(392, 0.3, 0.05, 0.12); steel(587, 0.35, 0.05, 0.2); },
     build: () => { tone(120, 0.15, "triangle", 0.2, 0.6); [523, 659, 784, 1046, 1318].forEach((f, i) => steel(f, 0.5, 0.07, 0.08 + i * 0.08)); },
     whistle: () => { tone(2300, 0.1, "sine", 0.05, 1.04); tone(2300, 0.22, "sine", 0.05, 0.96, 0.13); },
+    engine: () => { tone(90, 0.5, "sawtooth", 0.05, 2.2); steel(784, 0.3, 0.05, 0.15); },
     stamp: () => { tone(150, 0.12, "triangle", 0.22, 0.5); steel(1046, 0.5, 0.08, 0.1); steel(1318, 0.6, 0.07, 0.2); },
   };
 
@@ -1881,7 +2047,7 @@ window.Abflug = (() => {
     const t = now(), dt = Math.min(0.05, t - last || 0);
     last = t;
     // Karte offen mitten im Level: Spiel hält an.
-    if ($("#overlay").hidden || ended) update(t, dt);
+    if (($("#overlay").hidden && !peeking) || ended) update(t, dt);
     draw(t);
     requestAnimationFrame(frame);
   }
