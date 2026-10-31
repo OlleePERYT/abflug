@@ -66,15 +66,30 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
 .levels button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 14px; background: var(--teal); color: var(--sun); font-family: var(--font-display); font-weight: 800; font-size: 22px; line-height: 1; box-shadow: 0 3px 0 var(--teal-dark); cursor: pointer; display: grid; place-content: center; gap: 2px; }
 .levels button small { font-size: 10px; letter-spacing: 0; color: #FFB4A8; }
-.stars { display: flex; justify-content: center; gap: 6px; margin: -2px 0 6px; font-size: 44px; line-height: 1; }
-.stars span { color: #E1E9E8; }
-.stars span.on { color: #FFC400; text-shadow: 0 3px 0 #D99A00; animation: starpop .45s cubic-bezier(.3,1.6,.5,1) both; }
 @keyframes starpop { from { transform: scale(0) rotate(-40deg); } to { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .stars span.on { animation: none; } }
-.goals { list-style: none; padding: 0; margin: 0 0 12px; display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; font-weight: 800; color: #9FB2B5; }
-.goals li::before { content: "✗ "; }
-.goals li.ok { color: var(--teal); }
-.goals li.ok::before { content: "✓ "; }
+.stars3 { display: flex; justify-content: center; gap: 4px; margin: 0 0 12px; }
+.stars3 div { flex: 1; max-width: 92px; display: grid; justify-items: center; gap: 2px; }
+.stars3 span { font-size: 44px; line-height: 1; color: #E8DCC0; }
+.stars3 .on span { color: #FFC400; text-shadow: 0 3px 0 #D99A00; animation: starpop .45s cubic-bezier(.3,1.6,.5,1) both; }
+.stars3 small { font-size: 11px; font-weight: 800; color: #B5A57F; line-height: 1.2; }
+.stars3 .on small { color: var(--teal); }
+@media (prefers-reduced-motion: reduce) { .stars3 .on span { animation: none; } }
+.loot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; }
+.chip-l { background: #FFFFFF; border-radius: 14px; padding: 7px 8px; box-shadow: 0 2px 0 #EBD49E; font-size: 13px; font-weight: 700; color: var(--muted); display: grid; justify-items: center; gap: 2px; }
+.chip-l b { font-family: var(--font-display); font-size: 20px; color: var(--teal); line-height: 1.1; }
+.chip-l.shell b { color: var(--coral); }
+.chip-l small { font-size: 11px; line-height: 1.25; }
+.chip-l .dots { display: flex; gap: 4px; }
+.chip-l .dots i { width: 18px; height: 6px; border-radius: 3px; background: #E8DCC0; }
+.chip-l .dots i.on { background: var(--coral); }
+.loot-stamps { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 0 0 12px; font-size: 12px; font-weight: 800; color: var(--muted); }
+.loot-stamps img { width: 24px; height: 16px; border-radius: 3px; box-shadow: 0 0 0 2px #FFFFFF; }
+.loot-stamps span { margin-left: 4px; }
+.minis { display: flex; gap: 8px; }
+.mini { flex: 1; min-height: 46px; border: 0; border-radius: 16px; background: #FFFFFF; color: var(--teal); font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1.1; box-shadow: 0 3px 0 #E3C98F; cursor: pointer; display: grid; place-content: center; padding: 4px 6px; }
+.mini small { font-family: var(--font-body); font-size: 11px; font-weight: 700; color: var(--muted); }
+.mini.hot { background: var(--sun); box-shadow: 0 3px 0 #D9B330; position: relative; }
+.mini.hot::after { content: ""; position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--coral); border: 2px solid #FFFFFF; }
 .shop-row.sub { margin-left: 18px; background: #FFF6DA; }
 .shop-row .tier { color: var(--coral); letter-spacing: 1px; }
 .levels button:disabled { background: #E1E9E8; color: #9FB2B5; box-shadow: none; cursor: default; }
@@ -83,9 +98,6 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .chip svg { width: 22px; height: 16px; margin-right: 4px; }
 .chip.tow { display: flex; align-items: center; }
 .chip.armed { background: var(--coral); color: #FFFFFF; box-shadow: 0 3px 0 var(--coral-dark); }
-.streak { display: flex; justify-content: center; gap: 6px; margin: 0 0 6px; }
-.streak i { width: 34px; height: 10px; border-radius: 5px; background: #E1E9E8; }
-.streak i.on { background: var(--coral); }
 .card p.small { font-size: 14px; margin-bottom: 14px; }
 .meter { height: 12px; border-radius: 6px; background: #E1E9E8; margin: -6px 0 16px; overflow: hidden; }
 .meter span { display: block; height: 100%; background: var(--coral); border-radius: 6px; }
@@ -1220,25 +1232,26 @@ window.Abflug = (() => {
         const gain = Math.round(base * (1 + fx("bar", "bonus", 0))) + tips + starGain;
         shells += gain; store.set("abflug.shells", shells);
         const item = nextBuy(), canBuild = item && shells >= item.cost;
+        // Kurz und klar: Sterne mit Bedingung, eine Zeile Belohnungen, ein Hauptknopf, kleine Nebenknöpfe.
+        const goals = ["Geschafft", "Ohne 2. Chance", "Ohne Schlepper"], tw = Math.min(3, streak);
+        const why = [has("bar") ? "Strandbar" : "", tips ? "Souvenirs" : "", fresh ? `${fresh} neue Sterne` : ""].filter(Boolean).join(", ");
+        const canChal = levelIdx > 0 && !chalDone[levelIdx];
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1} geschafft</div>
           <h2>Alle im Urlaub!</h2>
-          <div class="stars" aria-label="${stars} von 3 Sternen">${[1, 2, 3].map(k => `<span class="${k <= stars ? "on" : ""}" style="animation-delay:${k * 0.18}s">★</span>`).join("")}</div>
-          <ul class="goals">
-            <li class="ok">Geschafft</li>
-            <li class="${S.gateCount < 5 ? "ok" : ""}">Ohne zweite Chance</li>
-            <li class="${stars === 3 ? "ok" : ""}">Ohne Schlepper</li>
-          </ul>
-          ${fresh ? `<p class="small"><b>${fresh} neue${fresh > 1 ? "" : "r"} Stern${fresh > 1 ? "e" : ""}: +${starGain} Muscheln.</b></p>` : ""}
-          ${streakMeter()}
-          <p class="small"><b>Siegesserie ${streak}.</b> Im nächsten Level wartet${Math.min(3, streak) > 1 ? "en" : ""} ${Math.min(3, streak)} Schlepper auf dich.</p>
-          <p class="small"><b>+${gain} Muscheln</b>${has("bar") || tips ? ` (mit ${[has("bar") ? "Strandbar" : "", tips ? "Souvenirstand" : ""].filter(Boolean).join(" und ")})` : ""}. ${item ? (canBuild ? `Genug für: ${item.name}!` : `Noch ${item.cost - shells} bis ${item.name}.`) : "Dein Flughafen ist fertig ausgebaut."}</p>
-          ${newStamps.length ? `<div class="newstamps">${newStamps.map(s => `<span><img src="${flagURL(s.d)}" alt="">${A.DEST[s.d].name}: ${STAMPS[s.tier].name}</span>`).join("")}</div>` : ""}
+          <div class="stars3" role="img" aria-label="${stars} von 3 Sternen">${goals.map((g, k) => `<div class="${k < stars ? "on" : ""}"><span style="animation-delay:${(k + 1) * 0.18}s">★</span><small>${g}</small></div>`).join("")}</div>
+          <div class="loot">
+            <div class="chip-l shell" title="${why}"><b>+${gain}</b> Muscheln${why ? `<small>${why}</small>` : ""}</div>
+            <div class="chip-l"><b>Serie ${streak}</b><span class="dots">${[1, 2, 3].map(k => `<i class="${streak >= k ? "on" : ""}"></i>`).join("")}</span><small>${tw} Schlepper fürs nächste Level</small></div>
+          </div>
+          ${newStamps.length ? `<div class="loot-stamps" aria-label="Neue Stempel">${newStamps.map(s => `<img src="${flagURL(s.d)}" alt="${A.DEST[s.d].name}: ${STAMPS[s.tier].name}" title="${A.DEST[s.d].name}: ${STAMPS[s.tier].name}">`).join("")}<span>Neue Stempel im Pass</span></div>` : ""}
           <div class="actions">
-            ${canBuild ? `<button class="btn" id="isleBtn">Flughafen ausbauen</button>` : ""}
-            <button class="btn ${canBuild ? "alt" : ""}" id="nextBtn">Weiter zu Level ${next + 1}</button>
-            ${levelIdx > 0 && !chalDone[levelIdx] ? `<button class="btn alt" id="chalBtn">Herausforderung: ${chalFor(levelIdx).name} (+${chalReward(levelIdx)})</button>` : ""}
-            <button class="btn alt" id="againBtn">Nochmal spielen</button>
+            <button class="btn" id="nextBtn">Weiter zu Level ${next + 1}</button>
+            <div class="minis">
+              <button class="mini ${canBuild ? "hot" : ""}" id="isleBtn">Ausbauen${canBuild ? `<small>${item.name}</small>` : item ? `<small>noch ${item.cost - shells}</small>` : ""}</button>
+              ${canChal ? `<button class="mini" id="chalBtn">${chalFor(levelIdx).name}<small>+${chalReward(levelIdx)}</small></button>` : ""}
+              <button class="mini" id="againBtn">Nochmal</button>
+            </div>
           </div>`);
         $("#isleBtn")?.addEventListener("click", () => showShop(next));
         $("#chalBtn")?.addEventListener("click", () => startLevel(levelIdx, chalFor(levelIdx)));
@@ -1306,9 +1319,7 @@ window.Abflug = (() => {
     S.gateCount = 5; sfx.go();
   }
   function setStreak(n) { streak = n; store.set("abflug.streak", n); }
-  function streakMeter() {
-    return `<div class="streak" aria-label="Siegesserie ${streak}">${[1, 2, 3].map(k => `<i class="${streak >= k ? "on" : ""}"></i>`).join("")}</div>`;
-  }
+
   // Läuft das Level schon? Dann kostet Abbrechen die Serie.
   function inProgress() { return S && !ended && (S.boarded > 0 || S.planes.some(p => p.where !== "apron" && p.where !== "hangar")); }
   function syncTow() {
