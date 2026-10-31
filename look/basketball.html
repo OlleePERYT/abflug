@@ -1,0 +1,429 @@
+<title>Abflug Halle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap">
+<style>
+/* Look-Probe Basketball: Arena-Seite in Nachtblau mit Ball-Orange. Links das Spielbild im Handyrahmen,
+   rechts die Bausteine im Einzelnen. Bewusst nur ein dunkles Thema, wie eine Halle bei Flutlicht. */
+:root {
+  --night: #101B30;
+  --navy: #1A2A48;
+  --line: #2C3F63;
+  --orange: #FF7A1A;
+  --cream: #F6EBD9;
+  --muted: #9FB0CC;
+  --display: "Anton", "Barlow Condensed", Impact, sans-serif;
+  --cond: "Barlow Condensed", "Barlow", Arial Narrow, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html { background: var(--night); }
+body { background: var(--night); color: var(--cream); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: grid; gap: 6px; margin-bottom: 26px; }
+.kicker { font-family: var(--cond); font-weight: 800; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: var(--orange); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 7vw, 72px); line-height: .95; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; max-width: 62ch; color: var(--muted); }
+.stage { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 860px) { .stage { grid-template-columns: 1fr; } }
+.phone { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 40px; padding: 10px; background: #0A1222; box-shadow: 0 0 0 2px var(--line), 0 30px 60px rgba(0,0,0,.45); }
+.phone canvas { display: block; width: 100%; height: auto; border-radius: 30px; }
+.toggle { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+.toggle button { font-family: var(--cond); font-weight: 800; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; border: 2px solid var(--line); background: transparent; color: var(--cream); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: var(--night); }
+button:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
+.parts { display: grid; gap: 22px; min-width: 0; }
+.part h2 { font-family: var(--cond); font-weight: 800; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; margin: 0 0 4px; }
+.part p { margin: 0 0 10px; color: var(--muted); max-width: 60ch; }
+.part canvas { display: block; width: 100%; max-width: 100%; height: auto; background: var(--navy); border-radius: 18px; }
+.map { width: 100%; border-collapse: collapse; font-size: 15px; }
+.map-wrap { overflow-x: auto; }
+.map th, .map td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.map th { font-family: var(--cond); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+.map td:first-child { color: var(--muted); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .phone canvas { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Look-Probe · zweites Thema für Abflug!</div>
+    <h1>Turniertag in der Halle</h1>
+    <p>Gleiche Mechanik, neues Setting: Mannschaftsbusse haben sich auf dem Hallenparkplatz verkeilt, die Spielerinnen drehen im Foyer ihre Runden und wollen zu ihrem Court. Alle Teams sind erfunden.</p>
+  </header>
+
+  <div class="stage">
+    <div>
+      <div class="phone"><canvas id="scene" width="390" height="800" role="img" aria-label="Spielbild: Foyer mit Laufbahn und Spielerinnen, fünf Courts, Parkplatz mit Mannschaftsbussen, links Schiedsrichterin, rechts Coach"></canvas></div>
+      <div class="toggle" role="group" aria-label="Spielbild-Variante">
+        <button id="normalBtn" aria-pressed="true">Normales Spiel</button>
+        <button id="playoffBtn" aria-pressed="false">Playoffs</button>
+      </div>
+    </div>
+
+    <div class="parts">
+      <section class="part">
+        <h2>Mannschaftsbusse</h2>
+        <p>Klein, mittel, groß: 16, 24 oder 40 Plätze. Großer Pfeil auf dem Dach für die Fahrtrichtung, Teamwappen am Heck, Frontscheibe mit Äuglein.</p>
+        <canvas id="buses" width="640" height="200" role="img" aria-label="Drei Mannschaftsbusse in Orange, Türkis und Lila"></canvas>
+      </section>
+      <section class="part">
+        <h2>Spielerinnen und Teams</h2>
+        <p>Trikot in Teamfarbe mit Symbol auf der Brust, Stirnband, Zopf oder Kurzhaar. Dazu acht erfundene Teams mit Wappen.</p>
+        <canvas id="teams" width="640" height="260" role="img" aria-label="Acht Spielerinnen in Teamtrikots mit Wappen und Teamnamen"></canvas>
+      </section>
+      <section class="part">
+        <h2>Schiri und Coach</h2>
+        <p>Die Schiedsrichterin links bremst mit „Timeout!“, der Coach rechts gibt Gas mit „Fast Break!“.</p>
+        <canvas id="crew" width="640" height="260" role="img" aria-label="Schiedsrichterin mit Pfeife und Coach mit Klemmbrett"></canvas>
+      </section>
+      <section class="part">
+        <h2>Was wird woraus</h2>
+        <div class="map-wrap">
+          <table class="map">
+            <tr><th>Karibik</th><th>Halle</th></tr>
+            <tr><td>Vorfeld, Flugzeuge</td><td>Hallenparkplatz, Mannschaftsbusse</td></tr>
+            <tr><td>Gates A1 bis A5</td><td>Courts 1 bis 5, Court 5 als zweite Chance</td></tr>
+            <tr><td>Touristen im Wartering</td><td>Spielerinnen auf der Laufbahn im Foyer</td></tr>
+            <tr><td>Länderflaggen</td><td>Teamwappen</td></tr>
+            <tr><td>Fluglotse, Pilot</td><td>Schiedsrichterin, Coach</td></tr>
+            <tr><td>Ausbau Flughafen</td><td>Ausbau Halle: Anzeigetafel, Snackbar, Fan-Shop, Flutlicht, Ballwagen</td></tr>
+            <tr><td>Reisepass</td><td>Stickeralbum</td></tr>
+            <tr><td>Sturm-Level</td><td>Playoffs mit Flutlicht und Konfetti</td></tr>
+            <tr><td>Son, House, Funk</td><td>Arena-Groove, Hallenorgel, Sneaker-Quietschen, Buzzer</td></tr>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // Teams: erfunden. Farbe, Symbol, Name.
+  const TEAMS = [
+    { name: "Spree Sharks", c: "#FF7A1A", g: "star" },
+    { name: "Kiez Kings", c: "#2EC4B6", g: "dot" },
+    { name: "Havel Hawks", c: "#9A4DF5", g: "diamond" },
+    { name: "Tempelhof Titans", c: "#F0302A", g: "tri" },
+    { name: "Wedding Waves", c: "#1F57F0", g: "plus" },
+    { name: "Mitte Magic", c: "#FFC400", g: "heart" },
+    { name: "Pankow Panthers", c: "#18B04F", g: "ring" },
+    { name: "Kreuzberg Comets", c: "#FF4FA6", g: "square" },
+  ];
+  const SKIN = ["#F6D2B0", "#E7B58B", "#C68A5E", "#9A6542", "#FADFC7"];
+  const HAIR = ["#3A2618", "#7A4E24", "#1E1A18", "#C98A4B", "#E9C27A"];
+  const shade = (hex, a) => { const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const f = v => Math.round(a < 0 ? v * (1 + a) : v + (255 - v) * a); return `rgb(${f(r)},${f(g)},${f(b)})`; };
+  const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const oval = (g, x, y, a, b) => { g.beginPath(); g.ellipse(x, y, a, b, 0, 0, 7); g.fill(); };
+  function glyph(g, kind, x, y, r, fill) {
+    g.save(); g.translate(x, y); g.fillStyle = fill; g.strokeStyle = fill; g.lineCap = "round"; g.beginPath();
+    switch (kind) {
+      case "dot": g.arc(0, 0, r * 0.8, 0, 7); g.fill(); break;
+      case "ring": g.lineWidth = r * 0.45; g.arc(0, 0, r * 0.65, 0, 7); g.stroke(); break;
+      case "square": g.rect(-r * 0.72, -r * 0.72, r * 1.44, r * 1.44); g.fill(); break;
+      case "diamond": g.moveTo(0, -r); g.lineTo(r * 0.8, 0); g.lineTo(0, r); g.lineTo(-r * 0.8, 0); g.closePath(); g.fill(); break;
+      case "tri": g.moveTo(0, -r); g.lineTo(r * 0.95, r * 0.75); g.lineTo(-r * 0.95, r * 0.75); g.closePath(); g.fill(); break;
+      case "plus": g.lineWidth = r * 0.5; g.moveTo(-r * 0.8, 0); g.lineTo(r * 0.8, 0); g.moveTo(0, -r * 0.8); g.lineTo(0, r * 0.8); g.stroke(); break;
+      case "star": for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, q = i % 2 ? r * 0.45 : r * 1.05; g.lineTo(Math.cos(a) * q, Math.sin(a) * q); } g.closePath(); g.fill(); break;
+      case "heart": g.moveTo(0, r * 0.85); g.bezierCurveTo(-r * 1.3, -r * 0.1, -r * 0.55, -r * 1.05, 0, -r * 0.35); g.bezierCurveTo(r * 0.55, -r * 1.05, r * 1.3, -r * 0.1, 0, r * 0.85); g.fill(); break;
+    }
+    g.restore();
+  }
+  function setup(id) {
+    const cv = document.getElementById(id), w = cv.width, h = cv.height, dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext("2d"); g.scale(dpr, dpr);
+    return { g, w, h };
+  }
+  // Wappen: Schild in Teamfarbe mit Symbol.
+  function crest(g, x, y, s, team) {
+    g.save(); g.translate(x, y); g.scale(s, s);
+    g.fillStyle = "#FFFFFF"; g.beginPath(); g.moveTo(-11, -12); g.lineTo(11, -12); g.lineTo(11, 2); g.quadraticCurveTo(11, 10, 0, 14); g.quadraticCurveTo(-11, 10, -11, 2); g.closePath(); g.fill();
+    g.fillStyle = team.c; g.beginPath(); g.moveTo(-8.5, -9.5); g.lineTo(8.5, -9.5); g.lineTo(8.5, 1.5); g.quadraticCurveTo(8.5, 8, 0, 11); g.quadraticCurveTo(-8.5, 8, -8.5, 1.5); g.closePath(); g.fill();
+    glyph(g, team.g, 0, 0, 5, "#FFFFFF");
+    g.restore();
+  }
+  // Bus von oben, Nase nach rechts. len 2/3/4 Felder, c Feldgröße.
+  function bus(g, x, y, ang, len, c, team) {
+    const half = len * c * 0.46, hw = c * 0.4;
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.fillStyle = "rgba(0,0,0,.22)"; rr(g, -half + 3, -hw + 4, half * 2, hw * 2, c * 0.18); g.fill();
+    g.fillStyle = "#FFFFFF"; rr(g, -half - 2, -hw - 2, half * 2 + 4, hw * 2 + 4, c * 0.2); g.fill();
+    const body = g.createLinearGradient(0, -hw, 0, hw); body.addColorStop(0, shade(team.c, 0.25)); body.addColorStop(0.5, team.c); body.addColorStop(1, shade(team.c, -0.2));
+    g.fillStyle = body; rr(g, -half, -hw, half * 2, hw * 2, c * 0.18); g.fill();
+    g.strokeStyle = shade(team.c, -0.4); g.lineWidth = Math.max(1, c * 0.04); g.stroke();
+    // Fensterreihen an den Seiten
+    g.fillStyle = "rgba(30,58,74,.55)";
+    for (let k = -half + c * 0.55; k < half - c * 0.5; k += c * 0.32) { rr(g, k, -hw + c * 0.06, c * 0.24, c * 0.1, 2); g.fill(); rr(g, k, hw - c * 0.16, c * 0.24, c * 0.1, 2); g.fill(); }
+    // Frontscheibe mit Äuglein
+    g.fillStyle = "#1E3A4A"; rr(g, half - c * 0.3, -hw + c * 0.08, c * 0.2, hw * 2 - c * 0.16, c * 0.07); g.fill();
+    g.fillStyle = "#FFFFFF"; oval(g, half - c * 0.19, -hw * 0.38, c * 0.05, c * 0.05); oval(g, half - c * 0.19, hw * 0.38, c * 0.05, c * 0.05);
+    // Pfeil auf dem Dach
+    const x0 = -half + c * 0.55, x1 = half - c * 0.42, hl = Math.min(c * 0.4, (x1 - x0) * 0.5), sw = hw * 0.26, hh = hw * 0.62;
+    g.beginPath(); g.moveTo(x0, -sw); g.lineTo(x1 - hl, -sw); g.lineTo(x1 - hl, -hh); g.lineTo(x1, 0); g.lineTo(x1 - hl, hh); g.lineTo(x1 - hl, sw); g.lineTo(x0, sw); g.closePath();
+    g.fillStyle = team.c === "#FFC400" ? "#16233B" : "#FFFFFF"; g.fill(); g.strokeStyle = shade(team.c, -0.4); g.lineWidth = Math.max(1, c * 0.03); g.stroke();
+    g.restore();
+    // Wappen am Heck, aufrecht
+    crest(g, x - Math.cos(ang) * (half - c * 0.28), y - Math.sin(ang) * (half - c * 0.28), c * 0.024, team);
+  }
+  // Spielerin: Trikot mit Symbol, Stirnband, Haare. v variiert Haut und Frisur.
+  function player(g, x, y, d, team, v, t) {
+    const bob = Math.abs(Math.sin(t * 7 + v * 1.7)) * d * 0.14;
+    g.fillStyle = "rgba(0,0,0,.18)"; oval(g, x, y, d * 0.42, d * 0.13);
+    g.save(); g.translate(x, y - bob);
+    g.fillStyle = shade(team.c, -0.35); rr(g, -d * 0.3, -d * 0.3, d * 0.6, d * 0.32, d * 0.1); g.fill();
+    g.fillStyle = team.c; rr(g, -d * 0.4, -d * 0.86, d * 0.8, d * 0.62, d * 0.24); g.fill();
+    g.fillStyle = "#FFFFFF"; g.fillRect(-d * 0.4, -d * 0.86, d * 0.08, d * 0.5); g.fillRect(d * 0.32, -d * 0.86, d * 0.08, d * 0.5);
+    glyph(g, team.g, 0, -d * 0.55, d * 0.17, team.c === "#FFC400" ? "#16233B" : "#FFFFFF");
+    const hy = -d * 1.12, hr = d * 0.33;
+    if (v % 3 === 0) { g.fillStyle = HAIR[v % HAIR.length]; g.save(); g.translate(d * 0.28, hy - d * 0.05); g.rotate(0.6 + Math.sin(t * 7 + v) * 0.2); rr(g, -d * 0.06, 0, d * 0.13, d * 0.38, d * 0.06); g.fill(); g.restore(); }
+    g.fillStyle = SKIN[v % SKIN.length]; g.beginPath(); g.arc(0, hy, hr, 0, 7); g.fill();
+    g.fillStyle = HAIR[v % HAIR.length]; g.beginPath(); g.arc(0, hy - hr * 0.15, hr * 1.02, Math.PI * 1.05, Math.PI * 1.95); g.fill();
+    g.fillStyle = team.c; g.fillRect(-hr, hy - hr * 0.42, hr * 2, hr * 0.28);
+    g.fillStyle = "#2A2A2A"; oval(g, -d * 0.11, hy + d * 0.06, d * 0.04, d * 0.045); oval(g, d * 0.11, hy + d * 0.06, d * 0.04, d * 0.045);
+    g.fillStyle = "rgba(255,120,150,.5)"; oval(g, -d * 0.2, hy + d * 0.15, d * 0.055, d * 0.04); oval(g, d * 0.2, hy + d * 0.15, d * 0.055, d * 0.04);
+    g.restore();
+  }
+  function ball(g, x, y, r, t) {
+    g.save(); g.translate(x, y); g.rotate(t);
+    g.fillStyle = "#FF7A1A"; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
+    g.strokeStyle = "#7A3410"; g.lineWidth = Math.max(1, r * 0.12);
+    g.beginPath(); g.arc(0, 0, r, 0, 7); g.moveTo(-r, 0); g.lineTo(r, 0); g.moveTo(0, -r); g.lineTo(0, r); g.stroke();
+    g.beginPath(); g.arc(-r * 1.25, 0, r * 0.9, -0.85, 0.85); g.stroke(); g.beginPath(); g.arc(r * 1.25, 0, r * 0.9, Math.PI - 0.85, Math.PI + 0.85); g.stroke();
+    g.restore();
+  }
+  // Schiedsrichterin: gestreiftes Shirt, Kappe, Pfeife; on = Timeout-Geste.
+  function referee(g, x, y, h, t, on) {
+    const s = h / 110; g.save(); g.translate(x, y); g.scale(s, s);
+    g.fillStyle = "rgba(0,0,0,.25)"; oval(g, 0, 0, 22, 5);
+    g.translate(0, on ? -Math.abs(Math.sin(t * 10)) * 5 : 0);
+    g.fillStyle = "#1E2433"; rr(g, -12, -32, 10, 32, 4); g.fill(); rr(g, 2, -32, 10, 32, 4); g.fill();
+    g.fillStyle = "#FFFFFF"; oval(g, -7, -1, 8, 4); oval(g, 7, -1, 8, 4);
+    if (on) {
+      g.strokeStyle = SKIN[1]; g.lineWidth = 7; g.lineCap = "round";
+      g.beginPath(); g.moveTo(-14, -62); g.lineTo(-6, -92); g.stroke(); g.beginPath(); g.moveTo(14, -62); g.lineTo(6, -98); g.stroke();
+      g.strokeStyle = "#FFFFFF"; g.lineWidth = 6; g.beginPath(); g.moveTo(-16, -96); g.lineTo(10, -96); g.moveTo(-2, -96); g.lineTo(-2, -82); g.stroke();
+    } else {
+      g.strokeStyle = SKIN[1]; g.lineWidth = 7; g.lineCap = "round";
+      g.beginPath(); g.moveTo(-15, -62); g.lineTo(-20, -40); g.stroke(); g.beginPath(); g.moveTo(15, -62); g.lineTo(20, -40); g.stroke();
+    }
+    g.save(); rr(g, -18, -70, 36, 42, 11); g.clip();
+    g.fillStyle = "#FFFFFF"; g.fillRect(-18, -70, 36, 42);
+    g.fillStyle = "#16233B"; for (let k = -18; k < 18; k += 8) g.fillRect(k, -70, 4, 42);
+    g.restore();
+    g.fillStyle = SKIN[1]; oval(g, 0, -84, 15, 15);
+    g.fillStyle = HAIR[2]; g.beginPath(); g.arc(0, -86, 15.5, Math.PI * 1.05, Math.PI * 1.95); g.fill();
+    g.save(); g.translate(12, -86); g.rotate(0.5 + Math.sin(t * 5) * 0.15); rr(g, -3, 0, 7, 18, 3); g.fill(); g.restore();
+    g.fillStyle = "#16233B"; rr(g, -15, -100, 30, 9, 4); g.fill(); g.fillRect(-2, -94, 22, 4);
+    g.fillStyle = "#2A2A2A"; oval(g, -5, -84, 1.8, 2.2); oval(g, 5, -84, 1.8, 2.2);
+    g.fillStyle = "#C0C8D2"; rr(g, -4, -77, 8, 4, 2); g.fill();
+    g.strokeStyle = "#FF7A1A"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-3, -75); g.quadraticCurveTo(-10, -66, 0, -60); g.stroke();
+    g.restore();
+  }
+  // Coach: Trainingsanzug, Kappe, Klemmbrett; on = Faust hoch, rennt auf der Stelle.
+  function coach(g, x, y, h, t, on) {
+    const s = h / 110, run = on ? Math.sin(t * 16) : 0; g.save(); g.translate(x, y); g.scale(s, s);
+    g.fillStyle = "rgba(0,0,0,.25)"; oval(g, 0, 0, 22, 5);
+    g.translate(0, on ? -Math.abs(run) * 5 : 0);
+    g.fillStyle = "#16233B";
+    g.save(); g.translate(-7, -32); g.rotate(run * 0.4); rr(g, -5, 0, 10, 32, 4); g.fill(); g.fillStyle = "#FF7A1A"; g.fillRect(3, 0, 2, 30); g.restore();
+    g.save(); g.translate(7, -32); g.rotate(-run * 0.4); g.fillStyle = "#16233B"; rr(g, -5, 0, 10, 32, 4); g.fill(); g.fillStyle = "#FF7A1A"; g.fillRect(3, 0, 2, 30); g.restore();
+    g.fillStyle = "#FFFFFF"; oval(g, -7 + run * 6, -1, 8, 4); oval(g, 7 - run * 6, -1, 8, 4);
+    g.strokeStyle = "#16233B"; g.lineWidth = 8; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(-15, -62); g.lineTo(-22, -46); g.lineTo(-10, -42); g.stroke();
+    g.fillStyle = "#F6EBD9"; rr(g, -20, -56, 16, 20, 2); g.fill(); g.fillStyle = "#7A4E24"; g.fillRect(-15, -58, 6, 3);
+    g.strokeStyle = "#16233B"; g.lineWidth = 1; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(-17, -50 + k * 5); g.lineTo(-7, -50 + k * 5); g.stroke(); }
+    g.strokeStyle = "#16233B"; g.lineWidth = 8;
+    const ra = on ? -2.7 + Math.sin(t * 10) * 0.2 : -0.4 + Math.sin(t * 2) * 0.2, hx = 15 + Math.sin(-ra) * 22, hy = -62 + Math.cos(ra) * 22;
+    g.beginPath(); g.moveTo(15, -62); g.lineTo(hx, hy); g.stroke();
+    g.fillStyle = SKIN[3]; oval(g, hx, hy, 5, 5);
+    g.fillStyle = "#16233B"; rr(g, -18, -70, 36, 42, 11); g.fill();
+    g.fillStyle = "#FF7A1A"; g.fillRect(-18, -60, 36, 4);
+    g.fillStyle = "#FFFFFF"; g.fillRect(-1, -70, 2, 40);
+    g.fillStyle = SKIN[3]; oval(g, 0, -84, 15, 15);
+    g.fillStyle = "#2A2A2A"; oval(g, -5, -84, 1.8, 2.2); oval(g, 5, -84, 1.8, 2.2);
+    g.fillStyle = "#3A2618"; rr(g, -9, -78, 18, 6, 3); g.fill();
+    g.strokeStyle = "#7A2E2E"; g.lineWidth = 1.6; g.beginPath(); g.arc(0, -74, 3.5, 0.3, Math.PI - 0.3); g.stroke();
+    g.fillStyle = "#FF7A1A"; rr(g, -16, -101, 32, 12, 6); g.fill(); g.fillRect(-2, -93, 24, 4);
+    g.fillStyle = "#FFFFFF"; oval(g, 0, -96, 3, 3);
+    g.restore();
+  }
+  function bubble(g, txt, x, y, minX, maxX) {
+    g.font = `800 14px "Barlow Condensed", "Barlow", sans-serif`;
+    const w = g.measureText(txt).width + 18, bx = Math.max(minX + w / 2, Math.min(maxX - w / 2, x));
+    g.fillStyle = "#FFFFFF"; rr(g, bx - w / 2, y - 24, w, 24, 12); g.fill();
+    g.beginPath(); g.moveTo(x - 5, y - 2); g.lineTo(x + 5, y - 2); g.lineTo(x, y + 6); g.fill();
+    g.fillStyle = "#FF7A1A"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(txt, bx, y - 11);
+  }
+
+  // ---------- Spielbild ----------
+  const S = setup("scene"), g = S.g, W = S.w, H = S.h;
+  let playoffs = false;
+  const parquet = (() => {
+    const c = document.createElement("canvas"); c.width = 48; c.height = 48; const p = c.getContext("2d");
+    const cols = ["#E8B77A", "#E2AE6F", "#EDC189", "#DDA765"];
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 2; k++) { p.fillStyle = cols[(r + k) % 4]; p.fillRect(k * 24 + (r % 2) * 12 - 12, r * 12, 24, 12); p.fillRect(k * 24 + (r % 2) * 12 + 36, r * 12, 24, 12); }
+    p.strokeStyle = "rgba(120,70,20,.18)"; p.lineWidth = 1;
+    for (let r = 0; r <= 4; r++) { p.beginPath(); p.moveTo(0, r * 12); p.lineTo(48, r * 12); p.stroke(); }
+    return g.createPattern(c, "repeat");
+  })();
+  const asphalt = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64; const p = c.getContext("2d");
+    p.fillStyle = "#5C6676"; p.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 500; i++) { p.fillStyle = `rgba(${Math.random() < 0.5 ? "255,255,255" : "0,0,0"},${Math.random() * 0.07})`; p.fillRect(Math.random() * 64, Math.random() * 64, 1.3, 1.3); }
+    return g.createPattern(c, "repeat");
+  })();
+  // Parkplatz-Raster und Busse (Spalte, Zeile, Richtung, Länge, Team)
+  const C0 = 40, AX = 55, AY = 452, COLS = 7, ROWS = 7;
+  const BUSES = [[1, 0, "U", 2, 1], [0, 4, "D", 3, 0], [4, 1, "R", 3, 3], [5, 1, "U", 2, 4], [6, 4, "U", 3, 0], [3, 3, "D", 2, 6], [2, 4, "L", 2, 2],
+    [5, 4, "R", 2, 5], [2, 6, "L", 3, 7], [5, 5, "U", 2, 1], [1, 5, "D", 2, 3], [4, 3, "L", 2, 2], [2, 2, "R", 2, 4]];
+  const DIR = { U: [0, -1, -Math.PI / 2], D: [0, 1, Math.PI / 2], L: [-1, 0, Math.PI], R: [1, 0, 0] };
+  const RING = Array.from({ length: 64 }, (_, i) => ({ team: [0, 0, 1, 1, 3, 3, 4, 4, 5, 6][(i * 7) % 10], v: i }));
+  function stadium(cx, cy, straight, r) {
+    g.beginPath(); g.moveTo(cx - straight / 2, cy + r); g.arc(cx - straight / 2, cy, r, Math.PI / 2, Math.PI * 1.5); g.lineTo(cx + straight / 2, cy - r); g.arc(cx + straight / 2, cy, r, -Math.PI / 2, Math.PI / 2); g.closePath();
+  }
+  function ringPoint(u, cx, cy, straight, r) {
+    const P = 2 * straight + 2 * Math.PI * r; let d = ((u % 1) + 1) % 1 * P;
+    if (d < straight) return [cx + straight / 2 - d, cy + r];
+    d -= straight; if (d < Math.PI * r) { const a = Math.PI / 2 + d / r; return [cx - straight / 2 + Math.cos(a) * r, cy + Math.sin(a) * r]; }
+    d -= Math.PI * r; if (d < straight) return [cx - straight / 2 + d, cy - r];
+    d -= straight; const a = -Math.PI / 2 + d / r; return [cx + straight / 2 + Math.cos(a) * r, cy + Math.sin(a) * r];
+  }
+  function drawScene(t) {
+    g.clearRect(0, 0, W, H);
+    // Hallenboden Foyer
+    g.fillStyle = parquet; g.fillRect(0, 0, W, 300);
+    // Bande oben mit Teamfahnen
+    g.fillStyle = "#16233B"; g.fillRect(0, 0, W, 64);
+    TEAMS.forEach((tm, i) => { const x = 12 + i * 47; g.fillStyle = tm.c; g.beginPath(); g.moveTo(x, 64); g.lineTo(x + 38, 64); g.lineTo(x + 19, 82 + Math.sin(t * 2 + i) * 2); g.closePath(); g.fill(); glyph(g, tm.g, x + 19, 70, 4.5, tm.c === "#FFC400" ? "#16233B" : "#FFFFFF"); });
+    // Kopfzeile
+    g.fillStyle = "#FF7A1A"; rr(g, 14, 16, 150, 34, 17); g.fill();
+    g.fillStyle = "#16233B"; g.font = `800 18px "Barlow Condensed", sans-serif`; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText("3  Kiez-Derby", 30, 34);
+    ["#FFFFFF", "#FFFFFF", "#FFFFFF"].forEach((c, i) => { g.fillStyle = "#24365C"; rr(g, W - 132 + i * 40, 16, 34, 34, 11); g.fill(); });
+    ball(g, W - 115, 33, 9, 0); g.fillStyle = "#F6EBD9"; g.font = `800 16px "Barlow Condensed", sans-serif`; g.textAlign = "center"; g.fillText("↺", W - 75, 34); g.fillText("♪", W - 35, 34);
+    // Laufbahn (Wartering) als Tartanbahn
+    const cx = W / 2, cy = 196, st = 84, r = 58;
+    g.fillStyle = "#D9573C"; stadium(cx, cy, st, r + 26); g.fill();
+    g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = 1.5;
+    for (const k of [-26, -13, 0, 13, 26]) { stadium(cx, cy, st, r + k); g.stroke(); }
+    g.fillStyle = "#3BB273"; stadium(cx, cy, st, r - 27); g.fill();
+    g.strokeStyle = "#FFFFFF"; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, 20, 0, 7); g.stroke(); g.beginPath(); g.moveTo(cx, cy - 35); g.lineTo(cx, cy + 35); g.stroke();
+    ball(g, cx, cy, 10, t * 0.6);
+    // Zuläufe: Eingang links und rechts
+    for (const [ex, lab] of [[cx - 70, "Eingang A"], [cx + 70, "Eingang B"]]) {
+      g.fillStyle = "#C9C1B2"; g.fillRect(ex - 28, 86, 56, 30);
+      g.fillStyle = "#16233B"; rr(g, ex - 32, 84, 64, 16, 8); g.fill();
+      g.fillStyle = "#FFC400"; g.font = `800 11px "Barlow Condensed", sans-serif`; g.textAlign = "center"; g.fillText(lab, ex, 92.5);
+    }
+    // Spielerinnen auf der Bahn
+    const figs = [];
+    RING.forEach((p, i) => { const lane = i % 4, u = (i / RING.length) * 0.62 + 0.15 + t * 0.018; const [x, y] = ringPoint(u, cx, cy, st, r + 19 - lane * 13); figs.push([x, y + 6, p]); });
+    figs.sort((a, b) => a[1] - b[1]).forEach(([x, y, p]) => player(g, x, y, 15, TEAMS[p.team], p.v, t));
+    // Deko links und rechts: Anzeigetafel, Snackbar
+    g.fillStyle = "#16233B"; rr(g, 6, 120, 52, 40, 6); g.fill();
+    g.fillStyle = "#FF3B30"; g.font = `400 16px Anton, Impact, sans-serif`; g.textAlign = "center"; g.fillText("54", 19, 145); g.fillText("49", 45, 145);
+    g.fillStyle = "#FFC400"; g.font = `800 8px "Barlow Condensed", sans-serif`; g.fillText("HEIM  GAST", 32, 129); g.fillText(`Q4  0${Math.floor(t) % 10}:2${Math.floor(t * 3) % 10}`, 32, 154);
+    g.fillStyle = "#C9C1B2"; g.fillRect(20, 160, 3, 18); g.fillRect(41, 160, 3, 18);
+    g.fillStyle = "#FFFFFF"; rr(g, W - 58, 150, 52, 28, 5); g.fill();
+    for (let k = 0; k < 5; k++) { g.fillStyle = k % 2 ? "#FFFFFF" : "#FF7A1A"; g.fillRect(W - 60 + k * 11, 138, 11, 12); }
+    g.fillStyle = "#16233B"; g.font = `800 10px "Barlow Condensed", sans-serif`; g.fillText("SNACKS", W - 32, 166);
+    g.fillStyle = "#FFE066"; for (let k = 0; k < 5; k++) oval(g, W - 44 + k * 4, 146 - (k % 2) * 2, 3, 3);
+    // Ballwagen
+    g.fillStyle = "#8C97A6"; rr(g, 8, 236, 44, 24, 4); g.fill();
+    for (let k = 0; k < 4; k++) ball(g, 15 + k * 10, 243 + (k % 2) * 6, 6, k);
+    g.fillStyle = "#33414D"; oval(g, 14, 262, 3.5, 3.5); oval(g, 46, 262, 3.5, 3.5);
+    // Courts (Gates)
+    g.fillStyle = "#24365C"; g.fillRect(0, 300, W, 130);
+    for (let i = 0; i < 5; i++) {
+      const x = 10 + i * 75, y = 308, w = 69, h = 92;
+      g.fillStyle = parquet; g.fillRect(x, y, w, h);
+      g.strokeStyle = "#FFFFFF"; g.lineWidth = 1.5; g.strokeRect(x + 2, y + 2, w - 4, h - 4);
+      g.fillStyle = i === 4 ? "rgba(16,27,48,.55)" : TEAMS[[0, 3, 4, 6][i]].c + "55"; g.fillRect(x + w / 2 - 14, y + 2, 28, 30);
+      g.beginPath(); g.arc(x + w / 2, y + 32, 14, 0, Math.PI); g.stroke();
+      g.strokeStyle = "#FF7A1A"; g.lineWidth = 2; g.beginPath(); g.arc(x + w / 2, y + 10, 5, 0, 7); g.stroke();
+      g.fillStyle = "#16233B"; g.font = `800 10px "Barlow Condensed", sans-serif`; g.textAlign = "left"; g.fillText("C" + (i + 1), x + 5, y + 10);
+      if (i === 4) { g.fillStyle = "rgba(255,255,255,.85)"; g.textAlign = "center"; g.font = `800 13px "Barlow Condensed", sans-serif`; g.fillText("2. Chance", x + w / 2, y + h / 2 + 6); }
+    }
+    // Gedockte Busse an Court 1 bis 4, mit Füllstand
+    [[0, 2, 0, "16"], [1, 3, 3, "9"], [2, 2, 4, "12"], [3, 2, 6, "20"]].forEach(([i, len, tm, n]) => {
+      const x = 10 + i * 75 + 34, y = 368;
+      bus(g, x, y, -Math.PI / 2, len, 30, TEAMS[tm]);
+      g.fillStyle = TEAMS[tm].c; rr(g, x - 15, 412, 30, 16, 8); g.fill(); g.fillStyle = "#FFFFFF"; g.font = `800 12px "Barlow Condensed", sans-serif`; g.textAlign = "center"; g.fillText(n, x, 420.5);
+    });
+    // Laufende Spielerin vom Foyer zum Court
+    const u = (t * 0.5) % 1; player(g, 120 + u * 20, 296 + u * 6, 13, TEAMS[0], 3, t * 2);
+    // Parkplatz
+    g.fillStyle = "#3BB273"; g.fillRect(0, 432, W, H - 432);
+    g.fillStyle = asphalt; rr(g, AX - 8, AY - 8, COLS * C0 + 16, ROWS * C0 + 16, 14); g.fill();
+    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 1.5;
+    for (let c = 0; c <= COLS; c++) { g.beginPath(); g.moveTo(AX + c * C0, AY); g.lineTo(AX + c * C0, AY + ROWS * C0); g.stroke(); }
+    g.setLineDash([6, 6]); for (let r2 = 1; r2 < ROWS; r2++) { g.beginPath(); g.moveTo(AX, AY + r2 * C0); g.lineTo(AX + COLS * C0, AY + r2 * C0); g.stroke(); } g.setLineDash([]);
+    BUSES.forEach(([x, y, d, len, tm]) => {
+      const [dx, dy, ang] = DIR[d];
+      const nx = AX + (x + 0.5) * C0, ny = AY + (y + 0.5) * C0;
+      bus(g, nx - (dx * (len - 1) * C0) / 2, ny - (dy * (len - 1) * C0) / 2, ang, len, C0, TEAMS[tm]);
+    });
+    // Schiri links, Coach rechts
+    const on = Math.floor(t / 2.5) % 3;
+    referee(g, 28, 760, 66, t, on === 1);
+    coach(g, W - 28, 760, 66, t, on === 2);
+    g.font = `800 11px "Barlow Condensed", sans-serif`; g.textAlign = "center";
+    [[28, "langsam"], [W - 28, "schnell"]].forEach(([x, s]) => { g.fillStyle = "#16233B"; rr(g, x - 25, 766, 50, 15, 7.5); g.fill(); g.fillStyle = "#FFC400"; g.fillText(s, x, 774); });
+    if (on === 1) bubble(g, "Timeout!", 28, 682, 4, W - 4);
+    if (on === 2) bubble(g, "Fast Break!", W - 28, 682, 4, W - 4);
+    // Playoffs: Flutlichtkegel und Konfetti
+    if (playoffs) {
+      g.save(); g.globalCompositeOperation = "lighter";
+      [[60, -1], [W - 60, 1]].forEach(([x0, s], i) => {
+        const a = Math.sin(t * 0.8 + i * 2) * 0.35 * s;
+        const tx = W / 2 + Math.sin(t * 0.8 + i * 2) * 140, ty = 420;
+        const grd = g.createRadialGradient(tx, ty, 10, tx, ty, 160); grd.addColorStop(0, "rgba(255,240,200,.22)"); grd.addColorStop(1, "rgba(255,240,200,0)");
+        g.fillStyle = grd; g.beginPath(); g.moveTo(x0, 0); g.lineTo(tx - 120, ty + 60); g.lineTo(tx + 120, ty + 60); g.closePath(); g.fill(); void a;
+      });
+      g.restore();
+      g.fillStyle = "rgba(16,27,48,.18)"; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 70; i++) {
+        const x = (i * 53.7 + Math.sin(t + i) * 12) % W, y = ((i * 97.1 + t * 60) % (H + 20)) - 10;
+        g.save(); g.translate(x, y); g.rotate(t * 3 + i); g.fillStyle = [TEAMS[i % 8].c, "#FFFFFF"][i % 2]; g.fillRect(-3, -1.5, 6, 3); g.restore();
+      }
+      g.fillStyle = "#FFC400"; rr(g, W / 2 - 60, 404, 120, 26, 13); g.fill();
+      g.fillStyle = "#16233B"; g.font = `400 16px Anton, Impact, sans-serif`; g.textAlign = "center"; g.fillText("PLAYOFFS", W / 2, 418);
+    }
+  }
+
+  // ---------- Einzelteile ----------
+  function staticParts(t) {
+    const B = setup.cache.buses, T = setup.cache.teams, R = setup.cache.crew;
+    B.g.clearRect(0, 0, B.w, B.h);
+    B.g.fillStyle = "#24365C"; B.g.fillRect(0, 0, B.w, B.h);
+    [[2, 0, 90, "16 Plätze"], [3, 1, 270, "24 Plätze"], [4, 2, 495, "40 Plätze"]].forEach(([len, tm, x, lab]) => {
+      bus(B.g, x, 86, 0, len, 62, [TEAMS[0], TEAMS[1], TEAMS[2]][tm]);
+      B.g.fillStyle = "#9FB0CC"; B.g.font = `800 17px "Barlow Condensed", sans-serif`; B.g.textAlign = "center"; B.g.fillText(lab, x, 150);
+    });
+    T.g.clearRect(0, 0, T.w, T.h);
+    TEAMS.forEach((tm, i) => {
+      const cx = 80 + (i % 4) * 160, y = i < 4 ? 92 : 214;
+      player(T.g, cx - 22, y, 40, tm, i * 3 + 1, t);
+      crest(T.g, cx + 30, y - 34, 1.6, tm);
+      T.g.fillStyle = "#F6EBD9"; T.g.font = `800 15px "Barlow Condensed", sans-serif`; T.g.textAlign = "center"; T.g.fillText(tm.name, cx, y + 24);
+    });
+    R.g.clearRect(0, 0, R.w, R.h);
+    const on = Math.floor(t / 2) % 2;
+    referee(R.g, 170, 230, 170, t, on === 0); coach(R.g, 470, 230, 170, t, on === 1);
+    if (on === 0) bubble(R.g, "Timeout!", 170, 46, 4, R.w - 4); else bubble(R.g, "Fast Break!", 470, 46, 4, R.w - 4);
+  }
+  setup.cache = { buses: setup("buses"), teams: setup("teams"), crew: setup("crew") };
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const start = performance.now();
+  function frame() {
+    const t = reduce ? 3 : (performance.now() - start) / 1000;
+    drawScene(t); staticParts(t);
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  const setMode = p => { playoffs = p; document.getElementById("normalBtn").setAttribute("aria-pressed", !p); document.getElementById("playoffBtn").setAttribute("aria-pressed", p); if (reduce) frame(); };
+  document.getElementById("normalBtn").addEventListener("click", () => setMode(false));
+  document.getElementById("playoffBtn").addEventListener("click", () => setMode(true));
+  (document.fonts?.ready || Promise.resolve()).then(frame);
+})();
+</script>

@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-10-30T21:43:29.573Z",
         "reason": "Claude: #9AA6B2 is the dark-mode muted token, only shown on dark background #14181D; checker paired it with light card color"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "look/basketball.html"
+        ],
+        "createdAt": "2026-10-31T10:30:09.000Z",
+        "reason": "Claude: single dark theme; muted #9FB0CC and orange #FF7A1A sit on #101B30/#1A2A48 (about 6:1), checker paired them with a light default background"
       }
     ]
   }
