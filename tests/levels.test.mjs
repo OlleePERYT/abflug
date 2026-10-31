@@ -83,6 +83,9 @@ try {
     without += a.planes.filter(p => p.revealed).length; withL += b.planes.filter(p => p.revealed).length;
   }
   assert.ok(withL > without, "Leuchtturm deckt mehr auf");
+  const lv9 = A.generate(9), all = A.createState(lv9, { lookahead: 99 }), two = A.createState(lv9, { lookahead: 2 }), one = A.createState(lv9, { lookahead: 1 });
+  assert.ok(all.planes.every(p => p.revealed), "Leuchtfeuer zeigt alles");
+  assert.ok(two.planes.filter(p => p.revealed).length >= one.planes.filter(p => p.revealed).length, "Stufe 2 mindestens wie Stufe 1");
   console.log(`ok  Leuchtturm (${without} -> ${withL} sichtbar)`);
 } catch (e) { failed++; console.log(`FAIL Leuchtturm: ${e.message}`); }
 process.exit(failed ? 1 : 0);
