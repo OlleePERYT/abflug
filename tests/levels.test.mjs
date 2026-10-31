@@ -73,4 +73,16 @@ try {
   assert.equal(st.planes[1].where, "taxi");
   console.log("ok  Schlepper");
 } catch (e) { failed++; console.log(`FAIL Schlepper: ${e.message}`); }
+// Leuchtturm: Mit lookahead sind mindestens so viele unbekannte Ziele sichtbar wie ohne, und mehr.
+try {
+  let without = 0, withL = 0;
+  for (const i of [5, 7, 8, 9]) {
+    const lv = A.generate(i);
+    const a = A.createState(lv), b = A.createState(lv, { lookahead: true });
+    a.planes.forEach((p, k) => assert.ok(!p.revealed || b.planes[k].revealed, "lookahead verdeckt nichts"));
+    without += a.planes.filter(p => p.revealed).length; withL += b.planes.filter(p => p.revealed).length;
+  }
+  assert.ok(withL > without, "Leuchtturm deckt mehr auf");
+  console.log(`ok  Leuchtturm (${without} -> ${withL} sichtbar)`);
+} catch (e) { failed++; console.log(`FAIL Leuchtturm: ${e.message}`); }
 process.exit(failed ? 1 : 0);
