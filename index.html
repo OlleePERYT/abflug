@@ -60,6 +60,8 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .tabs { display: flex; gap: 6px; justify-content: center; margin: -2px 0 12px; }
 .tabs button { border: 0; border-radius: 999px; padding: 6px 14px; font-family: var(--font-display); font-weight: 800; font-size: 15px; background: #FFFFFF; color: var(--teal); box-shadow: 0 2px 0 #E3C98F; cursor: pointer; }
 .tabs button.on { background: var(--teal); color: var(--sun); box-shadow: 0 2px 0 var(--teal-dark); }
+.levels button.storm:not(:disabled) { background: #3E4A8C; box-shadow: 0 3px 0 #262E5E; }
+.levels button.storm::before { content: "Sturm"; font-family: var(--font-body); font-size: 9px; color: #C9D3FF; }
 .levels button.done { background: #FFC400; color: var(--teal-dark); box-shadow: 0 3px 0 #D99A00; }
 .levels button.done small { color: var(--teal-dark); }
 .medal { width: 76px; height: 76px; margin: 10px auto 2px; border-radius: 50%; display: grid; place-items: center; color: #FFFFFF; font-size: 42px; background: radial-gradient(circle at 35% 30%, #FFF3A0, #FFC400 60%, #D99A00); border: 4px solid #FFFFFF; box-shadow: 0 4px 0 #B07A00; animation: starpop .5s cubic-bezier(.3,1.6,.5,1) both; }
@@ -86,6 +88,14 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .loot-stamps img { width: 24px; height: 16px; border-radius: 3px; box-shadow: 0 0 0 2px #FFFFFF; }
 .loot-stamps span { margin-left: 4px; }
 .minis { display: flex; gap: 8px; }
+.progress { margin: 0 0 12px; }
+.progress .meter { margin: 0 0 6px; height: 16px; border-radius: 8px; background: #E8DCC0; }
+.progress-l { display: flex; align-items: baseline; justify-content: center; gap: 6px; font-weight: 800; font-size: 14px; color: var(--muted); }
+.progress-l b { font-family: var(--font-display); font-size: 24px; color: var(--coral); }
+.progress-l span { font-size: 12px; font-weight: 700; }
+.loot.one { grid-template-columns: 1fr; }
+.chip-l.warn { background: #FFE3DE; box-shadow: 0 2px 0 #F2B3A8; }
+.chip-l.warn b { color: var(--coral-dark); }
 .mini { flex: 1; min-height: 46px; border: 0; border-radius: 16px; background: #FFFFFF; color: var(--teal); font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1.1; box-shadow: 0 3px 0 #E3C98F; cursor: pointer; display: grid; place-content: center; padding: 4px 6px; }
 .mini small { font-family: var(--font-body); font-size: 11px; font-weight: 700; color: var(--muted); }
 .mini.hot { background: var(--sun); box-shadow: 0 3px 0 #D9B330; position: relative; }
@@ -583,8 +593,10 @@ window.Abflug = (() => {
     };
   }
 
+  // Jedes fünfte Level ab Level 5 ist ein Sturm-Level: mehr und tiefer zugeparkte Ziele.
+  const isStorm = li => li >= 4 && (li + 1) % 5 === 0;
   function generate(li) {
-    const L = levelDef(li);
+    const L = levelDef(li), storm = isStorm(li);
     if (L.fixed) return fixedLevel(L);
     let best = null;
     const t0 = Date.now();
@@ -592,15 +604,17 @@ window.Abflug = (() => {
       // Zeitbudget, damit der Levelstart nicht hängt.
       if (best && Date.now() - t0 > 250) break;
       // Freispielen wird mit dem Level häufiger und tiefer.
-      const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919), { p: Math.min(0.75, 0.12 + 0.07 * li), maxB: Math.min(3, 1 + (li >> 1)) });
+      const p = Math.min(0.75, 0.12 + 0.07 * li), maxB = Math.min(3, 1 + (li >> 1));
+      const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919), storm ? { p: Math.min(0.9, p + 0.2), maxB: maxB + 1 } : { p, maxB });
       if (!lv || !solve(lv)) continue;
       if (!best || lv.planes.length > best.planes.length) best = lv;
       if (lv.planes.length >= L.planes * (L.accept || 0.9)) break;
     }
+    if (best) best.storm = storm;
     return best;
   }
 
-  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, levelDef, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
+  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, levelDef, isStorm, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
 })();
 </script>
 
@@ -1043,7 +1057,7 @@ window.Abflug = (() => {
     ringT = 0; ended = false; shift = { L: 0, R: 0 }; gateFlash = -9; shakeT = -9; pulse = [];
     $("#overlay").hidden = true;
     $("#lvlNum").textContent = levelIdx + 1;
-    $("#lvlTxt").textContent = chal ? `${lv.name} · ${chal.name}` : lv.name;
+    $("#lvlTxt").textContent = chal ? `${lv.name} · ${chal.name}` : lv.storm ? `${lv.name} · Sturm` : lv.name;
     $("#lvlBtn").setAttribute("aria-label", `Level ${levelIdx + 1}: ${lv.name}. Level wählen`);
     layout();
     tut = null; newStamps = []; towArmed = false;
@@ -1053,6 +1067,7 @@ window.Abflug = (() => {
     syncTow();
     if (A.levelDef(levelIdx).tutorial) { tut = { step: -1 }; tutNext(); }
     else if (chal) showHint(`<b>Herausforderung ${chal.name}:</b> ${chal.text} Ohne Schlepper und ohne zweite Chance.`, 7);
+    else if (lv.storm) showHint("<b>Sturm!</b> Hier sind mehr Ziele tief zugeparkt. Dafür gibt es doppelte Muscheln.", 6.5);
     else if (INTRO[levelIdx]) showHint(INTRO[levelIdx], 6.5); else hideHint();
     if (tows) setTimeout(() => toast(streak ? `Serie ${streak}: ${tows} Schlepper bereit` : `Kontrollturm: ${tows} Schlepper bereit`, 2200), 400);
   }
@@ -1229,12 +1244,12 @@ window.Abflug = (() => {
         const fresh = Math.max(0, stars - before), starGain = fresh * fx("bar", "starBonus", 10);
         if (fresh) { starsBy[levelIdx] = stars; store.set("abflug.stars", starsBy); }
         const base = 10 + Math.round(lv.tourists / 40) + 3 * Math.min(3, streak);
-        const gain = Math.round(base * (1 + fx("bar", "bonus", 0))) + tips + starGain;
+        const gain = Math.round(base * (1 + fx("bar", "bonus", 0)) * (lv.storm ? 2 : 1)) + tips + starGain;
         shells += gain; store.set("abflug.shells", shells);
         const item = nextBuy(), canBuild = item && shells >= item.cost;
         // Kurz und klar: Sterne mit Bedingung, eine Zeile Belohnungen, ein Hauptknopf, kleine Nebenknöpfe.
         const goals = ["Geschafft", "Ohne 2. Chance", "Ohne Schlepper"], tw = Math.min(3, streak);
-        const why = [has("bar") ? "Strandbar" : "", tips ? "Souvenirs" : "", fresh ? `${fresh} neue Sterne` : ""].filter(Boolean).join(", ");
+        const why = [lv.storm ? "Sturm ×2" : "", has("bar") ? "Strandbar" : "", tips ? "Souvenirs" : "", fresh ? `${fresh} neue Sterne` : ""].filter(Boolean).join(", ");
         const canChal = levelIdx > 0 && !chalDone[levelIdx];
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1} geschafft</div>
@@ -1264,15 +1279,22 @@ window.Abflug = (() => {
         // Zweite Chance: einmal pro Level ein Extra-Gate. Ist sie verbraucht, ist die Serie weg.
         const canGate = S.gateCount < 5, left = lv.tourists - S.boarded, had = streak;
         if (!canGate) setStreak(0);
+        // Kompakt wie die Gewinnkarte: Fortschritt groß, Serie als Kachel, ein Hauptknopf.
+        const pct = Math.round((S.boarded / lv.tourists) * 100);
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1}</div>
           <h2>${left <= lv.tourists * 0.25 ? "So knapp!" : "Abflug verzögert"}</h2>
-          <p>Alle Gates sind belegt, und niemand im Wartebereich passt. Nur noch <b>${left}</b> von ${lv.tourists} Touristen warten.</p>
-          <div class="meter"><span style="width:${Math.round((S.boarded / lv.tourists) * 100)}%"></span></div>
-          ${had ? `<p class="small"><b>${canGate ? `Deine Siegesserie von ${had} steht auf dem Spiel.` : `Deine Siegesserie von ${had} ist vorbei.`}</b></p>` : ""}
+          <p class="small">Alle Gates belegt, und niemand im Wartebereich passt.</p>
+          <div class="progress" role="img" aria-label="${pct} Prozent an Bord">
+            <div class="meter"><span style="width:${pct}%"></span></div>
+            <div class="progress-l"><b>${pct} %</b> an Bord<span>noch ${left} warten</span></div>
+          </div>
+          ${had ? `<div class="loot one"><div class="chip-l ${canGate ? "warn" : ""}"><b>Serie ${had}</b><small>${canGate ? "steht auf dem Spiel" : "ist vorbei"}</small></div></div>` : ""}
           <div class="actions">
-            ${canGate ? `<button class="btn" id="extraBtn">Zweite Chance: Extra-Gate</button><button class="btn alt" id="againBtn">Aufgeben</button>` : `<button class="btn" id="againBtn">Nochmal versuchen</button>`}
+            ${canGate ? `<button class="btn" id="extraBtn">Zweite Chance: Extra-Gate</button><div class="minis"><button class="mini" id="againBtn">Aufgeben</button><button class="mini" id="menuBtn">Levelwahl</button></div>` : `<button class="btn" id="againBtn">Nochmal versuchen</button><div class="minis"><button class="mini" id="isleBtn">Ausbauen</button><button class="mini" id="menuBtn">Levelwahl</button></div>`}
           </div>`);
+        $("#menuBtn").addEventListener("click", () => { if (canGate) setStreak(0); showMenu("lvl"); });
+        $("#isleBtn")?.addEventListener("click", () => showShop(levelIdx));
         $("#extraBtn")?.addEventListener("click", () => {
           openExtraGate(); $("#overlay").hidden = true; ended = false;
           const bonus = fx("turm", "extra", 0);
@@ -1816,6 +1838,7 @@ window.Abflug = (() => {
     drawGates(t);
     drawApron(t);
     drawCrew(t);
+    if (lv.storm) drawStorm(t);
     for (const [id, v] of vis) {
       if (v.kind !== "taxi") continue;
       const p = S.planes[id];
@@ -1862,6 +1885,19 @@ window.Abflug = (() => {
     drawTutorial(t);
   }
 
+  // Sturm-Level: dunklerer Himmel, Regen, ab und zu ein Blitz.
+  function drawStorm(t) {
+    ctx.fillStyle = "rgba(30,36,90,.16)"; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(220,235,255,.45)"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i < 70; i++) {
+      const x = ((i * 97.3 + t * 60) % (W + 40)) - 20, y = ((i * 53.7 + t * 520) % (H + 40)) - 20;
+      ctx.moveTo(x, y); ctx.lineTo(x - 4, y + 12);
+    }
+    ctx.stroke();
+    const f = (t * 0.9) % 6.5;
+    if (f < 0.18) { ctx.fillStyle = `rgba(255,255,255,${(f < 0.06 || f > 0.12 ? 0.28 : 0.1)})`; ctx.fillRect(0, 0, W, H); }
+  }
   function drawSea(t) {
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, C.sea1); g.addColorStop(1, C.sea2);
@@ -2173,7 +2209,7 @@ window.Abflug = (() => {
         const c = chalFor(i), open = i > 0 && i < maxLevel, done = chalDone[i];
         return `<button data-l="${i}" ${open ? "" : "disabled"} class="${done ? "done" : ""}" aria-label="Level ${i + 1}: ${L.name}, Herausforderung ${c.name}${done ? ", gemeistert" : ""}">${i + 1}<small>${i === 0 ? "" : done ? "Medaille" : c.short}</small></button>`;
       }
-      return `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx && !chal ? "cur" : ""}" aria-label="Level ${i + 1}: ${L.name}, ${st} von 3 Sternen">${i + 1}<small>${i <= maxLevel ? "★".repeat(st) + "☆".repeat(3 - st) : ""}</small></button>`;
+      return `<button data-l="${i}" ${i > maxLevel ? "disabled" : ""} class="${i === levelIdx && !chal ? "cur" : ""} ${A.isStorm(i) ? "storm" : ""}" aria-label="Level ${i + 1}: ${L.name}, ${st} von 3 Sternen">${i + 1}<small>${i <= maxLevel ? "★".repeat(st) + "☆".repeat(3 - st) : ""}</small></button>`;
     }).join("");
     const total = Object.values(starsBy).reduce((a, b) => a + b, 0), medals = Object.keys(chalDone).length;
     showCard(`

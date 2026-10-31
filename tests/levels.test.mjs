@@ -94,4 +94,11 @@ try {
   st.planes.forEach(p => assert.equal(p.revealed, p.where === "apron" && A.freeRun(st, p) < 0));
   console.log("ok  Nebel");
 } catch (e) { failed++; console.log(`FAIL Nebel: ${e.message}`); }
+// Sturm-Level: jedes fünfte ab Level 5, als solche markiert.
+try {
+  assert.deepEqual([0, 1, 2, 3, 4, 9, 14].map(A.isStorm), [false, false, false, false, true, true, true]);
+  assert.equal(A.generate(4).storm, true);
+  assert.equal(A.generate(3).storm, false);
+  console.log("ok  Sturm");
+} catch (e) { failed++; console.log(`FAIL Sturm: ${e.message}`); }
 process.exit(failed ? 1 : 0);
