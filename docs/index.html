@@ -1245,6 +1245,8 @@ window.Abflug = (() => {
     if (ended || !S || !$("#overlay").hidden || peeking) return;
     const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / Z, y = (e.clientY - r.top) / Z;
     // Terminal links und rechts vom Wartering: Bauplätze, Antippen öffnet den Ausbau.
+    const tf = lay.tafel;
+    if (tf && !tut && Math.abs(x - tf.x) < tf.w / 2 + 4 && y < tf.y + 4 && y > tf.y - tf.h - 4) { showTafel(); return; }
     if (y < lay.gy0 - 10 && y > lay.top + 20 && !tut) {
       const ringL = lay.x0 - lay.rad - lay.laneW / 2 - 6, ringR = lay.x1 + lay.rad + lay.laneW / 2 + 6;
       if (x < ringL || x > ringR) { showShop(); return; }
@@ -1602,7 +1604,11 @@ window.Abflug = (() => {
     if (has("wimpel")) drawWimpel(t, top + 10);
     item("eis", xL, y1, k, drawEis, t);
     item("souvenir", xL, y2, k, drawSouvenir, t);
-    item("tafel", xR, y1, k * 1.2, drawTafel, t);
+    // Abflugtafel füllt die ganze Seitenbreite. Antippen öffnet die große Liste.
+    const kt = Math.max(0.7, Math.min(1.3, (wR - 4) / 56));
+    const rows = fx("tafel", "rows", 3);
+    lay.tafel = has("tafel") ? { x: xR, y: y1, k: kt, w: 60 * kt, h: (30 + rows * 15 + 14) * kt } : null;
+    item("tafel", xR, y1, kt, drawTafel, t);
     item("band", xR, y2, k, drawBand, t);
   }
   function sides() {
@@ -1729,24 +1735,34 @@ window.Abflug = (() => {
     ctx.fillStyle = "#F2CF72"; oval(ctx, -10, -19, 7, 2.5); oval(ctx, -10, -21, 3.5, 2.5); oval(ctx, 8, -19, 7, 2.5); oval(ctx, 8, -21, 3.5, 2.5);
   }
   function drawTafel(t) {
-    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 24, 4);
-    const rows = fx("tafel", "rows", 3), top = -50 - (rows - 3) * 8.5;
+    ctx.fillStyle = "rgba(60,40,10,.18)"; oval(ctx, 0, 1, 26, 4);
+    const rows = fx("tafel", "rows", 3), top = -14 - 12 - 16 - rows * 15;
     ctx.fillStyle = "#4E6A72"; ctx.fillRect(-16, -14, 3, 14); ctx.fillRect(13, -14, 3, 14);
     ctx.fillStyle = "#1E2B33"; rr(ctx, -28, top, 56, -12 - top, 6); ctx.fill();
-    ctx.fillStyle = "#FFD23F"; ctx.font = `800 7px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("ABFLUG", 0, top + 6);
+    ctx.fillStyle = "#FFD23F"; ctx.font = `800 9px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("ABFLUG", 0, top + 8);
     // Die Tafel verrät die nächsten Gruppen, die noch nicht im Zulauf zu sehen sind.
     const next = upcoming().slice(0, rows), flip = Math.floor(t / 2.2) % rows;
     for (let i = 0; i < rows; i++) {
-      const y = top + 13 + i * 8.5, g = next[i], flick = i === flip && (t % 2.2) < 0.25;
-      if (!g) { ctx.fillStyle = "#3A4A55"; for (let k = 0; k < 6; k++) ctx.fillRect(-24 + k * 8, y + 2, 6, 2.5); continue; }
+      const y = top + 17 + i * 15, g = next[i], flick = i === flip && (t % 2.2) < 0.25;
+      if (!g) { ctx.fillStyle = "#3A4A55"; for (let k = 0; k < 5; k++) ctx.fillRect(-23 + k * 9.5, y + 5, 7, 3); continue; }
       const D = A.DEST[g.dest];
-      ctx.save(); ctx.beginPath(); ctx.rect(-24, y, 10, 6.5); ctx.clip(); drawFlag(ctx, D.id, -24, y, 10, 6.5); ctx.restore();
-      ctx.fillStyle = D.color; oval(ctx, -6, y + 3.2, 3.6, 3.6);
-      glyph(ctx, GLYPH[D.id], -6, y + 3.2, 2.4, D.id === "JP" ? D.text : "#FFFFFF");
-      ctx.fillStyle = flick ? "#FFFFFF" : "#FFD23F"; ctx.font = `800 7.5px ${FONT}`; ctx.textAlign = "left";
-      ctx.fillText(`${g.side === "L" ? "◀" : "▶"} ${g.n}`, 2, y + 3.6);
+      ctx.save(); ctx.beginPath(); ctx.rect(-25, y, 17, 11.5); ctx.clip(); drawFlag(ctx, D.id, -25, y, 17, 11.5); ctx.restore();
+      ctx.fillStyle = D.color; oval(ctx, -1, y + 5.8, 5.2, 5.2);
+      glyph(ctx, GLYPH[D.id], -1, y + 5.8, 3.4, D.id === "JP" ? D.text : "#FFFFFF");
+      ctx.fillStyle = flick ? "#FFFFFF" : "#FFD23F"; ctx.font = `800 11.5px ${FONT}`; ctx.textAlign = "left";
+      ctx.fillText(`${g.side === "L" ? "◀" : "▶"}${g.n}`, 6, y + 6.4);
     }
+  }
+  // Große Liste der nächsten Gruppen, zum Lesen auf dem Handy.
+  function showTafel() {
+    const rows = fx("tafel", "rows", 3), next = upcoming().slice(0, rows);
+    showCard(`
+      <div class="eyebrow">Abflugtafel</div>
+      <h2>Als Nächstes</h2>
+      ${next.length ? `<div class="pass">${next.map(g => { const D = A.DEST[g.dest]; return `<div class="stamp"><img src="${flagURL(g.dest)}" alt="" style="width:48px;height:32px"><div><b>${D.name}</b><small>${g.n} Touristen · kommen ${g.side === "L" ? "links" : "rechts"} herein</small></div></div>`; }).join("")}</div>` : `<p class="small">Alle weiteren Gruppen sind schon im Zulauf zu sehen.</p>`}
+      <div class="actions"><button class="btn" id="closeBtn">Zurück zum Spiel</button></div>`);
+    $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
   }
   // Gruppen, deren Touristen noch hinter dem sichtbaren Teil der Zuläufe warten, in Ankunftsreihenfolge.
   function upcoming() {

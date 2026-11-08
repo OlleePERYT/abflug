@@ -1,7 +1,7 @@
 // Offline-Speicher für Abflug!. Die Seite kommt zuerst aus dem Netz, damit Updates sofort
 // ankommen, und ohne Netz aus dem Cache. Icons und Schriften kommen zuerst aus dem Cache.
 // scripts/pages.sh setzt bei jedem Bau eine neue Versionsmarke ein, alte Caches werden dann gelöscht.
-const CACHE = "abflug-209ada933f27";
+const CACHE = "abflug-adf83acd184b";
 const CORE = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
