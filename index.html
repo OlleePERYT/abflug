@@ -2368,6 +2368,25 @@ window.Abflug = (() => {
     }));
     $("#closeBtn").addEventListener("click", () => ($("#overlay").hidden = true));
   }
+  // Startschirm: Titel, Weiterspielen und alle erreichten Level mit ihren Sternen.
+  function showStart() {
+    const total = Object.values(starsBy).reduce((a, b) => a + b, 0), medals = Object.keys(chalDone).length;
+    const btns = Array.from({ length: maxLevel + 1 }, (_, i) => {
+      const L = A.levelDef(i), st = starsBy[i] || 0;
+      return `<button data-l="${i}" class="${i === maxLevel ? "cur" : ""} ${A.isStorm(i) ? "storm" : ""}" aria-label="Level ${i + 1}: ${L.name}, ${st} von 3 Sternen">${i + 1}<small>${"★".repeat(st) + "☆".repeat(3 - st)}</small></button>`;
+    }).join("");
+    showCard(`
+      <div class="eyebrow">${total} Sterne · ${medals} Medaillen</div>
+      <h2>Abflug!</h2>
+      <div class="actions"><button class="btn" id="goBtn">${maxLevel ? `Weiter mit Level ${maxLevel + 1}` : "Los geht's"}</button></div>
+      ${maxLevel ? `<p class="small">Oder spiele ein geschafftes Level noch einmal, um mehr Sterne zu holen:</p><div class="levels">${btns}</div>` : ""}
+      <div class="actions"><button class="btn alt" id="isleBtn">Flughafen ausbauen</button></div>`);
+    hideHint();
+    $("#goBtn").addEventListener("click", () => startLevel(maxLevel));
+    $("#isleBtn").addEventListener("click", () => showShop());
+    $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => startLevel(+b.dataset.l)));
+    $(".levels .cur")?.scrollIntoView({ block: "nearest" });
+  }
   $("#restartBtn").addEventListener("click", () => {
     if (!$("#overlay").hidden) return;
     if (chal) return startLevel(levelIdx, chal);
@@ -2619,6 +2638,7 @@ window.Abflug = (() => {
   window.claude?.hot?.snapshot?.(() => ({ levelIdx }));
   const boot = data => {
     startLevel(data?.levelIdx ?? store.get("abflug.level", 0));
+    if (data?.levelIdx === undefined) showStart();
     last = now();
     requestAnimationFrame(frame);
   };
