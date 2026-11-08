@@ -11,7 +11,7 @@ const A = window.Abflug;
 
 let failed = 0;
 // Feste Level plus eine Stichprobe der endlosen Level.
-const idx = [...A.LEVELS.keys(), 10, 11, 12, 13, 14, 24, 39];
+const idx = [...A.LEVELS.keys(), 10, 11, 12, 13, 14, 19, 24, 39];
 idx.forEach(i => {
   const L = A.levelDef(i);
   try {
@@ -38,6 +38,18 @@ idx.forEach(i => {
       assert.equal(lv.arms.L[0].dest, st.planes[0].dest, "Tutorial: erste Gruppe passt zu Flugzeug 0");
     }
 
+    // Neue Regeln ab Level 11: Hindernisse, Gates, Schlösser, und das Level ist ein echtes Rätsel.
+    if (i >= A.LEVELS.length) {
+      assert.equal(lv.gates, L.gates, "Gate-Zahl aus der Definition");
+      assert.ok(lv.obstacles.length > 0, "Hindernisse gesetzt");
+      assert.equal(A.hardness(lv).planned, true, "ein Spieler ohne Voraussicht verliert");
+      const locked = lv.planes.filter(q => q.lock >= 0);
+      assert.ok(locked.length <= L.locks, "nicht mehr Schlösser als vorgesehen");
+      locked.forEach(q => assert.equal(lv.planes[q.lock].key, q.id, "Schlüssel gehört zum Schloss"));
+      const st = A.createState(lv);
+      lv.obstacles.forEach(o => assert.ok(!st.planes.some(q => A.cellsOf(q).some(([x, y]) => x === o.x && y === o.y)), "kein Flugzeug auf einem Hindernis"));
+    }
+
     // Zufälliges Spielen darf nie abstürzen und muss mit win oder lose enden.
     let wins = 0;
     for (let run = 0; run < 30; run++) {
@@ -49,7 +61,7 @@ idx.forEach(i => {
         if (s === "lose") break;
         // Zufallsspieler: schickt ab und zu irgendein freies Flugzeug los.
         if (s === "play" && Math.random() < 0.15) {
-          const free = st.planes.filter(p => p.where === "apron" && A.freeRun(st, p) < 0);
+          const free = st.planes.filter(p => A.canGo(st, p));
           if (!free.length) throw new Error("kein Zug möglich, aber nicht verloren");
           const p = free[(Math.random() * free.length) | 0];
           if (A.tap(st, p.id).ok) A.arrive(st, p.id);
@@ -101,4 +113,28 @@ try {
   assert.equal(A.generate(3).storm, false);
   console.log("ok  Sturm");
 } catch (e) { failed++; console.log(`FAIL Sturm: ${e.message}`); }
+// Schloss: Das Flugzeug rollt erst, wenn sein Schlüssel-Flugzeug abgeflogen ist.
+try {
+  const lv = A.generate(11), q = lv.planes.find(x => x.lock >= 0);
+  assert.ok(q, "Level 12 hat ein Schloss");
+  const st = A.createState(lv);
+  assert.equal(A.tap(st, q.id).reason, "locked", "verschlossen rollt nicht");
+  st.planes[q.lock].where = "gone";
+  assert.notEqual(A.tap(st, q.id).reason, "locked", "nach Abflug des Schlüssels offen");
+  console.log("ok  Schloss");
+} catch (e) { failed++; console.log(`FAIL Schloss: ${e.message}`); }
+// Schlepper kommt nicht durch feste Hindernisse.
+try {
+  const lv = A.generate(10), st = A.createState(lv), o = lv.obstacles[0];
+  const probe = { id: 0, ...st.planes[0], x: o.x, y: o.y + 1, dir: "U", len: 2, where: "apron" };
+  st.planes = [probe]; probe.id = 0; st.hangars = []; st.obstacles = [o];
+  assert.equal(A.tap(st, 0, true).reason, "fixed", "Schlepper stoppt am Hindernis");
+  console.log("ok  Hindernis");
+} catch (e) { failed++; console.log(`FAIL Hindernis: ${e.message}`); }
+// Sturm ab Level 15 hat nur 3 Gates, die zweite Chance öffnet das vierte.
+try {
+  const st = A.createState(A.generate(14));
+  assert.equal(st.gateCount, 3); assert.equal(st.baseGates, 3);
+  console.log("ok  3 Gates im Sturm");
+} catch (e) { failed++; console.log(`FAIL 3 Gates: ${e.message}`); }
 process.exit(failed ? 1 : 0);

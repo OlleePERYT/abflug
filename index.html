@@ -272,6 +272,9 @@ window.Abflug = (() => {
       mask: SHAPES[(r() * SHAPES.length) | 0](c, rows),
       dests: Math.min(DEST.length, 9 + (k >> 2)), planes: 50 + Math.min(14, k >> 1), mode: "alt",
       mystery: Math.min(0.4, 0.25 + k * 0.01), hangars: h, hangarSize: 4, accept: 0.8,
+      // Ab Level 11: feste Hindernisse, Sturm-Level mit nur 3 Gates, ab Level 12 Schlösser.
+      obstacles: Math.min(4, 1 + (k >> 2)) + (isStorm(li) ? 1 : 0), gates: isStorm(li) ? 3 : 4,
+      locks: li >= 11 ? Math.min(3, 1 + ((li - 11) >> 3)) : 0,
     });
   }
 
@@ -313,6 +316,16 @@ window.Abflug = (() => {
         break;
       }
     }
+    // Feste Hindernisse (Gepäckwagen, Palmen): belegen ein Feld, keine Flugbahn darf sie kreuzen.
+    const obstacles = [];
+    for (let n = 0; n < (L.obstacles || 0); n++) {
+      for (let t = 0; t < 300; t++) {
+        const x = (r() * cols) | 0, y = (r() * rows) | 0;
+        if (!inMask(x, y) || occ[y][x] !== null) continue;
+        occ[y][x] = "O"; obstacles.push({ x, y, kind: n % 3 });
+        break;
+      }
+    }
     const hangarPlanes = hangars.length * (L.hangarSize || 0);
     const target = L.planes - hangarPlanes;
     const lens = [2, 2, 2, 2, 3, 3, 3, 4, 4];
@@ -321,7 +334,7 @@ window.Abflug = (() => {
       const p = { x: (r() * cols) | 0, y: (r() * rows) | 0, dir: DKEYS[(r() * 4) | 0], len: lens[(r() * lens.length) | 0] };
       const cells = cellsOf(p);
       if (!cells.every(([a, b]) => inMask(a, b) && occ[b][a] === null)) continue;
-      if (pathOf(p, cols, rows).some(([a, b]) => occ[b][a] === "H" || typeof occ[b][a] === "number")) continue;
+      if (pathOf(p, cols, rows).some(([a, b]) => occ[b][a] === "H" || occ[b][a] === "O" || typeof occ[b][a] === "number")) continue;
       const i = base.length;
       base.push(p);
       cells.forEach(([a, b]) => (occ[b][a] = i));
@@ -340,7 +353,7 @@ window.Abflug = (() => {
     // Ziele verteilen: Ein oder zwei "versteckte" Ziele bekommen nur Flugzeuge, die anfangs
     // zugeparkt sind. So muss man genau die zuerst gefragten Länder erst freispielen.
     const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const st0 = createState({ cols, rows, mask: L.mask, mode: L.mode, planes: planes.map(p => ({ ...p, dest: 0 })), hangars, arms: { L: [], R: [] } });
+    const st0 = createState({ cols, rows, mask: L.mask, mode: L.mode, planes: planes.map(p => ({ ...p, dest: 0 })), hangars, obstacles, arms: { L: [], R: [] } });
     const freeIds = new Set(st0.planes.filter(p => p.where === "apron" && freeRun(st0, p) < 0).map(p => p.id));
     const perm = shuffle([...Array(L.dests).keys()]);
     const hidden = perm.slice(0, L.dests >= 5 ? 2 : 1), open = perm.slice(hidden.length);
@@ -353,7 +366,7 @@ window.Abflug = (() => {
     if (new Set(planes.map(p => p.dest)).size < L.dests) return null;
     if (L.mystery) base.forEach((_, i) => (planes[i].mystery = r() < L.mystery));
 
-    const built = buildQueue({ cols, rows, mask: L.mask, mode: L.mode, planes, hangars }, r, dig.p, dig.maxB);
+    const built = buildQueue({ cols, rows, mask: L.mask, mode: L.mode, planes, hangars, obstacles, gates: L.gates }, r, dig.p, dig.maxB);
     if (!built) return null;
     const { sol, seq } = built;
     const arms = { L: [], R: [] };
@@ -365,7 +378,7 @@ window.Abflug = (() => {
       seq.forEach((g, k) => (k % 2 ? arms.R : arms.L).push(g));
     }
     return {
-      name: L.name, cols, rows, mask: L.mask, mode: L.mode, planes,
+      name: L.name, cols, rows, mask: L.mask, mode: L.mode, planes, obstacles, gates: L.gates || 4,
       hangars: hangars.map(h => ({ x: h.x, y: h.y, dir: h.dir, queue: h.queue })),
       arms, sol, tourists: seq.reduce((s, g) => s + g.n, 0),
     };
@@ -448,10 +461,10 @@ window.Abflug = (() => {
     const hangars = lv.hangars.map(h => ({ x: h.x, y: h.y, dir: h.dir, queue: [...h.queue] }));
     hangars.forEach(h => { planes[h.queue.shift()].where = "apron"; });
     const st = {
-      cols: lv.cols, rows: lv.rows, mask: lv.mask, mode: lv.mode, planes, hangars,
-      gates: [null, null, null, null, null], gateCount: 4, lookahead: opts.lookahead === true ? 1 : opts.lookahead || 0,
+      cols: lv.cols, rows: lv.rows, mask: lv.mask, mode: lv.mode, planes, hangars, obstacles: lv.obstacles || [],
+      gates: [null, null, null, null, null], gateCount: lv.gates || 4, baseGates: lv.gates || 4, lookahead: opts.lookahead === true ? 1 : opts.lookahead || 0,
       arms: { L: { groups: lv.arms.L.map(g => ({ ...g })), taken: 0 }, R: { groups: lv.arms.R.map(g => ({ ...g })), taken: 0 } },
-      active: "L", boarded: 0,
+      active: "L", boarded: 0, hasLocks: planes.some(p => p.lock >= 0),
       ring: new Array(RING * 4).fill(-1), off: 0,
     };
     if (!st.arms.L.groups.length) st.active = "R";
@@ -462,8 +475,13 @@ window.Abflug = (() => {
     const m = new Map();
     st.planes.forEach(p => { if (p.where === "apron") cellsOf(p).forEach(([x, y]) => m.set(x + "," + y, p.id)); });
     st.hangars.forEach(h => m.set(h.x + "," + h.y, -1));
+    (st.obstacles || []).forEach(o => m.set(o.x + "," + o.y, -1));
     return m;
   }
+  // Schloss: Das Flugzeug rollt erst, wenn sein Schlüssel-Flugzeug abgeflogen ist.
+  const isLocked = (st, p) => p.lock >= 0 && st.planes[p.lock].where !== "gone";
+  const canGo = (st, p, m) => p.where === "apron" && freeRun(st, p, m) < 0 && !isLocked(st, p);
+  function anyCanGo(st) { const m = occMap(st); return st.planes.some(p => canGo(st, p, m)); }
   // -1: Weg frei. Sonst Anzahl freier Felder bis zum Hindernis.
   function freeRun(st, p, m = occMap(st)) {
     const path = pathOf(p, st.cols, st.rows);
@@ -483,8 +501,14 @@ window.Abflug = (() => {
   function tap(st, id, tow = false) {
     const p = st.planes[id];
     if (!p || p.where !== "apron") return { ok: false, reason: "none" };
+    if (isLocked(st, p)) return { ok: false, reason: "locked", lock: p.lock };
     const k = freeRun(st, p);
     if (k >= 0 && !tow) return { ok: false, reason: "blocked", free: k };
+    if (k >= 0) {
+      // Der Schlepper zieht nur über Flugzeuge, nicht durch feste Hindernisse.
+      const m = occMap(st), path = pathOf(p, st.cols, st.rows), f = path.findIndex(([x, y]) => m.get(x + "," + y) < 0);
+      if (f >= 0) return { ok: false, reason: "fixed", free: f };
+    }
     let g = -1;
     for (let i = 0; i < st.gateCount; i++) if (st.gates[i] === null) { g = i; break; }
     if (g < 0) return { ok: false, reason: "gates" };
@@ -558,13 +582,14 @@ window.Abflug = (() => {
     const gd = new Set();
     for (let i = 0; i < st.gateCount; i++) if (st.gates[i] !== null) gd.add(st.planes[st.gates[i]].dest);
     if (st.ring.some(d => d >= 0 && gd.has(d))) return "boarding";
-    for (let i = 0; i < st.gateCount; i++) if (st.gates[i] === null) return "play";
+    // Freies Gate, aber kein Flugzeug darf rollen (alle zugeparkt oder verschlossen): nur Warten hilft.
+    if (st.gates.slice(0, st.gateCount).some(g => g === null) && (!st.hasLocks || anyCanGo(st))) return "play";
     if (queued && st.ring.some(d => d < 0)) return "filling";
     return "lose";
   }
 
   // Spielt die Lösungsreihenfolge stur durch: so früh wie möglich losrollen, sonst Ring laufen lassen.
-  function solve(lv) {
+  function solve(lv, onTap) {
     const st = createState(lv);
     let idx = 0;
     for (let n = 0; n < 400000; n++) {
@@ -574,8 +599,8 @@ window.Abflug = (() => {
       if (s === "lose") return false;
       if (idx < lv.sol.length) {
         const r = tap(st, lv.sol[idx]);
-        if (r.ok) { arrive(st, lv.sol[idx]); idx++; continue; }
-        if (r.reason !== "gates") return false;
+        if (r.ok) { onTap?.(lv.sol[idx], st); arrive(st, lv.sol[idx]); idx++; continue; }
+        if (r.reason !== "gates" && r.reason !== "locked") return false;
       }
       tick(st);
     }
@@ -595,26 +620,99 @@ window.Abflug = (() => {
 
   // Jedes fünfte Level ab Level 5 ist ein Sturm-Level: mehr und tiefer zugeparkte Ziele.
   const isStorm = li => li >= 4 && (li + 1) % 5 === 0;
-  function generate(li) {
-    const L = levelDef(li), storm = isStorm(li);
-    if (L.fixed) return fixedLevel(L);
-    let best = null;
-    const t0 = Date.now();
-    for (let a = 0; a < 120; a++) {
-      // Zeitbudget, damit der Levelstart nicht hängt.
-      if (best && Date.now() - t0 > 250) break;
-      // Freispielen wird mit dem Level häufiger und tiefer.
-      const p = Math.min(0.75, 0.12 + 0.07 * li), maxB = Math.min(3, 1 + (li >> 1));
-      const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919), storm ? { p: Math.min(0.9, p + 0.2), maxB: maxB + 1 } : { p, maxB });
-      if (!lv || !solve(lv)) continue;
-      if (!best || lv.planes.length > best.planes.length) best = lv;
-      if (lv.planes.length >= L.planes * (L.accept || 0.9)) break;
+
+  // Vernünftiger Spieler ohne Voraussicht: schickt das freie Flugzeug, dessen Touristen als Nächste kommen.
+  // Gewinnt er das Level, ist es kaum ein Rätsel. Dient nur dem Messen der Schwierigkeit.
+  function greedy(lv) {
+    const st = createState(lv);
+    let idle = 0, lastBoarded = 0;
+    for (let n = 0; n < 60000; n++) {
+      st.planes.forEach(p => { if (p.where === "full") depart(st, p.id); });
+      const s = status(st);
+      if (s === "win") return true;
+      if (s === "lose") return false;
+      if (st.boarded !== lastBoarded) { lastBoarded = st.boarded; idle = 0; }
+      idle++;
+      if (s === "play") {
+        // Reihenfolge der Touristen: erst Ring ab Ausgang, dann die Zuläufe.
+        const order = [];
+        for (let j = 0; j < RING; j++) for (let c = 0; c < 4; c++) { const d = st.ring[((rowAt(st, j) * 4) + c)]; if (d >= 0) order.push(d); }
+        ["L", "R"].forEach(a => st.arms[a].groups.forEach(g => order.push(g.dest)));
+        const m = occMap(st), free = st.planes.filter(p => canGo(st, p, m));
+        let best = null, bestRank = 1e9;
+        free.forEach(p => { const rk = p.revealed ? order.indexOf(p.dest) : -1; const v = rk < 0 ? 5e8 : rk; if (v < bestRank) { best = p; bestRank = v; } });
+        const gfree = st.gates.slice(0, st.gateCount).filter(g => g === null).length;
+        // Ein Gate bleibt frei, außer das Ziel kommt gleich dran.
+        // Passiert lange nichts, rollt er trotzdem los.
+        if (best && (gfree > 1 || bestRank < 8 || idle > RING * 2) && tap(st, best.id).ok) { arrive(st, best.id); idle = 0; continue; }
+      }
+      tick(st);
     }
-    if (best) best.storm = storm;
-    return best;
+    return false;
   }
 
-  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, levelDef, isStorm, cellsOf, pathOf, generate, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
+  // Schlösser nachträglich setzen: Das Schlüssel-Flugzeug ist in der Lösung schon abgeflogen, wenn
+  // das verschlossene dran ist. So bleibt die Lösung gültig, und es kann nie ein Kreis entstehen.
+  function addLocks(lv, r, n) {
+    const goneAt = {}, st0 = createState(lv);
+    solve(lv, (id, st) => { goneAt[id] = st.planes.filter(p => p.where === "gone").map(p => p.id); });
+    const base = id => lv.planes[id].hangar < 0 && lv.planes[id].lock === undefined && lv.planes[id].key === undefined;
+    const ids = Object.keys(goneAt).map(Number).filter(base).sort(() => r() - 0.5);
+    let no = 0;
+    for (const pid of ids) {
+      if (no >= n) break;
+      if (!base(pid)) continue;
+      const keys = goneAt[pid].filter(q => base(q) && q !== pid && blockersOf(st0, st0.planes[q]));
+      if (!keys.length) continue;
+      const q = keys[(r() * keys.length) | 0];
+      no++;
+      lv.planes[pid].lock = q; lv.planes[pid].lockNo = no;
+      lv.planes[q].key = pid; lv.planes[q].lockNo = no;
+    }
+    return no;
+  }
+  // Schwierigkeit: Verliert der Spieler ohne Voraussicht, und wie viele Flugzeuge stehen anfangs zugeparkt?
+  function hardness(lv) {
+    const st = createState(lv);
+    const blocked = st.planes.filter(p => p.where === "apron" && freeRun(st, p) >= 0).length;
+    return { planned: !greedy(lv), blocked };
+  }
+  function generate(li, only) {
+    const L0 = levelDef(li), storm = isStorm(li);
+    if (L0.fixed) return fixedLevel(L0);
+    const hard = li >= LEVELS.length;
+    let L = L0;
+    for (let tries = 0; tries < 2; tries++) {
+      let best = null, bestScore = -1;
+      const t0 = Date.now();
+      for (let a = 0; a < 160; a++) {
+        // Zeitbudget, damit der Levelstart nicht hängt.
+        if (best && Date.now() - t0 > (hard ? 600 : 250)) break;
+        // Freispielen wird mit dem Level häufiger und tiefer.
+        const p = Math.min(0.75, 0.12 + 0.07 * li), maxB = Math.min(3, 1 + (li >> 1));
+        const lv = tryGen(L, rng((li + 1) * 104729 + a * 7919), storm ? { p: Math.min(0.9, p + 0.2), maxB: maxB + 1 } : { p, maxB });
+        if (!lv || !solve(lv)) continue;
+        let score = lv.planes.length, planned = true;
+        if (hard) { const h = hardness(lv); planned = h.planned; score += (h.planned ? 1000 : 0) + 5 * h.blocked; }
+        if (score > bestScore) { best = lv; bestScore = score; }
+        if (lv.planes.length >= L.planes * (L.accept || 0.9) && planned) break;
+      }
+      if (best) {
+        best.storm = storm;
+        if (L.locks) {
+          const r = rng((li + 1) * 7717 + 3), snap = best.planes.map(q => ({ ...q }));
+          addLocks(best, r, L.locks);
+          if (!solve(best)) best.planes = snap;
+        }
+        return best;
+      }
+      // Mit 3 Gates nichts Lösbares gefunden: auf 4 zurück.
+      L = { ...L0, gates: 4 };
+    }
+    return null;
+  }
+
+  return { SEATS, DIRS, DEST, LEVELS, RING, ENTRY, levelDef, isStorm, cellsOf, pathOf, generate, hardness, greedy, canGo, isLocked, createState, freeRun, tap, arrive, tick, depart, status, frontArm, solve };
 })();
 </script>
 
@@ -649,6 +747,9 @@ window.Abflug = (() => {
     1: "<b>Tipp:</b> Der <b>Pilot</b> rechts macht die Touristen schneller, der <b>Fluglotse</b> links bremst sie. Antippen oder festhalten.",
     3: "<b>Neu: Schranken.</b> Die beiden Eingänge öffnen abwechselnd, Gruppe für Gruppe.",
     5: "<b>Neu: Ziel unbekannt.</b> Graue Flugzeuge zeigen ihr Ziel, sobald ihr Weg frei ist.",
+    10: "<b>Neu: Hindernisse.</b> Gepäckwagen und Palmen stehen fest. Der Schlepper kommt an ihnen nicht vorbei.",
+    11: "<b>Neu: Schlösser.</b> Ein Flugzeug mit Schloss rollt erst, wenn das Flugzeug mit dem gleichen Schlüssel abgeflogen ist.",
+    14: "<b>Sturm mit nur 3 Gates.</b> Die zweite Chance öffnet ein viertes.",
     6: "<b>Neu: Hangar.</b> Rollt ein Flugzeug heraus, kommt das nächste nach. Die Zahl zeigt, wie viele noch drin sind.",
   };
   // Tutorial in Level 1: Pfeil zeigt auf das Flugzeug, das als Nächstes dran ist.
@@ -1080,7 +1181,7 @@ window.Abflug = (() => {
     syncTow();
     if (A.levelDef(levelIdx).tutorial) { tut = { step: -1 }; tutNext(); }
     else if (chal) showHint(`<b>Herausforderung ${chal.name}:</b> ${chal.text} Ohne Schlepper und ohne zweite Chance.`, 7);
-    else if (lv.storm) showHint("<b>Sturm!</b> Hier sind mehr Ziele tief zugeparkt. Dafür gibt es doppelte Muscheln.", 6.5);
+    else if (lv.storm) showHint(`<b>Sturm!</b> Hier sind mehr Ziele tief zugeparkt${lv.gates === 3 ? ", und es gibt nur 3 Gates (die zweite Chance öffnet ein viertes)" : ""}. Dafür gibt es doppelte Muscheln.`, 6.5);
     else if (INTRO[levelIdx]) showHint(INTRO[levelIdx], 6.5); else hideHint();
     if (tows) setTimeout(() => toast(streak ? `Serie ${streak}: ${tows} Schlepper bereit` : `Kontrollturm: ${tows} Schlepper bereit`, 2200), 400);
   }
@@ -1166,10 +1267,14 @@ window.Abflug = (() => {
       if (res.spawned !== null) vis.set(res.spawned, { kind: "spawn", t0: t });
       if (tow) { tows--; towsUsed++; towArmed = false; syncTow(); hideHint(); sfx.tow(); toast("Abgeschleppt!"); } else sfx.go();
       if (step && step.on === "go") tutNext();
-    } else if (res.reason === "blocked") {
+    } else if (res.reason === "blocked" || res.reason === "fixed") {
       vis.set(hit.id, { kind: "bump", t0: t, dist: (res.free + 0.22) * c });
       sfx.bump();
+      if (res.reason === "fixed") toast("Der Schlepper kommt hier nicht durch");
       if (step && step.on === "bump") tutNext();
+    } else if (res.reason === "locked") {
+      vis.set(hit.id, { kind: "bump", t0: t, dist: c * 0.18 });
+      sfx.bump(); toast(`Schloss ${hit.lockNo}: erst Flugzeug mit Schlüssel ${hit.lockNo} abfliegen lassen`, 1900);
     } else if (res.reason === "gates") {
       gateFlash = t; shakeT = t; toast("Alle Gates belegt"); sfx.bump();
     }
@@ -1231,6 +1336,9 @@ window.Abflug = (() => {
         if (step && step.on === "depart" && step.id === id) tutNext();
       }
     }
+    for (const p of S.planes) {
+      if (p.lock >= 0 && !p.opened && !A.isLocked(S, p)) { p.opened = true; toast(`Schloss ${p.lockNo} offen`); sfx.go(); }
+    }
     departing = departing.filter(d => t - d.t0 < 1.6);
     sparks = sparks.filter(s => t - s.t0 < 0.45);
     confetti = confetti.filter(p => t - p.t0 < 1.6);
@@ -1260,7 +1368,7 @@ window.Abflug = (() => {
         // Muscheln: Grundbetrag, mehr für große Level, Bonus für die Serie.
         // Strandbar: +20 %. Souvenirstand: Trinkgeld aus den Abflügen kommt dazu.
         // Sterne: 1 fürs Schaffen, 2 ohne zweite Chance, 3 zusätzlich ohne Schlepper. Neue Sterne bringen Muscheln.
-        const stars = S.gateCount < 5 ? (towsUsed ? 2 : 3) : 1, before = starsBy[levelIdx] || 0;
+        const stars = S.gateCount === S.baseGates ? (towsUsed ? 2 : 3) : 1, before = starsBy[levelIdx] || 0;
         const fresh = Math.max(0, stars - before), starGain = fresh * fx("bar", "starBonus", 10);
         if (fresh) { starsBy[levelIdx] = stars; store.set("abflug.stars", starsBy); }
         const base = 10 + Math.round(lv.tourists / 40) + 3 * Math.min(3, streak);
@@ -1297,14 +1405,14 @@ window.Abflug = (() => {
       } else {
         sfx.lose();
         // Zweite Chance: einmal pro Level ein Extra-Gate. Ist sie verbraucht, ist die Serie weg.
-        const canGate = S.gateCount < 5, left = lv.tourists - S.boarded, had = streak;
+        const canGate = S.gateCount === S.baseGates, left = lv.tourists - S.boarded, had = streak;
         if (!canGate) setStreak(0);
         // Kompakt wie die Gewinnkarte: Fortschritt groß, Serie als Kachel, ein Hauptknopf.
         const pct = Math.round((S.boarded / lv.tourists) * 100);
         showCard(`
           <div class="eyebrow">Level ${levelIdx + 1}</div>
           <h2>${left <= lv.tourists * 0.25 ? "So knapp!" : "Abflug verzögert"}</h2>
-          <p class="small">Alle Gates belegt, und niemand im Wartebereich passt.</p>
+          <p class="small">${S.gates.slice(0, S.gateCount).some(g => g === null) ? "Kein Flugzeug kann mehr rollen: Schloss oder Hindernis im Weg." : "Alle Gates belegt, und niemand im Wartebereich passt."}</p>
           <div class="progress" role="img" aria-label="${pct} Prozent an Bord">
             <div class="meter"><span style="width:${pct}%"></span></div>
             <div class="progress-l"><b>${pct} %</b> an Bord<span>noch ${left} warten</span></div>
@@ -1357,8 +1465,8 @@ window.Abflug = (() => {
     }
   }
   function openExtraGate() {
-    if (!S || S.gateCount >= 5) return;
-    S.gateCount = 5; sfx.go();
+    if (!S || S.gateCount > S.baseGates) return;
+    S.gateCount = S.baseGates + 1; sfx.go();
   }
   function setStreak(n) { streak = n; store.set("abflug.streak", n); }
 
@@ -2192,11 +2300,14 @@ window.Abflug = (() => {
       ctx.fillStyle = "rgba(0,0,0,.22)"; rr(ctx, bx - 3, gy0, 12, doorY - gy0 + 8, 4); ctx.fill();
       ctx.fillStyle = PASTEL[i % PASTEL.length]; rr(ctx, bx - 6, gy0 - 2, 12, doorY - gy0 + 6, 4); ctx.fill();
       ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.fillRect(bx - 4, gy0, 3, doorY - gy0);
-      if (locked) {
-        // Gesperrtes fünftes Gate: öffnet nur als zweite Chance nach einer Niederlage.
+      if (locked && i === S.gateCount && i === S.baseGates) {
+        // Gesperrtes Extra-Gate: öffnet nur als zweite Chance nach einer Niederlage.
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.45)";
         ctx.font = `800 13px ${FONT}`; ctx.fillText("2.", g.x, g.y - 4);
         ctx.font = `800 11px ${FONT}`; ctx.fillText("Chance", g.x, g.y + 9);
+      } else if (locked) {
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.35)";
+        ctx.font = `800 12px ${FONT}`; ctx.fillText("gesperrt", g.x, g.y);
       }
       if (!docked) return;
       const v = vis.get(id), dst = A.DEST[p.dest];
@@ -2260,6 +2371,7 @@ window.Abflug = (() => {
         }
       }
     }
+    for (const o of S.obstacles) drawObstacle(ax + (o.x + 0.5) * c, ay + (o.y + 0.5) * c, c, o.kind);
     for (const p of S.planes) {
       if (p.where !== "apron") continue;
       const v = vis.get(p.id), [dx, dy] = A.DIRS[p.dir];
@@ -2270,7 +2382,52 @@ window.Abflug = (() => {
       }
       if (v && v.kind === "spawn") { const s = Math.min(1, (t - v.t0) / 0.4), o = (1 - s) * c * 1.4; x -= dx * o; y -= dy * o; alpha = s; }
       drawPlane(x, y, ang, c, p, alpha);
+      // Abzeichen am Heck, damit Farbe und Symbol des Flugzeugs sichtbar bleiben.
+      const off = p.len * c * 0.5 - Math.max(9, c * 0.26) * 1.1, bx = x - dx * off, by = y - dy * off;
+      if (p.lock >= 0 && A.isLocked(S, p)) lockBadge(bx, by, c, p.lockNo, "lock");
+      else if (p.key >= 0 && S.planes[p.key].where !== "gone") lockBadge(bx, by, c, p.lockNo, "key");
     }
+  }
+  // Feste Hindernisse: Gepäckwagen, Palme, Tankwagen.
+  function drawObstacle(x, y, c, kind) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.beginPath(); ctx.ellipse(c * 0.05, c * 0.28, c * 0.36, c * 0.14, 0, 0, 7); ctx.fill();
+    if (kind === 1) {
+      ctx.fillStyle = "#8A5A2B"; rr(ctx, -c * 0.05, -c * 0.1, c * 0.1, c * 0.42, 3); ctx.fill();
+      ctx.fillStyle = "#2FA35C";
+      for (let k = 0; k < 6; k++) { ctx.save(); ctx.translate(0, -c * 0.12); ctx.rotate((k * Math.PI) / 3 + 0.3); ctx.beginPath(); ctx.ellipse(c * 0.2, 0, c * 0.22, c * 0.08, 0, 0, 7); ctx.fill(); ctx.restore(); }
+      ctx.fillStyle = "#7A4E24"; ctx.beginPath(); ctx.arc(0, -c * 0.12, c * 0.06, 0, 7); ctx.fill();
+    } else if (kind === 2) {
+      ctx.fillStyle = "#E64B3C"; rr(ctx, -c * 0.38, -c * 0.2, c * 0.76, c * 0.4, c * 0.18); ctx.fill();
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(-c * 0.1, -c * 0.2, c * 0.1, c * 0.4);
+      ctx.fillStyle = "#33414D"; ctx.beginPath(); ctx.arc(-c * 0.22, c * 0.2, c * 0.08, 0, 7); ctx.arc(c * 0.22, c * 0.2, c * 0.08, 0, 7); ctx.fill();
+    } else {
+      ctx.fillStyle = "#33414D"; rr(ctx, -c * 0.38, -c * 0.06, c * 0.76, c * 0.3, 5); ctx.fill();
+      ctx.fillStyle = "#FFC400"; rr(ctx, -c * 0.3, -c * 0.24, c * 0.24, c * 0.2, 4); ctx.fill();
+      ctx.fillStyle = "#FF6F61"; rr(ctx, c * 0.02, -c * 0.2, c * 0.26, c * 0.16, 4); ctx.fill();
+      ctx.fillStyle = "#1F7F90"; ctx.beginPath(); ctx.arc(-c * 0.24, c * 0.26, c * 0.07, 0, 7); ctx.arc(c * 0.24, c * 0.26, c * 0.07, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+  // Schloss auf dem verschlossenen Flugzeug, Schlüssel auf dem Flugzeug, das es öffnet. Gleiche Zahl und Farbe.
+  const LOCKCOL = ["#FF6F61", "#2FA3C6", "#8A6AD8"];
+  function lockBadge(x, y, c, no, kind) {
+    const r = Math.max(9, c * 0.26), col = LOCKCOL[(no - 1) % LOCKCOL.length];
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = col; ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#FFFFFF"; ctx.fillStyle = "#FFFFFF"; ctx.lineWidth = Math.max(1.6, r * 0.16); ctx.lineCap = "round";
+    if (kind === "lock") {
+      ctx.beginPath(); ctx.arc(0, -r * 0.18, r * 0.3, Math.PI, 0); ctx.stroke();
+      rr(ctx, -r * 0.42, -r * 0.14, r * 0.84, r * 0.62, 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(-r * 0.3, 0, r * 0.25, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r * 0.05, 0); ctx.lineTo(r * 0.5, 0); ctx.moveTo(r * 0.3, 0); ctx.lineTo(r * 0.3, r * 0.22); ctx.stroke();
+    }
+    ctx.restore();
+    ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+    ctx.font = `800 ${Math.round(r * 0.95)}px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.strokeText(no, x + r * 0.95, y - r * 0.8); ctx.fillText(no, x + r * 0.95, y - r * 0.8);
   }
 
   function drawTutorial(t) {
