@@ -801,6 +801,11 @@ window.Abflug = (() => {
   let ringT = 0, ended = false, shift = { L: 0, R: 0 }, gateFlash = -9, shakeT = -9, last = 0, lastPlop = 0, pulse = [], tut = null;
   const cache = {};
   let sprites = {}, pats = {};
+  // Einfache Figuren (z.B. für die Großeltern): Touristen einfarbig, Flugzeuge als schlichte Umrisse mit Cockpit,
+  // Hintergrund in ruhigen Flächen ohne Muster und Deko.
+  // Einschalten im Menü oder per Link mit ?einfach (bzw. ?einfach=0 zum Ausschalten).
+  let simple = store.get("abflug.simple", false);
+  { const q = new URLSearchParams(location.search).get("einfach"); if (q !== null) { simple = q !== "0"; store.set("abflug.simple", simple); } }
   const now = () => performance.now() / 1000;
 
   // ---------- Hilfen ----------
@@ -941,6 +946,8 @@ window.Abflug = (() => {
     g.lineTo(-half + r * 0.5, r); g.quadraticCurveTo(-half, r, -half, 0); g.quadraticCurveTo(-half, -r, -half + r * 0.5, -r); g.closePath();
     fill(body);
     if (flat) return;
+    // Einfach: nur Umriss mit Flügeln und eine Cockpitscheibe vorn, die die Rollrichtung zeigt.
+    if (simple) { g.fillStyle = "#1E3A4A"; g.beginPath(); g.ellipse(half - r * 0.78, 0, r * 0.36, r * 0.74, 0, 0, 7); g.fill(); return; }
     g.fillStyle = "rgba(255,255,255,.25)"; rr(g, -half + c * 0.12, -r * 0.8, half * 2 - c * 0.45, r * 0.3, r * 0.15); g.fill();
     // Cockpitscheibe mit zwei Äuglein
     g.fillStyle = "#1E3A4A"; g.beginPath(); g.ellipse(half - r * 0.78, 0, r * 0.36, r * 0.74, 0, 0, 7); g.fill();
@@ -954,7 +961,7 @@ window.Abflug = (() => {
     g.lineWidth = Math.max(1, c * 0.035); g.strokeStyle = dark; g.stroke();
   }
   function planeSprite(len, dest, mystery, c) {
-    const key = `p${len}:${dest}:${mystery ? 1 : 0}:${c}`;
+    const key = `p${len}:${dest}:${mystery ? 1 : 0}:${c}:${simple ? 1 : 0}`;
     if (sprites[key]) return sprites[key];
     const w = len * c * 0.95 + c * 0.3, h = c * 1.25, o = offscreen(w, h);
     o.g.translate(w / 2, h / 2);
@@ -968,6 +975,8 @@ window.Abflug = (() => {
     paintPlane(o.g, len, c, mystery ? "#A3ACB6" : A.DEST[dest].color, false, !mystery && A.DEST[dest].id === "JP" ? "#D0103A" : "#FFFFFF");
     // Symbol am Heck, passend zu den Touristen. Unbekanntes Ziel: Fragezeichen.
     const gx = -len * c * 0.46 + c * 0.26, gr = c * 0.2;
+    // Einfach: ohne Symbol. Das Fragezeichen malt drawPlane aufrecht, damit es nicht mitdreht.
+    if (simple) return (sprites[key] = o);
     o.g.fillStyle = "#FFFFFF"; o.g.beginPath(); o.g.arc(gx, 0, gr, 0, 7); o.g.fill();
     if (mystery) {
       o.g.fillStyle = "#6B7682"; o.g.font = `800 ${Math.round(gr * 1.6)}px ${FONT}`; o.g.textAlign = "center"; o.g.textBaseline = "middle";
@@ -979,7 +988,7 @@ window.Abflug = (() => {
     return (sprites[key] = o);
   }
   function shadowSprite(len, c) {
-    const key = `s${len}:${c}`;
+    const key = `s${len}:${c}:${simple ? 1 : 0}`;
     if (sprites[key]) return sprites[key];
     const w = len * c * 0.95 + c * 0.6, h = c * 1.5, o = offscreen(w, h);
     if ("filter" in o.g) o.g.filter = `blur(${Math.max(1, c * 0.06)}px)`;
@@ -1002,6 +1011,14 @@ window.Abflug = (() => {
     ctx.drawImage(spr.c, -spr.w / 2, -spr.h / 2, spr.w, spr.h);
     ctx.restore();
     // Flagge nur am Gate und unterwegs, auf dem Vorfeld reichen Farbe, Pfeil und Symbol.
+    if (simple) {
+      if (!p.revealed) {
+        ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = "#FFFFFF";
+        ctx.font = `800 ${Math.round(c * 0.55 * scale)}px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("?", x, y + c * 0.04 * scale); ctx.restore();
+      }
+      return;
+    }
     if (p.where === "apron") return;
     const bw = Math.max(13, c * 0.44) * scale, b = badgeSprite(p.revealed ? p.dest : -1, Math.round(bw));
     ctx.save(); ctx.globalAlpha = alpha;
@@ -1011,10 +1028,16 @@ window.Abflug = (() => {
 
   // ---------- Touristen: kleine runde Figuren ----------
   function touristSprite(dest, v, d) {
-    const key = `t${dest}:${v}:${d}`;
+    const key = `t${dest}:${v}:${d}:${simple ? 1 : 0}`;
     if (sprites[key]) return sprites[key];
     const w = d * 1.3, h = d * 1.75, o = offscreen(w, h), g = o.g, cx = w / 2;
     const col = A.DEST[dest].color;
+    if (simple) {
+      // Eine Kugel in der Farbe des Ziels. Dünner dunkler Rand, damit Gelb und Weiß auf dem Sand sichtbar bleiben.
+      g.fillStyle = col; g.beginPath(); g.arc(cx, h * 0.64, d * 0.47, 0, 7); g.fill();
+      g.strokeStyle = shade(col, -0.35); g.lineWidth = Math.max(1, d * 0.06); g.stroke();
+      return (sprites[key] = o);
+    }
     const bg = g.createLinearGradient(cx - d * 0.45, 0, cx + d * 0.45, 0);
     bg.addColorStop(0, shade(col, 0.4)); bg.addColorStop(0.5, col); bg.addColorStop(1, shade(col, -0.25));
     g.fillStyle = bg; g.beginPath(); g.ellipse(cx, h * 0.68, d * 0.44, d * 0.42, 0, 0, 7); g.fill();
@@ -1572,6 +1595,8 @@ window.Abflug = (() => {
     for (let j = 0; j < 12; j++) { const a = (j / 12) * Math.PI * 2, r = 12 + u * 44; oval(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r, 3, 3); }
   }
   function item(id, x, y, k, fn, t) {
+    // Einfach: keine Deko und keine Bauplätze, nur die Abflugtafel, weil sie beim Spielen hilft.
+    if (simple && (id !== "tafel" || !has(id))) return;
     if (!has(id)) return bauplatz(x, y, k, t);
     const sc = k * pop(id, t);
     ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); fn(t); ctx.restore();
@@ -1601,7 +1626,7 @@ window.Abflug = (() => {
     const wL = ringL - I.x, wR = I.x + I.w - ringR;
     const xL = I.x + wL / 2, xR = ringR + wR / 2, k = Math.max(0.55, Math.min(1.15, Math.min(wL, wR) / 80));
     const y1 = top + (gy0 - top) * 0.4, y2 = top + (gy0 - top) * 0.7;
-    if (has("wimpel")) drawWimpel(t, top + 10);
+    if (has("wimpel") && !simple) drawWimpel(t, top + 10);
     item("eis", xL, y1, k, drawEis, t);
     item("souvenir", xL, y2, k, drawSouvenir, t);
     // Abflugtafel füllt die ganze Seitenbreite. Antippen öffnet die große Liste.
@@ -1617,6 +1642,7 @@ window.Abflug = (() => {
     return { I, gapL, gapR, xL: I.x + gapL / 2, xR: right + gapR / 2, k: Math.max(0.5, Math.min(1.1, Math.min(gapL, gapR) / 55)), apB: lay.ay + lay.cell * S.rows };
   }
   function drawBeachDeco(t) {
+    if (simple) return;
     const { xL, xR, k, apB } = sides(), mid = lay.ay + (apB - lay.ay) * 0.45;
     palm(xL - 6 * k, mid, 22 * k, t, 3);
     if (has("turm")) item("turm", xR, mid + 22 * k, k, drawTurm, t); else palm(xR - 8 * k, mid + 10 * k, 20 * k, t, 4);
@@ -2057,7 +2083,7 @@ window.Abflug = (() => {
   function draw(t) {
     ctx.setTransform(DPR * Z, 0, 0, DPR * Z, 0, 0);
     drawSea(t);
-    drawGlints(t);
+    if (!simple) drawGlints(t);
     if (!S || !lay) return;
     const sh = t - shakeT < 0.3 ? (1 - (t - shakeT) / 0.3) * 4 : 0;
     if (sh) ctx.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
@@ -2066,7 +2092,7 @@ window.Abflug = (() => {
     drawGates(t);
     drawApron(t);
     drawCrew(t);
-    if (lv.storm) drawStorm(t); else drawParrots(t);
+    if (lv.storm) drawStorm(t); else if (!simple) drawParrots(t);
     for (const [id, v] of vis) {
       if (v.kind !== "taxi") continue;
       const p = S.planes[id];
@@ -2139,6 +2165,7 @@ window.Abflug = (() => {
     ctx.globalAlpha = 1;
   }
   function drawSea(t) {
+    if (simple) { ctx.fillStyle = "#2BB4CC"; ctx.fillRect(0, 0, W, H); return; }
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, C.sea1); g.addColorStop(1, C.sea2);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -2154,6 +2181,7 @@ window.Abflug = (() => {
   }
   function drawIsland(t) {
     const I = lay.island;
+    if (simple) { ctx.fillStyle = C.sand; rr(ctx, I.x, I.y, I.w, I.h, 34); ctx.fill(); return; }
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 8;
     ctx.setLineDash([14, 10]); ctx.lineDashOffset = -t * 12;
@@ -2171,8 +2199,9 @@ window.Abflug = (() => {
 
   function drawTerminal(t) {
     const { top, gy0, ox, gw } = lay, I = lay.island;
-    ctx.fillStyle = floorPat(); ctx.fillRect(I.x, 0, I.w, gy0);
+    ctx.fillStyle = simple ? C.floor : floorPat(); ctx.fillRect(I.x, 0, I.w, gy0);
     // Markise unter der Kopfzeile
+    if (!simple) {
     const aw = 22, ah = top + 6, awn = AWNINGS[decor.awning] || PASTEL;
     for (let x = I.x, k = 0; x < I.x + I.w; x += aw, k++) {
       ctx.fillStyle = k % 2 ? "#FFFFFF" : awn[(k >> 1) % awn.length];
@@ -2185,11 +2214,12 @@ window.Abflug = (() => {
       palm(px, gy0 - 40, 18, t, s);
       hibiscus(px + 7, gy0 - 40, 0.7, t + s);
     }
+    }
     // Weg vom Ring zur Glasfront
     const ex = lay.exit;
     ctx.fillStyle = C.lane; rr(ctx, ex.x - lay.laneW / 2 + 6, ex.y, lay.laneW - 12, gy0 - ex.y, 6); ctx.fill();
     ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    for (let y = ex.y + lay.laneW / 2 + 2; y < gy0 - 12; y += 10) {
+    if (!simple) for (let y = ex.y + lay.laneW / 2 + 2; y < gy0 - 12; y += 10) {
       ctx.beginPath(); ctx.moveTo(ex.x - 5, y); ctx.lineTo(ex.x, y + 5); ctx.lineTo(ex.x + 5, y); ctx.stroke();
     }
     drawTerminalDeco(t);
@@ -2245,6 +2275,7 @@ window.Abflug = (() => {
     // Glasfront mit bunten Häuschen pro Gate
     lay.gates.forEach((g, i) => {
       ctx.fillStyle = PASTEL[i % PASTEL.length]; ctx.fillRect(g.x - lay.slotW / 2, gy0 - 12, lay.slotW, 12);
+      if (simple) return;
       ctx.fillStyle = "rgba(255,255,255,.75)";
       for (let k = 0; k < 3; k++) rr(ctx, g.x - lay.slotW * 0.36 + k * lay.slotW * 0.26, gy0 - 9, lay.slotW * 0.18, 6, 2), ctx.fill();
     });
@@ -2262,10 +2293,11 @@ window.Abflug = (() => {
     ctx.fillStyle = C.sand; stadium(-hw); ctx.fill();
     ctx.fillStyle = "#7FD9B8"; stadium(-hw - 4); ctx.fill();
     const ir = lay.rad - hw;
-    if (ir > 8) drawCenter(t, ir);
+    if (ir > 8 && !simple) drawCenter(t, ir);
     // Absperrbänder mit Pfosten
     for (const k of [hw, -hw]) {
       ctx.strokeStyle = C.band; ctx.lineWidth = 3; stadium(k); ctx.stroke();
+      if (simple) continue;
       const r = lay.rad + k, P = 2 * (lay.x1 - lay.x0) + 2 * Math.PI * r, n = Math.max(8, Math.round(P / 26));
       const pl = poly(stadiumPts(k));
       for (let i = 0; i < n; i++) {
@@ -2289,7 +2321,7 @@ window.Abflug = (() => {
     ctx.strokeStyle = C.band; ctx.lineWidth = 3;
     for (const s of [-1, 1]) {
       ctx.beginPath(); ctx.moveTo(x + s * hw, y0); ctx.lineTo(x + s * hw, y1 - 6); ctx.stroke();
-      for (let y = y0; y < y1; y += 24) { ctx.fillStyle = C.post; ctx.beginPath(); ctx.arc(x + s * hw, y, 3.4, 0, 7); ctx.fill(); }
+      if (!simple) for (let y = y0; y < y1; y += 24) { ctx.fillStyle = C.post; ctx.beginPath(); ctx.arc(x + s * hw, y, 3.4, 0, 7); ctx.fill(); }
     }
   }
   function drawBarrier(side, t) {
@@ -2308,7 +2340,7 @@ window.Abflug = (() => {
 
   function drawGates(t) {
     const { gy0, gatesH, slotW, slotH, gates, gc } = lay, I = lay.island;
-    ctx.fillStyle = asphaltPat(); ctx.fillRect(I.x, gy0, I.w, gatesH + 16);
+    ctx.fillStyle = simple ? C.asphalt : asphaltPat(); ctx.fillRect(I.x, gy0, I.w, gatesH + 16);
     ctx.setLineDash([10, 8]); ctx.strokeStyle = C.line; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.moveTo(I.x + 10, lay.laneY); ctx.lineTo(I.x + I.w - 10, lay.laneY); ctx.stroke(); ctx.setLineDash([]);
     const flash = t - gateFlash < 0.6 ? 1 - (t - gateFlash) / 0.6 : 0;
@@ -2327,7 +2359,7 @@ window.Abflug = (() => {
       const bx = g.x + slotW * 0.3, doorY = docked ? g.y - p.len * gateC(p) * 0.22 : gy0 + 10;
       ctx.fillStyle = "rgba(0,0,0,.22)"; rr(ctx, bx - 3, gy0, 12, doorY - gy0 + 8, 4); ctx.fill();
       ctx.fillStyle = PASTEL[i % PASTEL.length]; rr(ctx, bx - 6, gy0 - 2, 12, doorY - gy0 + 6, 4); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.fillRect(bx - 4, gy0, 3, doorY - gy0);
+      if (!simple) { ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.fillRect(bx - 4, gy0, 3, doorY - gy0); }
       if (locked && i === S.gateCount && i === S.baseGates) {
         // Gesperrtes Extra-Gate: öffnet nur als zweite Chance nach einer Niederlage.
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.45)";
@@ -2363,7 +2395,7 @@ window.Abflug = (() => {
 
   function drawApron(t) {
     const { ax, ay, cell: c } = lay;
-    ctx.fillStyle = asphaltPat();
+    ctx.fillStyle = simple ? C.asphalt : asphaltPat();
     for (let y = 0; y < S.rows; y++) for (let x = 0; x < S.cols; x++) {
       if (S.mask[y][x]) { rr(ctx, ax + x * c - 4, ay + y * c - 4, c + 8, c + 8, 10); ctx.fill(); }
     }
@@ -2536,11 +2568,15 @@ window.Abflug = (() => {
       ${tab === "chal" ? `<p class="small">Geschaffte Level mit härterer Regel: Nebel, Eiltempo oder Kurze Sicht. Ohne Schlepper und ohne zweite Chance.</p>` : ""}
       ${risk ? `<p class="small">Ein Levelwechsel beendet deine Siegesserie von ${streak}.</p>` : ""}
       <div class="levels">${btns}</div>
-      <div class="actions"><button class="btn" id="isleBtn">Flughafen ausbauen</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button><div class="minis"><button class="mini" id="musicBtn">Musik: ${musicOn ? "an" : "aus"}<small>Karibik-Klänge im Hintergrund</small></button></div>${canInstall() ? `<button class="mini" id="installBtn">Als App installieren<small>aufs Handy, läuft auch offline</small></button>` : ""}</div>`);
+      <div class="actions"><button class="btn" id="isleBtn">Flughafen ausbauen</button><button class="btn alt" id="closeBtn">Zurück zum Spiel</button><div class="minis"><button class="mini" id="musicBtn">Musik: ${musicOn ? "an" : "aus"}<small>Karibik-Klänge im Hintergrund</small></button><button class="mini" id="simpleBtn">Einfache Figuren: ${simple ? "an" : "aus"}<small>ruhiges Bild ohne Deko</small></button></div>${canInstall() ? `<button class="mini" id="installBtn">Als App installieren<small>aufs Handy, läuft auch offline</small></button>` : ""}</div>`);
     $("#installBtn")?.addEventListener("click", () => install(tab));
     $("#musicBtn").addEventListener("click", () => {
       musicOn = !musicOn; store.set("abflug.music", musicOn);
       if (musicOn) audioInit(); else musicStop();
+      showMenu(tab);
+    });
+    $("#simpleBtn").addEventListener("click", () => {
+      simple = !simple; store.set("abflug.simple", simple);
       showMenu(tab);
     });
     $("#isleBtn").addEventListener("click", () => showShop());
@@ -2565,8 +2601,9 @@ window.Abflug = (() => {
       <h2>Abflug!</h2>
       <div class="actions"><button class="btn" id="goBtn">${maxLevel ? `Weiter mit Level ${maxLevel + 1}` : "Los geht's"}</button></div>
       ${maxLevel ? `<p class="small">Oder spiele ein geschafftes Level noch einmal, um mehr Sterne zu holen:</p><div class="levels">${btns}</div>` : ""}
-      <div class="actions"><button class="btn alt" id="isleBtn">Flughafen ausbauen</button></div>`);
+      <div class="actions"><button class="btn alt" id="isleBtn">Flughafen ausbauen</button><div class="minis"><button class="mini" id="simpleBtn">Einfache Figuren: ${simple ? "an" : "aus"}<small>ruhiges Bild ohne Deko</small></button></div></div>`);
     hideHint();
+    $("#simpleBtn").addEventListener("click", () => { simple = !simple; store.set("abflug.simple", simple); showStart(); });
     $("#goBtn").addEventListener("click", () => startLevel(maxLevel));
     $("#isleBtn").addEventListener("click", () => showShop());
     $("#card").querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => startLevel(+b.dataset.l)));
